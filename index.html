@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Court Piece</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #1c2128;
+      --border:    #30363d;
+      --green:     #238636;
+      --green-h:   #2ea043;
+      --red:       #e05555;
+      --text:      #e6edf3;
+      --text-muted:#8b949e;
+      --accent:    #f0a500;
+      --radius:    12px;
+      --font:      'Georgia', serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    /* ── LIVE REGIONS: fully hidden from screen, accessible to screen readers ── */
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* ── SKIP LINK ── */
+    .skip-link {
+      position: absolute;
+      top: -999px; left: 0;
+      background: var(--accent);
+      color: #000;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 4px;
+      z-index: 999;
+    }
+    .skip-link:focus { top: 8px; }
+
+    /* ── SCREENS ── */
+    .screen { display: none; width: 100%; max-width: 420px; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* ── HOME HEADER: purely decorative, no pointer events ── */
+    .home-header {
+      text-align: center;
+      margin-bottom: 36px;
+      pointer-events: none;
+      user-select: none;
+    }
+    .game-title {
+      font-size: clamp(2rem, 8vw, 3.2rem);
+      font-weight: bold;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-shadow: 0 0 24px rgba(240,165,0,0.3);
+    }
+    .game-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+    .suits {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 10px;
+      font-size: 1.5rem;
+      color: var(--text-muted);
+    }
+    .suits .red { color: var(--red); }
+
+    /* ── HOME CARD ── */
+    .home-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%;
+      padding: 16px 20px; border: none;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 1.05rem; font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      min-height: 56px;
+    }
+    .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .btn:active { transform: scale(0.97); }
+    .btn .icon { font-size: 1.2rem; }
+
+    .btn-play { background: var(--green); color: #fff; font-size: 1.1rem; }
+    .btn-play:hover { background: var(--green-h); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    .btn-outline:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 2px 0; }
+
+    /* ── SETTINGS PANEL ── */
+    #settings-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 100%;
+      margin-top: 14px;
+    }
+    #settings-panel.open { display: block; }
+
+    .settings-heading {
+      font-size: 0.95rem; font-weight: bold;
+      color: var(--accent); margin-bottom: 18px;
+    }
+    .toggle-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .toggle-label { font-size: 0.92rem; color: var(--text); }
+    .toggle-desc  { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    .toggle-switch { position: relative; width: 50px; height: 26px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 26px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px;
+      left: 4px; top: 4px;
+      background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .slider { background: var(--green); }
+    .toggle-switch input:checked + .slider::before { transform: translateX(24px); }
+    .toggle-switch input:focus-visible + .slider { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    footer {
+      margin-top: 28px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ── GAME SCREEN ── */
+    #screen-game {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+      padding: 12px;
+      gap: 10px;
+    }
+    #screen-game.active { display: flex; }
+
+    .game-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+    }
+    .game-topbar-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--accent);
+      pointer-events: none;
+      user-select: none;
+    }
+    .btn-small {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: var(--font);
+      font-size: 0.8rem;
+      cursor: pointer;
+      min-height: 36px;
+    }
+    .btn-small:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .btn-small:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .trump-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .ai-zone {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+    .zone-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .ai-cards-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .card-back {
+      width: 36px; height: 52px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    .trick-zone {
+      background: var(--surface2);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-align: center;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .trick-zone-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .trick-played-cards { display: flex; gap: 8px; justify-content: center; }
+    .card-played {
+      width: 44px; height: 62px;
+      background: #fff;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: bold; color: #222;
+    }
+    .card-played.red-card { color: var(--red); }
+
+    .game-info-bar { display: flex; gap: 10px; }
+    .info-btn {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-family: var(--font);
+      min-height: 52px;
+    }
+    .info-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .info-btn:hover { border-color: var(--text-muted); }
+    .info-btn-label { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .info-btn-value { font-size: 1rem; font-weight: bold; color: var(--text); margin-top: 2px; }
+
+    .human-zone {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .human-zone-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .human-cards-row {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .card-human {
+      width: 44px; height: 64px;
+      background: #fff;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: bold; color: #222;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .card-human.red-card { color: var(--red); }
+    .card-human:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      transform: translateY(-6px);
+    }
+    .card-human:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .card-human:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none !important;
+      pointer-events: none;
+    }
+
+    /* ── SHUFFLE SCREEN ── */
+    #shuffle-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      padding: 24px;
+      text-align: center;
+    }
+    #shuffle-screen.active { display: flex; }
+    .shuffle-title { font-size: 1.4rem; font-weight: bold; color: var(--accent); }
+    .shuffle-desc  { font-size: 0.9rem; color: var(--text-muted); max-width: 280px; }
+    .btn-shuffle {
+      background: var(--green); color: #fff; border: none;
+      border-radius: var(--radius);
+      padding: 18px 32px;
+      font-family: var(--font); font-size: 1.1rem; font-weight: bold;
+      cursor: pointer; min-height: 56px;
+    }
+    .btn-shuffle:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .btn-shuffle:hover { background: var(--green-h); }
+
+    /* ── OVERLAY PANELS ── */
+    .overlay-panel {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px;
+    }
+    .overlay-panel.active { display: flex; }
+    .panel-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      width: 100%; max-width: 420px;
+      max-height: 70vh; overflow-y: auto;
+    }
+    .panel-heading {
+      font-size: 1rem; font-weight: bold;
+      color: var(--accent); margin-bottom: 16px;
+    }
+    .panel-row {
+      display: flex; justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; color: var(--text);
+    }
+    .panel-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <!-- LIVE REGIONS: visually hidden, screen reader only -->
+  <div id="live-region-a" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
+  <div id="live-region-b" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
+
+  <!-- ══ HOME SCREEN ══ -->
+  <div id="screen-home" class="screen active" role="main">
+
+    <!-- Purely decorative header — no tabindex, no pointer events -->
+    <header class="home-header" aria-hidden="true">
+      <h1 class="game-title">Court Piece</h1>
+      <p class="game-subtitle">Human vs Computer — 4 Player Card Game</p>
+      <div class="suits">
+        <span>♠</span><span class="red">♥</span>
+        <span>♣</span><span class="red">♦</span>
+      </div>
+    </header>
+
+    <!-- Screen title for screen readers only -->
+    <h1 class="sr-only">Court Piece — Main Menu</h1>
+
+    <div id="main-content" class="home-card" role="region" aria-label="Game main menu">
+
+      <button class="btn btn-play" id="btn-play"
+        aria-label="Start New Game. Court Piece. Human versus Computer."
+        onclick="startNewGame()">
+        <span class="icon" aria-hidden="true">🃏</span>
+        Start New Game
+      </button>
+
+      <hr class="divider" aria-hidden="true" />
+
+      <button class="btn btn-outline" id="btn-settings"
+        aria-label="Open Settings. Sound and TalkBack options."
+        aria-expanded="false"
+        aria-controls="settings-panel"
+        onclick="toggleSettings()">
+        <span class="icon" aria-hidden="true">⚙️</span>
+        Settings
+      </button>
+
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" role="region"
+      aria-label="Settings panel" aria-hidden="true">
+
+      <p class="settings-heading" tabindex="-1" id="settings-heading">Settings</p>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Sound</div>
+          <div class="toggle-desc">Card flip and game sounds</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-sound" checked
+            role="switch" aria-checked="true"
+            aria-label="Sound. Currently on. Double tap to toggle."
+            onchange="handleToggle(this,'sound')" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">TalkBack Announcements</div>
+          <div class="toggle-desc">Automatic card announcements</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-talkback" checked
+            role="switch" aria-checked="true"
+            aria-label="TalkBack Announcements. Currently on. Double tap to toggle."
+            onchange="handleToggle(this,'talkback')" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button class="btn btn-outline" style="margin-top:4px;"
+        aria-label="Close Settings"
+        onclick="toggleSettings()">
+        Close Settings
+      </button>
+    </div>
+
+    <footer>
+      <p>Version 1.0 — Abbas Ali — Blind Developer</p>
+    </footer>
+  </div>
+
+  <!-- ══ SHUFFLE SCREEN ══ -->
+  <div id="shuffle-screen" role="dialog"
+    aria-modal="true"
+    aria-labelledby="shuffle-title"
+    aria-describedby="shuffle-desc">
+    <p class="shuffle-title" id="shuffle-title" tabindex="-1">Ready to Play?</p>
+    <p class="shuffle-desc" id="shuffle-desc">
+      Tap the button below to shuffle the deck and start the game.
+    </p>
+    <button class="btn-shuffle"
+      aria-label="Shuffle cards and deal. Game will begin after shuffle."
+      onclick="doShuffle()">
+      🔀 Shuffle &amp; Deal
+    </button>
+  </div>
+
+  <!-- ══ GAME SCREEN ══ -->
+  <div id="screen-game" role="main" aria-label="Court Piece game screen">
+
+    <div class="game-topbar" role="banner">
+      <!-- Title is decorative only -->
+      <span class="game-topbar-title" aria-hidden="true">Court Piece</span>
+      <button class="btn-small"
+        aria-label="Quit game and return to home screen"
+        onclick="quitGame()">
+        Quit Game
+      </button>
+    </div>
+
+    <div class="trump-bar" role="status"
+      id="trump-indicator"
+      tabindex="0"
+      aria-label="Trump suit: Not selected yet">
+      Trump: <span id="trump-display">Not selected yet</span>
+    </div>
+
+    <div class="ai-zone" role="region" aria-label="Opponents area. Their cards are hidden.">
+      <p class="zone-label">Opponents</p>
+      <div class="ai-cards-row" aria-hidden="true">
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+      </div>
+    </div>
+
+    <div class="trick-zone" role="region"
+      id="trick-zone"
+      aria-label="Current trick area. No cards played yet."
+      tabindex="0">
+      <p class="trick-zone-label">Current Trick</p>
+      <div class="trick-played-cards" id="trick-cards" aria-hidden="true"></div>
+      <p id="trick-status" style="font-size:0.8rem;color:var(--text-muted);">
+        Waiting for first card...
+      </p>
+    </div>
+
+    <div class="game-info-bar" role="region" aria-label="Score and history">
+      <button class="info-btn"
+        aria-label="View score. Your team: 0 tricks. Opponents: 0 tricks."
+        id="btn-score"
+        onclick="openPanel('score')">
+        <div class="info-btn-label">Score</div>
+        <div class="info-btn-value" id="score-display">0 — 0</div>
+      </button>
+      <button class="info-btn"
+        aria-label="View move history. No moves yet."
+        id="btn-history"
+        onclick="openPanel('history')">
+        <div class="info-btn-label">History</div>
+        <div class="info-btn-value">📋</div>
+      </button>
+    </div>
+
+    <div class="human-zone" role="region" aria-label="Your cards">
+      <p class="human-zone-label">Your Cards</p>
+      <div class="human-cards-row" id="human-cards-row"
+        role="list"
+        aria-label="Your hand. Select a card to play.">
+        <p style="color:var(--text-muted);font-size:0.85rem;" id="cards-placeholder">
+          Shuffle to receive your cards.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ SCORE PANEL ══ -->
+  <div id="panel-score" class="overlay-panel"
+    role="dialog" aria-modal="true" aria-labelledby="score-panel-heading">
+    <div class="panel-box">
+      <p class="panel-heading" tabindex="-1" id="score-panel-heading">Score</p>
+      <div class="panel-row">
+        <span>Your Team</span>
+        <span id="score-human">0 tricks</span>
+      </div>
+      <div class="panel-row">
+        <span>Opponents</span>
+        <span id="score-ai">0 tricks</span>
+      </div>
+      <div class="panel-row">
+        <span>Target</span>
+        <span>7 tricks to win</span>
+      </div>
+      <button class="btn btn-outline" style="margin-top:16px;"
+        aria-label="Close score panel"
+        onclick="closePanel('score')">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ HISTORY PANEL ══ -->
+  <div id="panel-history" class="overlay-panel"
+    role="dialog" aria-modal="true" aria-labelledby="history-panel-heading">
+    <div class="panel-box">
+      <p class="panel-heading" tabindex="-1" id="history-panel-heading">Move History</p>
+      <div id="history-list">
+        <p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>
+      </div>
+      <button class="btn btn-outline" style="margin-top:16px;"
+        aria-label="Close history panel"
+        onclick="closePanel('history')">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ══ STATE ══ */
+    const state = {
+      sound:       true,
+      talkback:    true,
+      scoreHuman:  0,
+      scoreAI:     0,
+      history:     [],
+      trump:       null,
+      deck:        [],
+      hands:       { human: [], r1: [], r2: [], r3: [] },
+      deckRest:    [],
+      phase:       'trump-select'
+    };
+
+    /* ══ CARD ENGINE ══ */
+    const SUITS = [
+      { name: 'Spades',   symbol: '♠', red: false },
+      { name: 'Hearts',   symbol: '♥', red: true  },
+      { name: 'Clubs',    symbol: '♣', red: false },
+      { name: 'Diamonds', symbol: '♦', red: true  }
+    ];
+    const RANKS = [
+      { name: 'Ace',   short: 'A',  value: 14 },
+      { name: 'King',  short: 'K',  value: 13 },
+      { name: 'Queen', short: 'Q',  value: 12 },
+      { name: 'Jack',  short: 'J',  value: 11 },
+      { name: 'Ten',   short: '10', value: 10 },
+      { name: 'Nine',  short: '9',  value: 9  },
+      { name: 'Eight', short: '8',  value: 8  },
+      { name: 'Seven', short: '7',  value: 7  },
+      { name: 'Six',   short: '6',  value: 6  },
+      { name: 'Five',  short: '5',  value: 5  },
+      { name: 'Four',  short: '4',  value: 4  },
+      { name: 'Three', short: '3',  value: 3  },
+      { name: 'Two',   short: '2',  value: 2  }
+    ];
+
+    function buildDeck() {
+      const deck = [];
+      for (const suit of SUITS)
+        for (const rank of RANKS)
+          deck.push({
+            label:   rank.name + ' of ' + suit.name,
+            display: rank.short + suit.symbol,
+            suit:    suit.name,
+            rank:    rank.name,
+            value:   rank.value,
+            red:     suit.red
+          });
+      return deck;
+    }
+
+    function shuffleDeck(deck) {
+      const d = [...deck];
+      for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [d[i], d[j]] = [d[j], d[i]];
+      }
+      return d;
+    }
+
+    function dealFirst5(deck) {
+      return {
+        human: deck.slice(0,  5),
+        r1:    deck.slice(5,  10),
+        r2:    deck.slice(10, 15),
+        r3:    deck.slice(15, 20),
+        rest:  deck.slice(20)
+      };
+    }
+
+    function dealRemaining(hands, rest) {
+      return {
+        human: hands.human.concat(rest.slice(0,  8)),
+        r1:    hands.r1.concat(   rest.slice(8,  16)),
+        r2:    hands.r2.concat(   rest.slice(16, 24)),
+        r3:    hands.r3.concat(   rest.slice(24, 32))
+      };
+    }
+
+    /* ══ ANNOUNCE ══
+       Uses two alternating regions so TalkBack treats each as new content.
+       Text auto-clears after 2 seconds so it never stays stuck visually or in DOM.
+    ══ */
+    let _announceTick = false;
+    function announce(msg) {
+      if (!state.talkback) return;
+      _announceTick = !_announceTick;
+      const activeId  = _announceTick ? 'live-region-a' : 'live-region-b';
+      const clearId   = _announceTick ? 'live-region-b' : 'live-region-a';
+      document.getElementById(clearId).textContent = '';
+      setTimeout(() => {
+        const el = document.getElementById(activeId);
+        el.textContent = msg;
+        // Auto-clear after 2 seconds so text never gets stuck
+        setTimeout(() => { el.textContent = ''; }, 2000);
+      }, 80);
+    }
+
+    function clearAllAnnouncements() {
+      document.getElementById('live-region-a').textContent = '';
+      document.getElementById('live-region-b').textContent = '';
+    }
+
+    /* ══ INIT ══ */
+    window.addEventListener('load', () => {
+      // Ensure settings panel always starts closed
+      const panel = document.getElementById('settings-panel');
+      const btn   = document.getElementById('btn-settings');
+      panel.classList.remove('open');
+      panel.setAttribute('aria-hidden', 'true');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.setAttribute('aria-label', 'Open Settings. Sound and TalkBack options.');
+      clearAllAnnouncements();
+    });
+
+    /* ══ SETTINGS ══ */
+    function toggleSettings() {
+      const panel  = document.getElementById('settings-panel');
+      const btn    = document.getElementById('btn-settings');
+      const isOpen = panel.classList.contains('open');
+      if (isOpen) {
+        panel.classList.remove('open');
+        panel.setAttribute('aria-hidden', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-label', 'Open Settings. Sound and TalkBack options.');
+        announce('Settings closed.');
+        btn.focus();
+      } else {
+        panel.classList.add('open');
+        panel.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-expanded', 'true');
+        btn.setAttribute('aria-label', 'Close Settings.');
+        setTimeout(() => {
+          document.getElementById('settings-heading').focus();
+          announce('Settings opened. Sound toggle and TalkBack toggle are available.');
+        }, 150);
+      }
+    }
+
+    function handleToggle(input, type) {
+      const isOn = input.checked;
+      input.setAttribute('aria-checked', String(isOn));
+      state[type] = isOn;
+      if (type === 'sound') {
+        input.setAttribute('aria-label', 'Sound. Currently ' + (isOn?'on':'off') + '. Double tap to toggle.');
+        announce('Sound ' + (isOn ? 'turned on.' : 'turned off.'));
+      } else {
+        input.setAttribute('aria-label', 'TalkBack Announcements. Currently ' + (isOn?'on':'off') + '. Double tap to toggle.');
+        announce('TalkBack announcements ' + (isOn ? 'turned on.' : 'turned off.'));
+      }
+    }
+
+    /* ══ NAVIGATION ══
+       startNewGame() is the ONLY entry point to the game.
+       It is bound ONLY to #btn-play. Nothing else calls it.
+    ══ */
+    function startNewGame() {
+      clearAllAnnouncements();
+      document.getElementById('screen-home').classList.remove('active');
+      const sh = document.getElementById('shuffle-screen');
+      sh.classList.add('active');
+      setTimeout(() => {
+        document.getElementById('shuffle-title').focus();
+        announce('Ready to play. Tap Shuffle and Deal to begin.');
+      }, 150);
+    }
+
+    function quitGame() {
+      clearAllAnnouncements();
+      document.getElementById('screen-game').classList.remove('active');
+      document.getElementById('screen-home').classList.add('active');
+      // Reset game state for next round
+      state.scoreHuman = 0;
+      state.scoreAI    = 0;
+      state.history    = [];
+      state.trump      = null;
+      state.phase      = 'trump-select';
+      setTimeout(() => {
+        document.getElementById('btn-play').focus();
+        announce('You have quit the game. Back on home screen.');
+      }, 150);
+    }
+
+    /* ══ SHUFFLE & DEAL ══ */
+    function doShuffle() {
+      clearAllAnnouncements();
+      document.getElementById('shuffle-screen').classList.remove('active');
+      document.getElementById('screen-game').classList.add('active');
+
+      state.deck = shuffleDeck(buildDeck());
+      const dealt = dealFirst5(state.deck);
+      state.hands.human = dealt.human;
+      state.hands.r1    = dealt.r1;
+      state.hands.r2    = dealt.r2;
+      state.hands.r3    = dealt.r3;
+      state.deckRest    = dealt.rest;
+      state.phase       = 'trump-select';
+
+      renderHand(state.hands.human, true);
+      showTrumpSelector();
+
+      const cardNames = state.hands.human.map(c => c.label).join(', ');
+      setTimeout(() => {
+        announce('Cards dealt. You have 5 cards: ' + cardNames + '. Please select your trump suit.');
+        const sel = document.getElementById('trump-selector');
+        if (sel) sel.querySelector('button').focus();
+      }, 400);
+    }
+
+    /* ══ TRUMP SELECTOR ══ */
+    function showTrumpSelector() {
+      document.getElementById('trump-selector')?.remove();
+      const zone = document.getElementById('trump-indicator');
+      zone.innerHTML = 'Select Trump Suit:';
+      zone.setAttribute('aria-label', 'Select your trump suit. Four suit buttons follow.');
+
+      const selector = document.createElement('div');
+      selector.id = 'trump-selector';
+      selector.setAttribute('role', 'group');
+      selector.setAttribute('aria-label', 'Trump suit buttons. Choose one.');
+      selector.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;';
+
+      SUITS.forEach(suit => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-small';
+        btn.style.cssText = 'font-size:1.1rem;padding:10px 14px;min-height:44px;color:'
+          + (suit.red ? 'var(--red)' : 'var(--text)') + ';';
+        btn.textContent = suit.symbol + ' ' + suit.name;
+        btn.setAttribute('aria-label', suit.name + '. Double tap to select as trump suit.');
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectTrump(suit.name, suit.symbol, suit.red);
+        });
+        selector.appendChild(btn);
+      });
+
+      zone.appendChild(selector);
+    }
+
+    function selectTrump(suitName, suitSymbol, isRed) {
+      state.trump = suitName;
+      const zone = document.getElementById('trump-indicator');
+      zone.innerHTML = 'Trump: <span style="color:'
+        + (isRed ? 'var(--red)' : 'var(--text)')
+        + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
+      zone.setAttribute('aria-label', 'Trump suit is ' + suitName);
+
+      announce('Trump selected: ' + suitName + '. Dealing remaining 8 cards. Please wait.');
+
+      setTimeout(() => {
+        state.hands  = dealRemaining(state.hands, state.deckRest);
+        state.phase  = 'playing';
+        renderHand(state.hands.human, false);
+
+        announce('All 13 cards dealt. Trump is ' + suitName
+          + '. Your turn. Swipe your hand and double tap a card to play.');
+
+        setTimeout(() => {
+          const first = document.querySelector('.card-human:not([disabled])');
+          if (first) first.focus();
+        }, 200);
+      }, 600);
+    }
+
+    /* ══ RENDER HAND ══ */
+    function renderHand(hand, locked) {
+      const row = document.getElementById('human-cards-row');
+      document.getElementById('cards-placeholder')?.remove();
+      row.innerHTML = '';
+      hand.forEach(card => {
+        const btn = document.createElement('button');
+        btn.className = 'card-human' + (card.red ? ' red-card' : '');
+        btn.setAttribute('role', 'listitem');
+        btn.setAttribute('tabindex', '0');
+        if (locked) {
+          btn.setAttribute('disabled', 'true');
+          btn.setAttribute('aria-label', card.label + '. Waiting for trump selection.');
+        } else {
+          btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playCard(card, btn);
+          });
+        }
+        btn.textContent = card.display;
+        row.appendChild(btn);
+      });
+    }
+
+    /* ══ PLAY CARD ══ */
+    function playCard(card, btn) {
+      if (state.phase !== 'playing') return;
+      if (btn.disabled) return;
+
+      btn.disabled = true;
+      btn.setAttribute('aria-label', card.label + '. Already played.');
+
+      const trickCards = document.getElementById('trick-cards');
+      trickCards.innerHTML = '';
+      const c = document.createElement('div');
+      c.className = 'card-played' + (card.red ? ' red-card' : '');
+      c.textContent = card.display;
+      c.setAttribute('aria-hidden', 'true');
+      trickCards.appendChild(c);
+
+      document.getElementById('trick-status').textContent = 'You played ' + card.label;
+      document.getElementById('trick-zone').setAttribute('aria-label',
+        'Current trick. You played ' + card.label + '. Waiting for opponents.');
+
+      announce('You played ' + card.label + '. Waiting for opponents.');
+
+      state.history.push('You played ' + card.label);
+      document.getElementById('btn-history').setAttribute('aria-label',
+        'View move history. ' + state.history.length + ' moves recorded.');
+    }
+
+    /* ══ PANELS ══ */
+    function openPanel(type) {
+      const panel = document.getElementById('panel-' + type);
+      panel.classList.add('active');
+      if (type === 'score') {
+        document.getElementById('score-human').textContent = state.scoreHuman + ' tricks';
+        document.getElementById('score-ai').textContent    = state.scoreAI    + ' tricks';
+        announce('Score. Your team: ' + state.scoreHuman + ' tricks. Opponents: ' + state.scoreAI + ' tricks.');
+      } else {
+        const list = document.getElementById('history-list');
+        if (state.history.length === 0) {
+          list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
+          announce('History panel opened. No moves yet.');
+        } else {
+          list.innerHTML = state.history.map((move, i) =>
+            '<div class="panel-row"><span>Move ' + (i+1) + '</span><span>' + move + '</span></div>'
+          ).join('');
+          announce('History. ' + state.history.length + ' moves recorded.');
+        }
+      }
+      setTimeout(() => document.getElementById(type + '-panel-heading').focus(), 150);
+    }
+
+    function closePanel(type) {
+      document.getElementById('panel-' + type).classList.remove('active');
+      announce(type === 'score' ? 'Score panel closed.' : 'History panel closed.');
+      document.getElementById('btn-' + type).focus();
+    }
+  </script>
+
+</body>
+</html>
