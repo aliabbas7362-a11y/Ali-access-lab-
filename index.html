@@ -444,8 +444,7 @@
     <div id="main-content" class="home-card" role="region" aria-label="Game main menu">
 
       <button class="btn btn-play" id="btn-play"
-        aria-label="Start New Game. Court Piece. Human versus Computer."
-        onclick="startNewGame()">
+        aria-label="Start New Game. Court Piece. Human versus Computer.">
         <span class="icon" aria-hidden="true">🃏</span>
         Start New Game
       </button>
@@ -652,7 +651,8 @@
       deck:        [],
       hands:       { human: [], r1: [], r2: [], r3: [] },
       deckRest:    [],
-      phase:       'trump-select'
+      phase:       'trump-select',
+      currentTrick: []
     };
 
     /* ══ CARD ENGINE ══ */
@@ -747,7 +747,7 @@
 
     /* ══ INIT ══ */
     window.addEventListener('load', () => {
-      // Ensure settings panel always starts closed
+      // Reset settings panel
       const panel = document.getElementById('settings-panel');
       const btn   = document.getElementById('btn-settings');
       panel.classList.remove('open');
@@ -755,6 +755,34 @@
       btn.setAttribute('aria-expanded', 'false');
       btn.setAttribute('aria-label', 'Open Settings. Sound and TalkBack options.');
       clearAllAnnouncements();
+
+      // ── EXCLUSIVE game start binding ──
+      // ONLY #btn-play can trigger game. No other element has this listener.
+      let isGameStarting = false;
+      document.getElementById('btn-play').addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (isGameStarting) return; // block double-tap
+        isGameStarting = true;
+        clearAllAnnouncements();
+        document.getElementById('screen-home').classList.remove('active');
+        const sh = document.getElementById('shuffle-screen');
+        sh.classList.add('active');
+        setTimeout(() => {
+          document.getElementById('shuffle-title').focus();
+          announce('Ready to play. Tap Shuffle and Deal to begin.');
+          isGameStarting = false; // reset after transition
+        }, 300);
+      });
+
+      // ── Block all clicks on header and non-button home elements ──
+      const homeHeader = document.querySelector('.home-header');
+      if (homeHeader) {
+        homeHeader.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }, true); // capture phase
+      }
     });
 
     /* ══ SETTINGS ══ */
@@ -794,21 +822,7 @@
       }
     }
 
-    /* ══ NAVIGATION ══
-       startNewGame() is the ONLY entry point to the game.
-       It is bound ONLY to #btn-play. Nothing else calls it.
-    ══ */
-    function startNewGame() {
-      clearAllAnnouncements();
-      document.getElementById('screen-home').classList.remove('active');
-      const sh = document.getElementById('shuffle-screen');
-      sh.classList.add('active');
-      setTimeout(() => {
-        document.getElementById('shuffle-title').focus();
-        announce('Ready to play. Tap Shuffle and Deal to begin.');
-      }, 150);
-    }
-
+    /* ══ QUIT GAME ══ */
     function quitGame() {
       clearAllAnnouncements();
       document.getElementById('screen-game').classList.remove('active');
@@ -819,6 +833,7 @@
       state.history    = [];
       state.trump      = null;
       state.phase      = 'trump-select';
+      state.currentTrick = [];
       setTimeout(() => {
         document.getElementById('btn-play').focus();
         announce('You have quit the game. Back on home screen.');
@@ -906,6 +921,67 @@
       }, 600);
     }
 
+    /* ══ CARD FILTERING ══
+       Jab Human ki baari ho aur lead suit decide ho,
+       sirf valid cards clickable honge.
+       Valid = lead suit available ho toh sirf woh suit,
+               lead suit na ho toh saare cards (Trump bhi)
+    ══ */
+    function applyCardFilter(ledSuit) {
+      const hand = state.hands.human;
+      const hasLedSuit = hand.some(c => c.suit === ledSuit && !isBtnDisabled(c));
+
+      document.querySelectorAll('.card-human').forEach(btn => {
+        if (btn.disabled) return; // already played — skip
+        const cardLabel = btn.getAttribute('aria-label').replace('. Double tap to play.','').replace('. Invalid card. You must follow suit.','').trim();
+        const card = hand.find(c => c.label === cardLabel);
+        if (!card) return;
+
+        if (hasLedSuit) {
+          // Must follow suit
+          if (card.suit === ledSuit) {
+            // Valid — keep enabled
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+          } else {
+            // Invalid — disable visually
+            btn.disabled = true;
+            btn.style.opacity = '0.3';
+            btn.style.pointerEvents = 'none';
+            btn.setAttribute('aria-label', card.label + '. Invalid card. You must follow suit.');
+          }
+        } else {
+          // No led suit — all cards valid (can Trump or play anything)
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+        }
+      });
+
+      // Announce to TalkBack
+      if (hasLedSuit) {
+        announce('You must follow suit: ' + ledSuit + '. Only ' + ledSuit + ' cards are playable.');
+      } else {
+        announce('You have no ' + ledSuit + '. You may play any card including trump.');
+      }
+
+      // Move focus to first valid card
+      setTimeout(() => {
+        const first = document.querySelector('.card-human:not([disabled])');
+        if (first) first.focus();
+      }, 150);
+    }
+
+    function isBtnDisabled(card) {
+      const btns = document.querySelectorAll('.card-human');
+      for (const btn of btns) {
+        const lbl = btn.getAttribute('aria-label') || '';
+        if (lbl.startsWith(card.label) && btn.disabled) return true;
+      }
+      return false;
+    }
+
     /* ══ RENDER HAND ══ */
     function renderHand(hand, locked) {
       const row = document.getElementById('human-cards-row');
@@ -917,7 +993,7 @@
         btn.setAttribute('role', 'listitem');
         btn.setAttribute('tabindex', '0');
         if (locked) {
-          btn.setAttribute('disabled', 'true');
+          btn.disabled = true;
           btn.setAttribute('aria-label', card.label + '. Waiting for trump selection.');
         } else {
           btn.setAttribute('aria-label', card.label + '. Double tap to play.');
@@ -935,27 +1011,215 @@
     function playCard(card, btn) {
       if (state.phase !== 'playing') return;
       if (btn.disabled) return;
+      // Lock human turn during AI sequence
+      state.phase = 'ai-turn';
 
       btn.disabled = true;
       btn.setAttribute('aria-label', card.label + '. Already played.');
 
+      // Show human card in trick zone
+      showCardInTrick(card, 0);
+      updateTrickZoneLabel('You played ' + card.label + '. Waiting for opponents.');
+      announce('You played ' + card.label + '.');
+
+      state.history.push('You played ' + card.label);
+      updateHistoryBtn();
+
+      // Store trick cards for winner calculation
+      state.currentTrick = [
+        { card: card, player: 'human', team: 'A' }
+      ];
+
+      // Fire robots with 1.5s gaps
+      const robots = [
+        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner',   delay: 1500 },
+        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive', delay: 3000 },
+        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive',  delay: 4500 }
+      ];
+
+      robots.forEach(robot => {
+        setTimeout(() => {
+          const chosen = getAICard(
+            state.hands[robot.key],
+            card.suit,         // led suit
+            state.trump,
+            robot.mode,
+            state.currentTrick
+          );
+
+          // Remove chosen card from robot's hand
+          state.hands[robot.key] = state.hands[robot.key].filter(
+            c => c.label !== chosen.label
+          );
+
+          state.currentTrick.push({ card: chosen, player: robot.key, team: robot.team });
+          showCardInTrick(chosen, state.currentTrick.length - 1);
+          announce(robot.label + ' played ' + chosen.label + '.');
+          state.history.push(robot.label + ' played ' + chosen.label);
+          updateHistoryBtn();
+
+          // After last robot, resolve trick
+          if (robot.key === 'r3') {
+            setTimeout(() => resolveTrick(card.suit), 1200);
+          }
+        }, robot.delay);
+      });
+    }
+
+    /* ══ GET AI CARD ══
+       One function, three modes.
+       Returns the best card for the AI based on mode and game state.
+    ══ */
+    function getAICard(hand, ledSuit, trump, mode, trickSoFar) {
+      if (!hand || hand.length === 0) return null;
+
+      // Step 1: Filter valid cards (must follow suit if possible)
+      const followSuit = hand.filter(c => c.suit === ledSuit);
+      const trumpCards = hand.filter(c => c.suit === trump);
+      const validCards = followSuit.length > 0 ? followSuit : hand;
+
+      // Step 2: Sort helpers
+      const byValueAsc  = arr => [...arr].sort((a,b) => a.value - b.value);
+      const byValueDesc = arr => [...arr].sort((a,b) => b.value - a.value);
+
+      // Step 3: Current winning card in trick
+      const winnerSoFar = getWinningCard(trickSoFar, ledSuit, trump);
+
+      if (mode === 'partner') {
+        // Partner: if our team is already winning, play lowest valid card
+        // If opponent winning, try to beat with lowest winning card
+        if (winnerSoFar && winnerSoFar.team === 'A') {
+          return byValueAsc(validCards)[0]; // team winning — save big cards
+        }
+        const canBeat = validCards.filter(c => cardBeats(c, winnerSoFar.card, ledSuit, trump));
+        if (canBeat.length > 0) return byValueAsc(canBeat)[0]; // beat with lowest winner
+        return byValueAsc(validCards)[0]; // can't beat — discard lowest
+
+      } else if (mode === 'aggressive') {
+        // Aggressive: always try to win — play highest card
+        const canBeat = validCards.filter(c => cardBeats(c, winnerSoFar ? winnerSoFar.card : null, ledSuit, trump));
+        if (canBeat.length > 0) return byValueDesc(canBeat)[0]; // highest winning card
+        // Can't follow suit and win — try trump
+        if (followSuit.length === 0 && trumpCards.length > 0) return byValueDesc(trumpCards)[0];
+        return byValueDesc(validCards)[0]; // play highest anyway
+
+      } else {
+        // Defensive: if opponent winning, try to beat cheaply; else discard lowest
+        if (winnerSoFar && winnerSoFar.team === 'B') {
+          return byValueAsc(validCards)[0]; // opponent already winning own trick — discard
+        }
+        const canBeat = validCards.filter(c => cardBeats(c, winnerSoFar ? winnerSoFar.card : null, ledSuit, trump));
+        if (canBeat.length > 0) return byValueAsc(canBeat)[0]; // beat cheaply
+        return byValueAsc(validCards)[0]; // discard lowest
+      }
+    }
+
+    /* ══ CARD BEATS ══ */
+    function cardBeats(card, against, ledSuit, trump) {
+      if (!against) return true; // nothing to beat
+      if (card.suit === trump && against.suit !== trump) return true;
+      if (card.suit === against.suit) return card.value > against.value;
+      return false;
+    }
+
+    /* ══ GET WINNING CARD IN TRICK ══ */
+    function getWinningCard(trick, ledSuit, trump) {
+      if (!trick || trick.length === 0) return null;
+      return trick.reduce((best, entry) => {
+        if (!best) return entry;
+        if (cardBeats(entry.card, best.card, ledSuit, trump)) return entry;
+        return best;
+      }, null);
+    }
+
+    /* ══ RESOLVE TRICK ══ */
+    function resolveTrick(ledSuit) {
+      const winner = getWinningCard(state.currentTrick, ledSuit, state.trump);
+      if (!winner) return;
+
+      const isHumanTeam = winner.team === 'A';
+      if (isHumanTeam) {
+        state.scoreHuman++;
+        announce('Your team wins this trick! Score: Your team ' + state.scoreHuman + ', Opponents ' + state.scoreAI + '.');
+      } else {
+        state.scoreAI++;
+        announce('Opponents win this trick. Score: Your team ' + state.scoreHuman + ', Opponents ' + state.scoreAI + '.');
+      }
+
+      state.history.push('--- Trick won by: ' + (isHumanTeam ? 'Your Team' : 'Opponents') + ' ---');
+      updateHistoryBtn();
+      updateScoreDisplay();
+
+      // Check game over
+      if (state.scoreHuman >= 7 || state.scoreAI >= 7) {
+        setTimeout(() => endGame(state.scoreHuman >= 7), 1000);
+        return;
+      }
+
+      // Allow human to play next card
+      setTimeout(() => {
+        state.phase = 'playing';
+        state.currentTrick = [];
+        updateTrickZoneLabel('New trick. Your turn. Play a card.');
+        announce('New trick. Your turn.');
+        // Reset all remaining cards to fully enabled for new trick
+        document.querySelectorAll('.card-human').forEach(btn => {
+          if (!btn.disabled) {
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = '';
+          }
+        });
+        const firstCard = document.querySelector('.card-human:not([disabled])');
+        if (firstCard) firstCard.focus();
+      }, 1500);
+    }
+
+    /* ══ END GAME ══ */
+    function endGame(humanWon) {
+      state.phase = 'ended';
+
+      // Disable ALL remaining human cards immediately
+      document.querySelectorAll('.card-human').forEach(btn => {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        btn.setAttribute('aria-label', btn.textContent.trim() + '. Game over. Card cannot be played.');
+      });
+
+      const msg = humanWon
+        ? 'Congratulations! Your team wins the game! Final score: ' + state.scoreHuman + ' to ' + state.scoreAI + '.'
+        : 'Game over. Opponents win. Final score: ' + state.scoreHuman + ' to ' + state.scoreAI + '.';
+
+      announce(msg);
+      document.getElementById('trick-status').textContent = humanWon ? '🎉 Your Team Wins!' : '❌ Opponents Win';
+      updateTrickZoneLabel(msg);
+    }
+
+    /* ══ HELPERS ══ */
+    function showCardInTrick(card, index) {
       const trickCards = document.getElementById('trick-cards');
-      trickCards.innerHTML = '';
+      if (index === 0) trickCards.innerHTML = '';
       const c = document.createElement('div');
       c.className = 'card-played' + (card.red ? ' red-card' : '');
       c.textContent = card.display;
       c.setAttribute('aria-hidden', 'true');
       trickCards.appendChild(c);
+    }
 
-      document.getElementById('trick-status').textContent = 'You played ' + card.label;
-      document.getElementById('trick-zone').setAttribute('aria-label',
-        'Current trick. You played ' + card.label + '. Waiting for opponents.');
+    function updateTrickZoneLabel(msg) {
+      document.getElementById('trick-status').textContent = msg;
+      document.getElementById('trick-zone').setAttribute('aria-label', msg);
+    }
 
-      announce('You played ' + card.label + '. Waiting for opponents.');
-
-      state.history.push('You played ' + card.label);
+    function updateHistoryBtn() {
       document.getElementById('btn-history').setAttribute('aria-label',
         'View move history. ' + state.history.length + ' moves recorded.');
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('score-display').textContent =
+        state.scoreHuman + ' — ' + state.scoreAI;
+      document.getElementById('btn-score').setAttribute('aria-label',
+        'View score. Your team: ' + state.scoreHuman + ' tricks. Opponents: ' + state.scoreAI + ' tricks.');
     }
 
     /* ══ PANELS ══ */
