@@ -662,7 +662,25 @@
       leader:      'human'
     };
 
-    /* ══ CARD ENGINE ══ */
+    /* ══ SOUND SYSTEM ══ */
+    const SFX = {
+      cardFlip:  new Audio('sounds/card-flip.mp3'),
+      shuffle:   new Audio('sounds/shuffle.mp3'),
+      win:       new Audio('sounds/win.mp3'),
+      lose:      new Audio('sounds/lose.mp3'),
+      trickWin:  new Audio('sounds/trick-win.mp3'),
+      trickLose: new Audio('sounds/trick-lose.mp3')
+    };
+
+    function playSound(key) {
+      if (!state.sound) return;
+      try {
+        const sfx = SFX[key];
+        if (!sfx) return;
+        sfx.currentTime = 0;
+        sfx.play().catch(() => {}); // silently ignore autoplay block
+      } catch(e) {}
+    }
     const SUITS = [
       { name: 'Spades',   symbol: '♠', red: false },
       { name: 'Hearts',   symbol: '♥', red: true  },
@@ -893,6 +911,7 @@
       document.getElementById('screen-game').classList.add('active');
 
       state.deck = shuffleDeck(buildDeck());
+      playSound('shuffle');
       const dealt = dealFirst5(state.deck);
       state.hands.human = dealt.human;
       state.hands.r1    = dealt.r1;
@@ -1060,6 +1079,7 @@
       state.phase = 'ai-turn';
       btn.disabled = true;
       btn.setAttribute('aria-label', card.label + '. Already played.');
+      playSound('cardFlip');
       // DOM se bhi permanently remove karo — sirf disable nahi, hatao
       setTimeout(() => { btn.remove(); }, 100);
 
@@ -1135,6 +1155,7 @@
             state.hands[robot.key] = state.hands[robot.key].filter(c => c.label !== chosen.label);
             state.currentTrick.push({ card: chosen, player: robot.key, team: robot.team });
             showCardInTrick(chosen, state.currentTrick.length - 1);
+            playSound('cardFlip');
             announce(robot.label + ' played ' + chosen.label + '.');
             state.history.push(robot.label + ' played ' + chosen.label);
             updateHistoryBtn();
@@ -1230,9 +1251,11 @@
       const isHumanTeam = winner.team === 'A';
       if (isHumanTeam) {
         state.scoreHuman++;
+        playSound('trickWin');
         announce('Your team wins this trick! Score: Your team ' + state.scoreHuman + ', Opponents ' + state.scoreAI + '.');
       } else {
         state.scoreAI++;
+        playSound('trickLose');
         announce('Opponents win this trick. Score: Your team ' + state.scoreHuman + ', Opponents ' + state.scoreAI + '.');
       }
 
@@ -1264,12 +1287,13 @@
           state.phase = 'playing';
           updateTrickZoneLabel('Your team won. You lead the next trick. Play any card.');
           announce('Your team wins! You lead the next trick. Play any card.');
-          // تمام باقی کارڈز فعال کریں بغیر فلٹر کے
+          // Saare remaining cards properly reset karo — opacity aur pointerEvents dono
           document.querySelectorAll('.card-human').forEach(btn => {
-            if (!btn.disabled) {
-              btn.style.opacity = '1';
-              btn.style.pointerEvents = '';
-            }
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = '';
+            const lbl = btn.getAttribute('data-label');
+            if (lbl) btn.setAttribute('aria-label', lbl + '. Double tap to play.');
           });
           const firstCard = document.querySelector('.card-human:not([disabled])');
           if (firstCard) firstCard.focus();
@@ -1300,6 +1324,7 @@
           state.currentTrick = [{ card: leaderCard, player: leaderKey, team: leaderTeam }];
 
           showCardInTrick(leaderCard, 0);
+          playSound('cardFlip');
           updateTrickZoneLabel(leaderLabel + ' leads with ' + leaderCard.label + '. Your turn — follow suit if possible.');
           announce(leaderLabel + ' leads with ' + leaderCard.label + '. Your turn to follow.');
           state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
@@ -1331,6 +1356,7 @@
         : 'Game over. Opponents win. Final score: ' + state.scoreHuman + ' to ' + state.scoreAI + '. Tap Play Again to start a new game.';
 
       announce(msg);
+      playSound(humanWon ? 'win' : 'lose');
       document.getElementById('trick-status').textContent = humanWon ? '🎉 Your Team Wins!' : '❌ Opponents Win';
       updateTrickZoneLabel(msg);
 
