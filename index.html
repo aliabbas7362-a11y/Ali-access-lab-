@@ -672,13 +672,17 @@
       trickLose: new Audio('sounds/trick-lose.mp3')
     };
 
+    // Saare sounds ka volume max set karo
+    Object.values(SFX).forEach(sfx => { sfx.volume = 1.0; });
+
     function playSound(key) {
       if (!state.sound) return;
       try {
         const sfx = SFX[key];
         if (!sfx) return;
         sfx.currentTime = 0;
-        sfx.play().catch(() => {}); // silently ignore autoplay block
+        sfx.volume = 1.0; // har play pe volume ensure karo
+        sfx.play().catch(() => {});
       } catch(e) {}
     }
     const SUITS = [
