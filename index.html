@@ -420,6 +420,268 @@
       font-size: 0.9rem; color: var(--text);
     }
     .panel-row:last-child { border-bottom: none; }
+
+    /* ══════════════════════════════════════════
+       VISUAL INTERFACE — SIGHTED PLAYERS
+       All aria/TalkBack elements untouched.
+    ══════════════════════════════════════════ */
+
+    /* ── REAL CARD DESIGN ── */
+    .vis-card {
+      position: relative;
+      width: 48px;
+      height: 68px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: 'Georgia', serif;
+      font-weight: bold;
+      font-size: 0.75rem;
+      color: #1a1a1a;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .vis-card.red { color: #cc1111; }
+    .vis-card .vc-tl {
+      position: absolute;
+      top: 3px; left: 4px;
+      font-size: 0.6rem;
+      line-height: 1.1;
+      text-align: left;
+    }
+    .vis-card .vc-br {
+      position: absolute;
+      bottom: 3px; right: 4px;
+      font-size: 0.6rem;
+      line-height: 1.1;
+      text-align: right;
+      transform: rotate(180deg);
+    }
+    .vis-card .vc-center {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    /* ── CARD BACK VISUAL ── */
+    .vis-card-back {
+      width: 34px; height: 48px;
+      background: linear-gradient(135deg, #1a3a6b 0%, #0d1f40 100%);
+      border-radius: 6px;
+      border: 2px solid #2a5298;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.3);
+      flex-shrink: 0;
+      background-image:
+        repeating-linear-gradient(45deg,
+          transparent, transparent 3px,
+          rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px);
+    }
+
+    /* ── 2×2 PLAYER GRID ── */
+    .player-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .player-slot {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      min-height: 110px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: box-shadow 0.25s, border-color 0.25s, opacity 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .player-slot[data-player="human"] {
+      border-color: #2a5298;
+      background: #0d1f3a;
+    }
+    .player-slot-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .player-slot-avatar { font-size: 1.1rem; }
+    .player-slot-card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 72px;
+    }
+
+    /* empty slot placeholder */
+    .slot-empty {
+      width: 48px; height: 68px;
+      border: 2px dashed rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+
+    /* ── TRICK WIN/LOSE GLOW ── */
+    .player-slot.glow-win {
+      box-shadow: 0 0 18px 4px rgba(35,134,54,0.8);
+      border-color: var(--green);
+    }
+    .player-slot.glow-lose {
+      opacity: 0.45;
+    }
+
+    /* ── CARD PLAY ANIMATION ── */
+    @keyframes slideInCard {
+      from { opacity: 0; transform: translateY(-18px) scale(0.85); }
+      to   { opacity: 1; transform: translateY(0)     scale(1); }
+    }
+    .vis-card.anim-play {
+      animation: slideInCard 0.28s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    /* ── SHUFFLE ANIMATION ── */
+    #shuffle-cards-anim {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 80px;
+      position: relative;
+      margin: 8px 0;
+    }
+    .shuffle-card-vis {
+      width: 34px; height: 48px;
+      background: linear-gradient(135deg, #1a3a6b, #0d1f40);
+      border: 2px solid #2a5298;
+      border-radius: 6px;
+      position: absolute;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      background-image:
+        repeating-linear-gradient(45deg,
+          transparent, transparent 3px,
+          rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 6px);
+    }
+    @keyframes shuffleFan {
+      0%   { transform: translateX(0) rotate(0deg); opacity:0; }
+      30%  { opacity:1; }
+      60%  { transform: translateX(var(--tx)) rotate(var(--rot)); }
+      80%  { transform: translateX(var(--tx)) rotate(var(--rot)); }
+      100% { transform: translateX(0) rotate(0deg); opacity:0.4; }
+    }
+    .shuffle-card-vis { animation: shuffleFan 0.9s ease-in-out both; }
+
+    /* ── GAME WIN/LOSE ANIMATIONS ── */
+    @keyframes celebrationPop {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.06); }
+      60%  { transform: scale(0.97); }
+      100% { transform: scale(1); }
+    }
+    @keyframes gameLoseFade {
+      from { opacity: 1; }
+      to   { opacity: 0.35; filter: grayscale(80%); }
+    }
+    .game-win-anim  { animation: celebrationPop 0.5s ease-in-out 3; }
+    .game-lose-anim { animation: gameLoseFade  0.8s ease-in-out forwards; }
+
+    /* ── ENHANCED HUMAN CARD BUTTONS ── */
+    /* Override existing .card-human to look like real cards */
+    .card-human {
+      position: relative !important;
+      width: 48px !important;
+      height: 68px !important;
+      background: #fff !important;
+      border-radius: 8px !important;
+      border: 1.5px solid #bbb !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-direction: column !important;
+      font-family: 'Georgia', serif !important;
+      font-weight: bold !important;
+      font-size: 0 !important; /* hide old textContent display — we use pseudo layout */
+      color: #1a1a1a !important;
+      cursor: pointer !important;
+      transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s !important;
+      overflow: hidden !important;
+    }
+    .card-human.red-card { color: #cc1111 !important; }
+    .card-human:focus-visible {
+      outline: none !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(240,165,0,0.5), 0 4px 12px rgba(0,0,0,0.3) !important;
+      transform: translateY(-8px) !important;
+    }
+    .card-human:hover {
+      border-color: var(--accent) !important;
+      transform: translateY(-5px) !important;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.3) !important;
+    }
+    .card-human:disabled {
+      opacity: 0.28 !important;
+      cursor: not-allowed !important;
+      transform: none !important;
+      pointer-events: none !important;
+      box-shadow: none !important;
+    }
+    /* Card corner labels injected via JS */
+    .card-human .vc-tl {
+      position: absolute;
+      top: 3px; left: 4px;
+      font-size: 0.58rem;
+      line-height: 1.1;
+      text-align: left;
+      font-weight: bold;
+      font-family: 'Georgia', serif;
+      pointer-events: none;
+    }
+    .card-human .vc-br {
+      position: absolute;
+      bottom: 3px; right: 4px;
+      font-size: 0.58rem;
+      line-height: 1.1;
+      text-align: right;
+      transform: rotate(180deg);
+      font-weight: bold;
+      font-family: 'Georgia', serif;
+      pointer-events: none;
+    }
+    .card-human .vc-center {
+      font-size: 1rem;
+      font-family: 'Georgia', serif;
+      font-weight: bold;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    /* ── TRICK ZONE REDESIGN ── */
+    /* (existing .trick-zone kept, we add player-grid inside instead) */
+
+    /* ── TRICK CLEAR FADE ── */
+    @keyframes trickClearFade {
+      from { opacity:1; transform:scale(1); }
+      to   { opacity:0; transform:scale(0.85) translateY(8px); }
+    }
+    .slot-card-clearing {
+      animation: trickClearFade 0.35s ease-in forwards;
+    }
   </style>
 </head>
 <body>
@@ -519,6 +781,7 @@
     aria-labelledby="shuffle-title"
     aria-describedby="shuffle-desc">
     <p class="shuffle-title" id="shuffle-title" tabindex="-1">Ready to Play?</p>
+    <div id="shuffle-cards-anim" aria-hidden="true"></div>
     <p class="shuffle-desc" id="shuffle-desc">
       Tap the button below to shuffle the deck and start the game.
     </p>
@@ -551,14 +814,58 @@
 
     <div class="ai-zone" role="region" aria-label="Opponents area. Their cards are hidden.">
       <p class="zone-label">Opponents</p>
-      <div class="ai-cards-row" aria-hidden="true">
-        <div class="card-back">🂠</div>
-        <div class="card-back">🂠</div>
-        <div class="card-back">🂠</div>
-        <div class="card-back">🂠</div>
-        <div class="card-back">🂠</div>
-        <div class="card-back">🂠</div>
-        <div class="card-back">🂠</div>
+      <div class="ai-cards-row" aria-hidden="true" id="ai-cards-visual">
+        <div class="vis-card-back"></div>
+        <div class="vis-card-back"></div>
+        <div class="vis-card-back"></div>
+        <div class="vis-card-back"></div>
+        <div class="vis-card-back"></div>
+        <div class="vis-card-back"></div>
+        <div class="vis-card-back"></div>
+      </div>
+    </div>
+
+    <!-- ══ 2×2 PLAYER TRICK GRID — Visual only, aria-hidden ══ -->
+    <div class="player-grid" aria-hidden="true" id="player-grid">
+      <!-- Top-left: Partner R1 -->
+      <div class="player-slot" id="slot-r1" data-player="r1">
+        <div class="player-slot-header">
+          <span class="player-slot-avatar">🤖</span>
+          <span>Partner</span>
+        </div>
+        <div class="player-slot-card-area" id="slot-card-r1">
+          <div class="slot-empty"></div>
+        </div>
+      </div>
+      <!-- Top-right: Opponent R2 -->
+      <div class="player-slot" id="slot-r2" data-player="r2">
+        <div class="player-slot-header">
+          <span class="player-slot-avatar">👹</span>
+          <span>Opp 1</span>
+        </div>
+        <div class="player-slot-card-area" id="slot-card-r2">
+          <div class="slot-empty"></div>
+        </div>
+      </div>
+      <!-- Bottom-left: Opponent R3 -->
+      <div class="player-slot" id="slot-r3" data-player="r3">
+        <div class="player-slot-header">
+          <span class="player-slot-avatar">👹</span>
+          <span>Opp 2</span>
+        </div>
+        <div class="player-slot-card-area" id="slot-card-r3">
+          <div class="slot-empty"></div>
+        </div>
+      </div>
+      <!-- Bottom-right: You -->
+      <div class="player-slot" id="slot-human" data-player="human">
+        <div class="player-slot-header">
+          <span class="player-slot-avatar">🫵</span>
+          <span>You</span>
+        </div>
+        <div class="player-slot-card-area" id="slot-card-human">
+          <div class="slot-empty"></div>
+        </div>
       </div>
     </div>
 
@@ -1064,7 +1371,16 @@
             playCard(card, btn);
           });
         }
-        btn.textContent = card.display;
+        // ── Visual real-card layout (aria-hidden children) ──
+        const colorClass = card.red ? 'red' : '';
+        const rank = card.display.replace(/[♠♥♣♦]/g,'');
+        const suit = card.red
+          ? (card.suit === 'Hearts' ? '♥' : '♦')
+          : (card.suit === 'Spades' ? '♠' : '♣');
+        btn.innerHTML =
+          '<span class="vc-tl" aria-hidden="true">' + rank + '<br>' + suit + '</span>' +
+          '<span class="vc-center" aria-hidden="true">' + suit + '</span>' +
+          '<span class="vc-br" aria-hidden="true">' + rank + '<br>' + suit + '</span>';
         row.appendChild(btn);
       });
     }
@@ -1438,6 +1754,230 @@
       announce(type === 'score' ? 'Score panel closed.' : 'History panel closed.');
       document.getElementById('btn-' + type).focus();
     }
+
+    /* ══════════════════════════════════════════
+       VISUAL SYNC LAYER
+       Ye sab functions existing logic ke BAAD
+       call hote hain — koi bhi timing ya aria
+       nahi badlti.
+    ══════════════════════════════════════════ */
+
+    /* ── Build a real visual card element ── */
+    function buildVisCard(card) {
+      const el = document.createElement('div');
+      el.className = 'vis-card' + (card.red ? ' red' : '');
+      const suit = card.red
+        ? (card.suit === 'Hearts' ? '♥' : '♦')
+        : (card.suit === 'Spades' ? '♠' : '♣');
+      const rank = card.display.replace(/[♠♥♣♦]/g, '');
+      el.innerHTML =
+        '<span class="vc-tl">' + rank + '<br>' + suit + '</span>' +
+        '<span class="vc-center">' + suit + '</span>' +
+        '<span class="vc-br">' + rank + '<br>' + suit + '</span>';
+      el.setAttribute('aria-hidden', 'true');
+      return el;
+    }
+
+    /* ── Show card in player slot (visual only) ── */
+    function showCardInSlot(playerKey, card) {
+      const areaId = 'slot-card-' + playerKey;
+      const area = document.getElementById(areaId);
+      if (!area) return;
+      area.innerHTML = '';
+      const el = buildVisCard(card);
+      el.classList.add('anim-play');
+      area.appendChild(el);
+    }
+
+    /* ── Clear all 4 slots (with fade animation) ── */
+    function clearAllSlots() {
+      ['human','r1','r2','r3'].forEach(key => {
+        const area = document.getElementById('slot-card-' + key);
+        if (!area) return;
+        const existing = area.querySelector('.vis-card');
+        if (existing) {
+          existing.classList.add('slot-card-clearing');
+          setTimeout(() => { area.innerHTML = '<div class="slot-empty"></div>'; }, 370);
+        } else {
+          area.innerHTML = '<div class="slot-empty"></div>';
+        }
+      });
+    }
+
+    /* ── Trick win glow ── */
+    function visualTrickWin(winnerPlayer) {
+      // Remove any existing glow
+      document.querySelectorAll('.player-slot').forEach(s => {
+        s.classList.remove('glow-win','glow-lose');
+      });
+      const winSlot = document.getElementById('slot-' + winnerPlayer);
+      if (winSlot) {
+        winSlot.classList.add('glow-win');
+        setTimeout(() => winSlot.classList.remove('glow-win'), 1100);
+      }
+    }
+
+    /* ── Trick lose dim ── */
+    function visualTrickLose(winnerPlayer) {
+      document.querySelectorAll('.player-slot').forEach(s => {
+        s.classList.remove('glow-win','glow-lose');
+      });
+      // Dim the losers (everyone except winner)
+      ['human','r1','r2','r3'].forEach(key => {
+        if (key !== winnerPlayer) {
+          const sl = document.getElementById('slot-' + key);
+          if (sl) {
+            sl.classList.add('glow-lose');
+            setTimeout(() => sl.classList.remove('glow-lose'), 1100);
+          }
+        }
+      });
+    }
+
+    /* ── Game win celebration ── */
+    function visualGameWin() {
+      const grid = document.getElementById('player-grid');
+      if (grid) {
+        grid.classList.add('game-win-anim');
+        setTimeout(() => grid.classList.remove('game-win-anim'), 1600);
+      }
+    }
+
+    /* ── Game lose fade ── */
+    function visualGameLose() {
+      const grid = document.getElementById('player-grid');
+      if (grid) {
+        grid.classList.add('game-lose-anim');
+        setTimeout(() => grid.classList.remove('game-lose-anim'), 1500);
+      }
+    }
+
+    /* ── Shuffle fan animation ── */
+    function runShuffleAnimation() {
+      const container = document.getElementById('shuffle-cards-anim');
+      if (!container) return;
+      container.innerHTML = '';
+      const positions = [
+        { tx: '-52px', rot: '-22deg', delay: '0s'    },
+        { tx: '-26px', rot: '-11deg', delay: '0.07s' },
+        { tx:   '0px', rot:   '0deg', delay: '0.14s' },
+        { tx:  '26px', rot:  '11deg', delay: '0.21s' },
+        { tx:  '52px', rot:  '22deg', delay: '0.28s' },
+      ];
+      positions.forEach(p => {
+        const c = document.createElement('div');
+        c.className = 'shuffle-card-vis';
+        c.style.cssText =
+          '--tx:' + p.tx + ';--rot:' + p.rot + ';' +
+          'animation-delay:' + p.delay + ';' +
+          'animation-duration:0.9s;';
+        container.appendChild(c);
+      });
+    }
+
+    /* ── Update AI card count visual ── */
+    function updateAICardVisual(count) {
+      const row = document.getElementById('ai-cards-visual');
+      if (!row) return;
+      row.innerHTML = '';
+      const show = Math.min(count, 10);
+      for (let i = 0; i < show; i++) {
+        const b = document.createElement('div');
+        b.className = 'vis-card-back';
+        b.setAttribute('aria-hidden','true');
+        row.appendChild(b);
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       HOOK INTO EXISTING FUNCTIONS
+       We WRAP the originals — never replace them.
+       Original logic runs first, visual runs after.
+    ══════════════════════════════════════════ */
+
+    /* Wrap showCardInTrick to also update player slot */
+    const _origShowCardInTrick = showCardInTrick;
+    showCardInTrick = function(card, index) {
+      _origShowCardInTrick(card, index);
+      // state.currentTrick may not yet contain this card (human lead case)
+      // So we track who's playing via the trick length at call time
+      // If index === 0 and currentTrick is empty → it's the human OR a robot leader
+      // We read from currentTrick if available, otherwise infer from state
+      const entry = state.currentTrick[index];
+      if (entry) {
+        showCardInSlot(entry.player, entry.card);
+      }
+      // Human lead case: currentTrick not yet set — handled by playCard wrapper below
+    };
+
+    /* Wrap resolveTrick to add glow/dim + clear slots */
+    const _origResolveTrick = resolveTrick;
+    resolveTrick = function(ledSuit) {
+      // Determine winner for visual BEFORE calling original
+      const winner = getWinningCard(state.currentTrick, ledSuit, state.trump);
+      const isHumanTeam = winner && winner.team === 'A';
+
+      if (winner) {
+        if (isHumanTeam) {
+          visualTrickWin(winner.player);
+        } else {
+          visualTrickLose(winner.player);
+        }
+      }
+
+      // Clear slots after glow (synced with existing 1200ms trick-cards clear)
+      setTimeout(() => clearAllSlots(), 1200);
+
+      _origResolveTrick(ledSuit);
+    };
+
+    /* Wrap endGame to trigger win/lose visual */
+    const _origEndGame = endGame;
+    endGame = function(humanWon) {
+      _origEndGame(humanWon);
+      if (humanWon) {
+        setTimeout(() => visualGameWin(), 200);
+      } else {
+        setTimeout(() => visualGameLose(), 200);
+      }
+    };
+
+    /* Wrap doShuffle to show fan animation first, then proceed */
+    const _origDoShuffle = doShuffle;
+    doShuffle = function() {
+      runShuffleAnimation();
+      _origDoShuffle();
+      // Update AI card backs after deal
+      setTimeout(() => updateAICardVisual(13), 700);
+    };
+
+    /* Wrap quitGame to reset visual slots and AI backs */
+    const _origQuitGame = quitGame;
+    quitGame = function() {
+      clearAllSlots();
+      updateAICardVisual(7);
+      document.getElementById('player-grid')?.classList.remove('game-win-anim','game-lose-anim');
+      _origQuitGame();
+    };
+
+    /* Run shuffle fan animation when shuffle screen first appears */
+    (function() {
+      const origBtnPlay = document.getElementById('btn-play');
+      if (origBtnPlay) {
+        origBtnPlay.addEventListener('click', function() {
+          setTimeout(() => runShuffleAnimation(), 350);
+        });
+      }
+    })();
+
+    /* Also hook playCard to show human card in slot */
+    const _origPlayCard = playCard;
+    playCard = function(card, btn) {
+      _origPlayCard(card, btn);
+      // Human slot — works in both lead and follow cases since
+      // we call it after _origPlayCard which sets currentTrick
+      showCardInSlot('human', card);
+    };
   </script>
 
 </body>
