@@ -14,7 +14,7 @@
       --border:    #30363d;
       --green:     #238636;
       --green-h:   #2ea043;
-      --red:       #e05555;
+      --red:       #d32f2f;       /* vibrant card-game red */
       --text:      #e6edf3;
       --text-muted:#8b949e;
       --accent:    #f0a500;
@@ -34,7 +34,7 @@
       padding: 16px;
     }
 
-    /* ── LIVE REGIONS: fully hidden from screen, accessible to screen readers ── */
+    /* ── LIVE REGIONS ── */
     .sr-only {
       position: absolute !important;
       width: 1px !important;
@@ -64,7 +64,7 @@
     .screen { display: none; width: 100%; max-width: 420px; }
     .screen.active { display: flex; flex-direction: column; align-items: center; }
 
-    /* ── HOME HEADER: purely decorative, no pointer events ── */
+    /* ── HOME HEADER ── */
     .home-header {
       text-align: center;
       margin-bottom: 36px;
@@ -104,7 +104,6 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      /* کارڈ کنٹینر خود انٹرایکٹیو نہیں — صرف بٹن کلک کریں */
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -185,7 +184,6 @@
       font-size: 0.72rem;
       color: var(--text-muted);
       text-align: center;
-      /* غیر انٹرایکٹیو: کوئی کلک یا فوکس نہیں */
       pointer-events: none;
       user-select: none;
     }
@@ -292,15 +290,112 @@
       text-transform: uppercase;
     }
     .trick-played-cards { display: flex; gap: 8px; justify-content: center; }
+
+    /* ── REAL PLAYING CARD BASE STYLES ──
+       Used by BOTH .card-played (trick zone) and .card-human (hand).
+       White background, smooth shadow, real border-radius — looks like
+       a card sitting on a green table. */
     .card-played {
-      width: 44px; height: 62px;
-      background: #fff;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem; font-weight: bold; color: #222;
+      position: relative;
+      width: 52px; height: 74px;
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1.5px solid #c8c8c8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0; /* stray text hidden; content via child spans */
+      flex-direction: column;
+      flex-shrink: 0;
     }
-    .card-played.red-card { color: var(--red); }
+
+    /* ── HUMAN HAND CARD ──
+       Slightly larger than trick-zone cards so the hand feels distinct.
+       Hover/focus lifts card like picking it up. */
+    .card-human {
+      position: relative;
+      width: 52px; height: 76px;
+      background: #ffffff;
+      border-radius: 9px;
+      border: 2px solid #c8c8c8;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0; /* visual content via child spans */
+      flex-direction: column;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s;
+      flex-shrink: 0;
+    }
+    .card-human:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      transform: translateY(-8px);
+      box-shadow: 0 8px 20px rgba(240,165,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+    }
+    .card-human:hover {
+      border-color: var(--accent);
+      transform: translateY(-5px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    }
+    .card-human:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+      pointer-events: none;
+    }
+
+    /* ── CARD CORNER LABELS ──
+       Top-left (.vc-tl) and bottom-right (.vc-br) show Rank + Suit symbol.
+       Bottom-right is rotated 180° to mirror real card convention. */
+    .vc-tl {
+      position: absolute;
+      top: 4px; left: 5px;
+      font-size: 0.62rem;
+      font-weight: bold;
+      font-family: 'Georgia', serif;
+      line-height: 1.2;
+      color: #1a1a1a;
+      pointer-events: none;
+      text-align: left;
+    }
+    .vc-br {
+      position: absolute;
+      bottom: 4px; right: 5px;
+      font-size: 0.62rem;
+      font-weight: bold;
+      font-family: 'Georgia', serif;
+      line-height: 1.2;
+      color: #1a1a1a;
+      transform: rotate(180deg);
+      pointer-events: none;
+      text-align: left;
+    }
+
+    /* ── CENTER SUIT SYMBOL ──
+       Large, bold, high-visibility suit symbol in the dead center of the card.
+       Sighted players can recognize the suit from a distance instantly. */
+    .vc-center {
+      font-size: 1.6rem;
+      font-weight: bold;
+      font-family: 'Georgia', serif;
+      color: #1a1a1a;
+      pointer-events: none;
+      line-height: 1;
+      /* absolute center is already handled by parent flexbox */
+    }
+
+    /* ── RED SUITS RULE ──
+       Applied to the entire card element + all child spans
+       whenever the card is Hearts (H) or Diamonds (D).
+       !important ensures it overrides the default #1a1a1a. */
+    .suit-red { color: #d32f2f !important; }
+    .vc-tl.suit-red,
+    .vc-br.suit-red,
+    .vc-center.suit-red { color: #d32f2f !important; }
 
     .game-info-bar { display: flex; gap: 10px; }
     .info-btn {
@@ -336,31 +431,8 @@
     .human-cards-row {
       display: flex;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
-    }
-    .card-human {
-      width: 44px; height: 64px;
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid transparent;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.82rem; font-weight: bold; color: #222;
-      cursor: pointer;
-      transition: border-color 0.15s, transform 0.1s;
-    }
-    .card-human.red-card { color: var(--red); }
-    .card-human:focus-visible {
-      outline: none;
-      border-color: var(--accent);
-      transform: translateY(-6px);
-    }
-    .card-human:hover { border-color: var(--accent); transform: translateY(-4px); }
-    .card-human:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-      transform: none !important;
-      pointer-events: none;
     }
 
     /* ── SHUFFLE SCREEN ── */
@@ -420,282 +492,20 @@
       font-size: 0.9rem; color: var(--text);
     }
     .panel-row:last-child { border-bottom: none; }
-
-    /* ══════════════════════════════════════════
-       VISUAL INTERFACE — SIGHTED PLAYERS
-       All aria/TalkBack elements untouched.
-    ══════════════════════════════════════════ */
-
-    /* ── REAL CARD DESIGN ── */
-    .vis-card {
-      position: relative;
-      width: 48px;
-      height: 68px;
-      background: #fff;
-      border-radius: 8px;
-      border: 1.5px solid #ccc;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      font-family: 'Georgia', serif;
-      font-weight: bold;
-      font-size: 0.75rem;
-      color: #1a1a1a;
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-    .vis-card.red { color: #cc1111; }
-    .vis-card .vc-tl {
-      position: absolute;
-      top: 3px; left: 4px;
-      font-size: 0.6rem;
-      line-height: 1.1;
-      text-align: left;
-    }
-    .vis-card .vc-br {
-      position: absolute;
-      bottom: 3px; right: 4px;
-      font-size: 0.6rem;
-      line-height: 1.1;
-      text-align: right;
-      transform: rotate(180deg);
-    }
-    .vis-card .vc-center {
-      font-size: 1.05rem;
-      line-height: 1;
-    }
-
-    /* ── CARD BACK VISUAL ── */
-    .vis-card-back {
-      width: 34px; height: 48px;
-      background: linear-gradient(135deg, #1a3a6b 0%, #0d1f40 100%);
-      border-radius: 6px;
-      border: 2px solid #2a5298;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.3);
-      flex-shrink: 0;
-      background-image:
-        repeating-linear-gradient(45deg,
-          transparent, transparent 3px,
-          rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px);
-    }
-
-    /* ── 2×2 PLAYER GRID ── */
-    .player-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
-      gap: 8px;
-      width: 100%;
-    }
-
-    .player-slot {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 10px;
-      min-height: 110px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      transition: box-shadow 0.25s, border-color 0.25s, opacity 0.25s;
-      position: relative;
-      overflow: hidden;
-    }
-    .player-slot[data-player="human"] {
-      border-color: #2a5298;
-      background: #0d1f3a;
-    }
-    .player-slot-header {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-    .player-slot-avatar { font-size: 1.1rem; }
-    .player-slot-card-area {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 72px;
-    }
-
-    /* empty slot placeholder */
-    .slot-empty {
-      width: 48px; height: 68px;
-      border: 2px dashed rgba(255,255,255,0.1);
-      border-radius: 8px;
-    }
-
-    /* ── TRICK WIN/LOSE GLOW ── */
-    .player-slot.glow-win {
-      box-shadow: 0 0 18px 4px rgba(35,134,54,0.8);
-      border-color: var(--green);
-    }
-    .player-slot.glow-lose {
-      opacity: 0.45;
-    }
-
-    /* ── CARD PLAY ANIMATION ── */
-    @keyframes slideInCard {
-      from { opacity: 0; transform: translateY(-18px) scale(0.85); }
-      to   { opacity: 1; transform: translateY(0)     scale(1); }
-    }
-    .vis-card.anim-play {
-      animation: slideInCard 0.28s cubic-bezier(0.22,1,0.36,1) both;
-    }
-
-    /* ── SHUFFLE ANIMATION ── */
-    #shuffle-cards-anim {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 80px;
-      position: relative;
-      margin: 8px 0;
-    }
-    .shuffle-card-vis {
-      width: 34px; height: 48px;
-      background: linear-gradient(135deg, #1a3a6b, #0d1f40);
-      border: 2px solid #2a5298;
-      border-radius: 6px;
-      position: absolute;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-      background-image:
-        repeating-linear-gradient(45deg,
-          transparent, transparent 3px,
-          rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 6px);
-    }
-    @keyframes shuffleFan {
-      0%   { transform: translateX(0) rotate(0deg); opacity:0; }
-      30%  { opacity:1; }
-      60%  { transform: translateX(var(--tx)) rotate(var(--rot)); }
-      80%  { transform: translateX(var(--tx)) rotate(var(--rot)); }
-      100% { transform: translateX(0) rotate(0deg); opacity:0.4; }
-    }
-    .shuffle-card-vis { animation: shuffleFan 0.9s ease-in-out both; }
-
-    /* ── GAME WIN/LOSE ANIMATIONS ── */
-    @keyframes celebrationPop {
-      0%   { transform: scale(1); }
-      30%  { transform: scale(1.06); }
-      60%  { transform: scale(0.97); }
-      100% { transform: scale(1); }
-    }
-    @keyframes gameLoseFade {
-      from { opacity: 1; }
-      to   { opacity: 0.35; filter: grayscale(80%); }
-    }
-    .game-win-anim  { animation: celebrationPop 0.5s ease-in-out 3; }
-    .game-lose-anim { animation: gameLoseFade  0.8s ease-in-out forwards; }
-
-    /* ── ENHANCED HUMAN CARD BUTTONS ── */
-    /* Override existing .card-human to look like real cards */
-    .card-human {
-      position: relative !important;
-      width: 48px !important;
-      height: 68px !important;
-      background: #fff !important;
-      border-radius: 8px !important;
-      border: 1.5px solid #bbb !important;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      flex-direction: column !important;
-      font-family: 'Georgia', serif !important;
-      font-weight: bold !important;
-      font-size: 0 !important; /* hide old textContent display — we use pseudo layout */
-      color: #1a1a1a !important;
-      cursor: pointer !important;
-      transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s !important;
-      overflow: hidden !important;
-    }
-    .card-human.red-card { color: #cc1111 !important; }
-    .card-human:focus-visible {
-      outline: none !important;
-      border-color: var(--accent) !important;
-      box-shadow: 0 0 0 3px rgba(240,165,0,0.5), 0 4px 12px rgba(0,0,0,0.3) !important;
-      transform: translateY(-8px) !important;
-    }
-    .card-human:hover {
-      border-color: var(--accent) !important;
-      transform: translateY(-5px) !important;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.3) !important;
-    }
-    .card-human:disabled {
-      opacity: 0.28 !important;
-      cursor: not-allowed !important;
-      transform: none !important;
-      pointer-events: none !important;
-      box-shadow: none !important;
-    }
-    /* Card corner labels injected via JS */
-    .card-human .vc-tl {
-      position: absolute;
-      top: 3px; left: 4px;
-      font-size: 0.58rem;
-      line-height: 1.1;
-      text-align: left;
-      font-weight: bold;
-      font-family: 'Georgia', serif;
-      pointer-events: none;
-    }
-    .card-human .vc-br {
-      position: absolute;
-      bottom: 3px; right: 4px;
-      font-size: 0.58rem;
-      line-height: 1.1;
-      text-align: right;
-      transform: rotate(180deg);
-      font-weight: bold;
-      font-family: 'Georgia', serif;
-      pointer-events: none;
-    }
-    .card-human .vc-center {
-      font-size: 1rem;
-      font-family: 'Georgia', serif;
-      font-weight: bold;
-      pointer-events: none;
-      line-height: 1;
-    }
-
-    /* ── TRICK ZONE REDESIGN ── */
-    /* (existing .trick-zone kept, we add player-grid inside instead) */
-
-    /* ── TRICK CLEAR FADE ── */
-    @keyframes trickClearFade {
-      from { opacity:1; transform:scale(1); }
-      to   { opacity:0; transform:scale(0.85) translateY(8px); }
-    }
-    .slot-card-clearing {
-      animation: trickClearFade 0.35s ease-in forwards;
-    }
   </style>
 </head>
 <body>
 
   <a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <!-- LIVE REGIONS: visually hidden, screen reader only -->
+  <!-- LIVE REGIONS: screen reader only, visually hidden -->
   <div id="live-region-a" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
   <div id="live-region-b" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
 
   <!-- ══ HOME SCREEN ══ -->
   <div id="screen-home" class="screen active" role="main">
 
-    <!-- Purely decorative header — no tabindex, no pointer events -->
+    <!-- Purely decorative header — aria-hidden, no tabindex -->
     <header class="home-header" aria-hidden="true">
       <h1 class="game-title">Court Piece</h1>
       <p class="game-subtitle">Human vs Computer — 4 Player Card Game</p>
@@ -781,7 +591,6 @@
     aria-labelledby="shuffle-title"
     aria-describedby="shuffle-desc">
     <p class="shuffle-title" id="shuffle-title" tabindex="-1">Ready to Play?</p>
-    <div id="shuffle-cards-anim" aria-hidden="true"></div>
     <p class="shuffle-desc" id="shuffle-desc">
       Tap the button below to shuffle the deck and start the game.
     </p>
@@ -796,7 +605,6 @@
   <div id="screen-game" role="main" aria-label="Court Piece game screen">
 
     <div class="game-topbar" role="banner">
-      <!-- Title is decorative only -->
       <span class="game-topbar-title" aria-hidden="true">Court Piece</span>
       <button class="btn-small"
         aria-label="Quit game and return to home screen"
@@ -812,70 +620,28 @@
       Trump: <span id="trump-display">Not selected yet</span>
     </div>
 
+    <!-- Opponents zone — cards face-down, entire zone aria-hidden for TalkBack -->
     <div class="ai-zone" role="region" aria-label="Opponents area. Their cards are hidden.">
       <p class="zone-label">Opponents</p>
-      <div class="ai-cards-row" aria-hidden="true" id="ai-cards-visual">
-        <div class="vis-card-back"></div>
-        <div class="vis-card-back"></div>
-        <div class="vis-card-back"></div>
-        <div class="vis-card-back"></div>
-        <div class="vis-card-back"></div>
-        <div class="vis-card-back"></div>
-        <div class="vis-card-back"></div>
+      <div class="ai-cards-row" aria-hidden="true">
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
+        <div class="card-back">🂠</div>
       </div>
     </div>
 
-    <!-- ══ 2×2 PLAYER TRICK GRID — Visual only, aria-hidden ══ -->
-    <div class="player-grid" aria-hidden="true" id="player-grid">
-      <!-- Top-left: Partner R1 -->
-      <div class="player-slot" id="slot-r1" data-player="r1">
-        <div class="player-slot-header">
-          <span class="player-slot-avatar">🤖</span>
-          <span>Partner</span>
-        </div>
-        <div class="player-slot-card-area" id="slot-card-r1">
-          <div class="slot-empty"></div>
-        </div>
-      </div>
-      <!-- Top-right: Opponent R2 -->
-      <div class="player-slot" id="slot-r2" data-player="r2">
-        <div class="player-slot-header">
-          <span class="player-slot-avatar">👹</span>
-          <span>Opp 1</span>
-        </div>
-        <div class="player-slot-card-area" id="slot-card-r2">
-          <div class="slot-empty"></div>
-        </div>
-      </div>
-      <!-- Bottom-left: Opponent R3 -->
-      <div class="player-slot" id="slot-r3" data-player="r3">
-        <div class="player-slot-header">
-          <span class="player-slot-avatar">👹</span>
-          <span>Opp 2</span>
-        </div>
-        <div class="player-slot-card-area" id="slot-card-r3">
-          <div class="slot-empty"></div>
-        </div>
-      </div>
-      <!-- Bottom-right: You -->
-      <div class="player-slot" id="slot-human" data-player="human">
-        <div class="player-slot-header">
-          <span class="player-slot-avatar">🫵</span>
-          <span>You</span>
-        </div>
-        <div class="player-slot-card-area" id="slot-card-human">
-          <div class="slot-empty"></div>
-        </div>
-      </div>
-    </div>
-
+    <!-- Trick zone — visual cards are aria-hidden; TalkBack uses live region -->
     <div class="trick-zone" role="region"
       id="trick-zone"
-      aria-label="Current trick area. No cards played yet."
-      tabindex="0">
+      aria-label="Current trick area. No cards played yet.">
       <p class="trick-zone-label">Current Trick</p>
+      <!-- aria-hidden on the visual card container — screen reader reads live region only -->
       <div class="trick-played-cards" id="trick-cards" aria-hidden="true"></div>
-      <p id="trick-status" style="font-size:0.8rem;color:var(--text-muted);">
+      <p id="trick-status" aria-hidden="true" style="font-size:0.8rem;color:var(--text-muted);">
         Waiting for first card...
       </p>
     </div>
@@ -897,6 +663,7 @@
       </button>
     </div>
 
+    <!-- Human hand — individual card buttons are the interactive layer -->
     <div class="human-zone" id="human-zone" role="region" aria-label="Your cards">
       <p class="human-zone-label">Your Cards</p>
       <div class="human-cards-row" id="human-cards-row"
@@ -954,19 +721,18 @@
   <script>
     /* ══ STATE ══ */
     const state = {
-      sound:       true,
-      talkback:    true,
-      scoreHuman:  0,
-      scoreAI:     0,
-      history:     [],
-      trump:       null,
-      deck:        [],
-      hands:       { human: [], r1: [], r2: [], r3: [] },
-      deckRest:    [],
-      phase:       'trump-select',
+      sound:        true,
+      talkback:     true,
+      scoreHuman:   0,
+      scoreAI:      0,
+      history:      [],
+      trump:        null,
+      deck:         [],
+      hands:        { human: [], r1: [], r2: [], r3: [] },
+      deckRest:     [],
+      phase:        'trump-select',
       currentTrick: [],
-      /* ٹرک لیڈر: human / r1 / r2 / r3 — اگلا ٹرک کون شروع کرے گا */
-      leader:      'human'
+      leader:       'human'   /* human / r1 / r2 / r3 */
     };
 
     /* ══ SOUND SYSTEM ══ */
@@ -978,8 +744,6 @@
       trickWin:  new Audio('sounds/trick-win.mp3'),
       trickLose: new Audio('sounds/trick-lose.mp3')
     };
-
-    // Saare sounds ka volume max set karo
     Object.values(SFX).forEach(sfx => { sfx.volume = 1.0; });
 
     function playSound(key) {
@@ -988,10 +752,12 @@
         const sfx = SFX[key];
         if (!sfx) return;
         sfx.currentTime = 0;
-        sfx.volume = 1.0; // har play pe volume ensure karo
+        sfx.volume = 1.0;
         sfx.play().catch(() => {});
       } catch(e) {}
     }
+
+    /* ══ DECK DATA ══ */
     const SUITS = [
       { name: 'Spades',   symbol: '♠', red: false },
       { name: 'Hearts',   symbol: '♥', red: true  },
@@ -1058,20 +824,19 @@
     }
 
     /* ══ ANNOUNCE ══
-       Uses two alternating regions so TalkBack treats each as new content.
-       Text auto-clears after 2 seconds so it never stays stuck visually or in DOM.
+       Two alternating live regions so TalkBack treats each message as new content.
+       Text auto-clears after 3.5 s so it never gets stuck.
     ══ */
     let _announceTick = false;
     function announce(msg) {
       if (!state.talkback) return;
       _announceTick = !_announceTick;
-      const activeId  = _announceTick ? 'live-region-a' : 'live-region-b';
-      const clearId   = _announceTick ? 'live-region-b' : 'live-region-a';
+      const activeId = _announceTick ? 'live-region-a' : 'live-region-b';
+      const clearId  = _announceTick ? 'live-region-b' : 'live-region-a';
       document.getElementById(clearId).textContent = '';
       setTimeout(() => {
         const el = document.getElementById(activeId);
         el.textContent = msg;
-        // Auto-clear after 3.5 seconds — robot announcements 1.5s gaps pe hain
         setTimeout(() => { el.textContent = ''; }, 3500);
       }, 80);
     }
@@ -1081,9 +846,59 @@
       document.getElementById('live-region-b').textContent = '';
     }
 
+    /* ══ PARSE CARD STRING ══
+       Card identifiers in game logic are strings like "HA", "S10", "D1K", "C7".
+       First character = suit letter (H/D/C/S).
+       Remaining characters = rank short (A, K, Q, J, 10, 9 … 2).
+       Returns { suitSymbol, rankShort, isRed }
+    ══ */
+    function parseCardId(cardId) {
+      const suitChar = cardId.charAt(0).toUpperCase();
+      const rankShort = cardId.slice(1);  /* everything after first char */
+
+      let suitSymbol = '?';
+      let isRed = false;
+
+      if      (suitChar === 'H') { suitSymbol = '♥'; isRed = true;  }
+      else if (suitChar === 'D') { suitSymbol = '♦'; isRed = true;  }
+      else if (suitChar === 'C') { suitSymbol = '♣'; isRed = false; }
+      else if (suitChar === 'S') { suitSymbol = '♠'; isRed = false; }
+
+      return { suitSymbol, rankShort, isRed };
+    }
+
+    /* ══ BUILD CARD VISUAL (shared helper) ══
+       Creates the three child spans that make a card look real:
+         .vc-tl   → top-left corner: "A♦"
+         .vc-center → dead-center large suit symbol: "♦"
+         .vc-br   → bottom-right corner (rotated 180°): "A♦"
+       All three are aria-hidden — TalkBack reads the button's aria-label only.
+       Applies .suit-red to every span when the card is red.
+    ══ */
+    function buildCardSpans(suitSymbol, rankShort, isRed) {
+      const redClass = isRed ? ' suit-red' : '';
+      const cornerText = rankShort + suitSymbol;  /* e.g. "A♦" or "10♠" */
+
+      const tlSpan = document.createElement('span');
+      tlSpan.className = 'vc-tl' + redClass;
+      tlSpan.setAttribute('aria-hidden', 'true');
+      tlSpan.textContent = cornerText;
+
+      const centerSpan = document.createElement('span');
+      centerSpan.className = 'vc-center' + redClass;
+      centerSpan.setAttribute('aria-hidden', 'true');
+      centerSpan.textContent = suitSymbol;   /* LARGE center symbol only */
+
+      const brSpan = document.createElement('span');
+      brSpan.className = 'vc-br' + redClass;
+      brSpan.setAttribute('aria-hidden', 'true');
+      brSpan.textContent = cornerText;
+
+      return [tlSpan, centerSpan, brSpan];
+    }
+
     /* ══ INIT ══ */
     window.addEventListener('load', () => {
-      // Reset settings panel
       const panel = document.getElementById('settings-panel');
       const btn   = document.getElementById('btn-settings');
       panel.classList.remove('open');
@@ -1092,13 +907,11 @@
       btn.setAttribute('aria-label', 'Open Settings. Sound and TalkBack options.');
       clearAllAnnouncements();
 
-      // ── EXCLUSIVE game start binding ──
-      // ONLY #btn-play can trigger game. No other element has this listener.
       let isGameStarting = false;
       document.getElementById('btn-play').addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (isGameStarting) return; // block double-tap
+        if (isGameStarting) return;
         isGameStarting = true;
         clearAllAnnouncements();
         document.getElementById('screen-home').classList.remove('active');
@@ -1107,17 +920,16 @@
         setTimeout(() => {
           document.getElementById('shuffle-title').focus();
           announce('Ready to play. Tap Shuffle and Deal to begin.');
-          isGameStarting = false; // reset after transition
+          isGameStarting = false;
         }, 300);
       });
 
-      // ── Block all clicks on header and non-button home elements ──
       const homeHeader = document.querySelector('.home-header');
       if (homeHeader) {
         homeHeader.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-        }, true); // capture phase
+        }, true);
       }
     });
 
@@ -1162,7 +974,6 @@
     function quitGame() {
       clearAllAnnouncements();
 
-      // ── State reset ──
       state.scoreHuman   = 0;
       state.scoreAI      = 0;
       state.history      = [];
@@ -1174,38 +985,30 @@
       state.deck         = [];
       state.deckRest     = [];
 
-      // ── DOM reset ──
-      // Score display
       document.getElementById('score-display').textContent = '0 — 0';
       document.getElementById('btn-score').setAttribute('aria-label',
         'View score. Your team: 0 tricks. Opponents: 0 tricks.');
 
-      // Trick zone
       document.getElementById('trick-cards').innerHTML = '';
       document.getElementById('trick-status').textContent = 'Waiting for first card...';
       document.getElementById('trick-zone').setAttribute('aria-label',
         'Current trick area. No cards played yet.');
 
-      // Trump indicator
       document.getElementById('trump-indicator').innerHTML =
         'Trump: <span id="trump-display">Not selected yet</span>';
       document.getElementById('trump-indicator').setAttribute('aria-label',
         'Trump suit: Not selected yet');
 
-      // Human cards zone
       document.getElementById('human-cards-row').innerHTML =
         '<p style="color:var(--text-muted);font-size:0.85rem;" id="cards-placeholder">Shuffle to receive your cards.</p>';
 
-      // History list
       document.getElementById('history-list').innerHTML =
         '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
       document.getElementById('btn-history').setAttribute('aria-label',
         'View move history. No moves yet.');
 
-      // Play Again button remove karo agar ho
       document.getElementById('btn-play-again')?.remove();
 
-      // ── Screen switch ──
       document.getElementById('screen-game').classList.remove('active');
       document.getElementById('screen-home').classList.add('active');
 
@@ -1221,16 +1024,16 @@
       document.getElementById('shuffle-screen').classList.remove('active');
       document.getElementById('screen-game').classList.add('active');
 
-      state.deck = shuffleDeck(buildDeck());
+      state.deck     = shuffleDeck(buildDeck());
       playSound('shuffle');
-      const dealt = dealFirst5(state.deck);
+      const dealt    = dealFirst5(state.deck);
       state.hands.human = dealt.human;
       state.hands.r1    = dealt.r1;
       state.hands.r2    = dealt.r2;
       state.hands.r3    = dealt.r3;
       state.deckRest    = dealt.rest;
       state.phase       = 'trump-select';
-      state.leader      = 'human'; // پہلی ڈیل میں Human ہمیشہ lead کرتا ہے
+      state.leader      = 'human';
 
       renderHand(state.hands.human, true);
       showTrumpSelector();
@@ -1260,7 +1063,7 @@
         const btn = document.createElement('button');
         btn.className = 'btn-small';
         btn.style.cssText = 'font-size:1.1rem;padding:10px 14px;min-height:44px;color:'
-          + (suit.red ? 'var(--red)' : 'var(--text)') + ';';
+          + (suit.red ? '#d32f2f' : 'var(--text)') + ';';
         btn.textContent = suit.symbol + ' ' + suit.name;
         btn.setAttribute('aria-label', suit.name + '. Double tap to select as trump suit.');
         btn.addEventListener('click', (e) => {
@@ -1273,15 +1076,20 @@
       zone.appendChild(selector);
     }
 
+    /* ══ SELECT TRUMP ══
+       FIX: announce() is called immediately after trump is set
+       so blind users get instant audio confirmation.
+    ══ */
     function selectTrump(suitName, suitSymbol, isRed) {
       state.trump = suitName;
-      const zone = document.getElementById('trump-indicator');
+      const zone  = document.getElementById('trump-indicator');
       zone.innerHTML = 'Trump: <span style="color:'
-        + (isRed ? 'var(--red)' : 'var(--text)')
+        + (isRed ? '#d32f2f' : 'var(--text)')
         + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
       zone.setAttribute('aria-label', 'Trump suit is ' + suitName);
 
-      announce('Trump selected: ' + suitName + '. Dealing remaining 8 cards. Please wait.');
+      /* ── Immediate audio confirmation for blind users ── */
+      announce('Trump suit selected: ' + suitName + '. Dealing remaining 8 cards. Please wait.');
 
       setTimeout(() => {
         state.hands  = dealRemaining(state.hands, state.deckRest);
@@ -1298,15 +1106,60 @@
       }, 600);
     }
 
-    /* ══ CARD FILTERING ══
-       Jab Human ki baari ho aur lead suit decide ho,
-       sirf valid cards clickable honge.
-       Valid = lead suit available ho toh sirf woh suit,
-               lead suit na ho toh saare cards (Trump bhi)
+    /* ══ RENDER HAND ══
+       FIX: card is a CARD OBJECT (with .label, .display, .suit, .red etc.)
+       from buildDeck(), NOT a raw string identifier.
+       We parse the display string to extract suitSymbol and rankShort
+       so the corner labels are always correct and never undefined.
+
+       Visual layers (spans) → all aria-hidden="true"
+       The button itself carries the accessible label via aria-label.
     ══ */
+    function renderHand(hand, locked) {
+      const row = document.getElementById('human-cards-row');
+      document.getElementById('cards-placeholder')?.remove();
+      row.innerHTML = '';
+
+      hand.forEach(card => {
+        /* ── Extract suit symbol and rank from card.display (e.g. "A♦", "10♠") ── */
+        const suitSymbol = card.display.replace(/[^♠♥♣♦]/g, '');
+        const rankShort  = card.display.replace(/[♠♥♣♦]/g, '');
+        const isRed      = card.red;
+
+        /* ── Build the button ── */
+        const btn = document.createElement('button');
+        /* Apply suit-red to the card element itself so the whole card can inherit */
+        btn.className = 'card-human' + (isRed ? ' suit-red' : '');
+        btn.setAttribute('role', 'listitem');
+        btn.setAttribute('tabindex', '0');
+        btn.setAttribute('aria-hidden', 'false'); /* buttons are interactive — NOT aria-hidden */
+        /* data-label is the reliable key used by applyCardFilter */
+        btn.setAttribute('data-label', card.label);
+
+        if (locked) {
+          btn.disabled = true;
+          btn.setAttribute('aria-label', card.label + '. Waiting for trump selection.');
+        } else {
+          btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playCard(card, btn);
+          });
+        }
+
+        /* ── Inject visual card spans (all aria-hidden) ── */
+        const [tlSpan, centerSpan, brSpan] = buildCardSpans(suitSymbol, rankShort, isRed);
+        btn.appendChild(tlSpan);
+        btn.appendChild(centerSpan);
+        btn.appendChild(brSpan);
+
+        row.appendChild(btn);
+      });
+    }
+
     /* ══ CARD FILTER ══
-       state.hands.human = sirf woh cards jo abhi tak khele nahi gaye.
-       Isliye directly is array se suit check karo — koi btn parsing ki zaroorat nahi.
+       Enables/disables hand cards based on the led suit rule.
+       Uses data-label to match against state.hands.human objects.
     ══ */
     function applyCardFilter(ledSuit) {
       const unplayedHand = state.hands.human;
@@ -1315,7 +1168,7 @@
       document.querySelectorAll('.card-human').forEach(btn => {
         const cardLabel = btn.getAttribute('data-label');
         const card = unplayedHand.find(c => c.label === cardLabel);
-        if (!card) return; // DOM mein hai lekin hand mein nahi — skip
+        if (!card) return;
 
         if (hasLedSuit) {
           if (card.suit === ledSuit) {
@@ -1349,48 +1202,11 @@
       }, 150);
     }
 
-    /* ══ RENDER HAND ══ */
-    function renderHand(hand, locked) {
-      const row = document.getElementById('human-cards-row');
-      document.getElementById('cards-placeholder')?.remove();
-      row.innerHTML = '';
-      hand.forEach(card => {
-        const btn = document.createElement('button');
-        btn.className = 'card-human' + (card.red ? ' red-card' : '');
-        btn.setAttribute('role', 'listitem');
-        btn.setAttribute('tabindex', '0');
-        // data-label: applyCardFilter isko use karta hai reliable card match ke liye
-        btn.setAttribute('data-label', card.label);
-        if (locked) {
-          btn.disabled = true;
-          btn.setAttribute('aria-label', card.label + '. Waiting for trump selection.');
-        } else {
-          btn.setAttribute('aria-label', card.label + '. Double tap to play.');
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playCard(card, btn);
-          });
-        }
-        // ── Visual real-card layout (aria-hidden children) ──
-        const colorClass = card.red ? 'red' : '';
-        const rank = card.display.replace(/[♠♥♣♦]/g,'');
-        const suit = card.red
-          ? (card.suit === 'Hearts' ? '♥' : '♦')
-          : (card.suit === 'Spades' ? '♠' : '♣');
-        btn.innerHTML =
-          '<span class="vc-tl" aria-hidden="true">' + rank + '<br>' + suit + '</span>' +
-          '<span class="vc-center" aria-hidden="true">' + suit + '</span>' +
-          '<span class="vc-br" aria-hidden="true">' + rank + '<br>' + suit + '</span>';
-        row.appendChild(btn);
-      });
-    }
-
     /* ══ PLAY CARD ══
-       Human apna card khelata hai.
-       Do halaat:
-       1. state.leader === 'human' → Human pehle khelata hai, phir R1→R2→R3
-       2. state.leader !== 'human' → Koi Robot lead kar chuka hai (currentTrick[0]),
-          Human follow karta hai, phir baaki robots apni order mein follow karte hain.
+       Human plays a card.
+       Two paths:
+         1. state.leader === 'human' → Human leads; R1→R2→R3 follow.
+         2. state.leader !== 'human' → A robot led; Human follows, remaining robots follow.
     ══ */
     function playCard(card, btn) {
       if (state.phase !== 'playing') return;
@@ -1400,14 +1216,12 @@
       btn.disabled = true;
       btn.setAttribute('aria-label', card.label + '. Already played.');
       playSound('cardFlip');
-      // DOM se bhi permanently remove karo — sirf disable nahi, hatao
       setTimeout(() => { btn.remove(); }, 100);
 
-      // Human ka card state.hands.human se hata do — yahi sabse zaroori hai
       state.hands.human = state.hands.human.filter(c => c.label !== card.label);
 
       if (state.leader === 'human') {
-        // ── Human leads ──
+        /* ── Human leads ── */
         showCardInTrick(card, 0);
         updateTrickZoneLabel('You played ' + card.label + '. Waiting for opponents.');
         announce('You played ' + card.label + '. You are leading this trick.');
@@ -1416,7 +1230,6 @@
 
         state.currentTrick = [{ card: card, player: 'human', team: 'A' }];
 
-        // Teeono robots Human ke baad follow karte hain: R1 → R2 → R3
         fireRobotsInOrder(
           [
             { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
@@ -1427,10 +1240,9 @@
         );
 
       } else {
-        // ── Human follows a robot lead ──
+        /* ── Human follows a robot lead ── */
         const ledSuit = state.currentTrick[0].card.suit;
 
-        // Human ka card trick mein add karo (index = current trick length before push)
         showCardInTrick(card, state.currentTrick.length);
         updateTrickZoneLabel('You played ' + card.label + '. Opponents still playing.');
         announce('You played ' + card.label + '.');
@@ -1439,25 +1251,21 @@
 
         state.currentTrick.push({ card: card, player: 'human', team: 'A' });
 
-        // Baaki sab robots jo abhi tak nahi khele unhe fire karo
-        // Leader ke alawa sab remaining robots follow karenge
-        const leaderKey = state.leader;
         const allRobots = [
           { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
           { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
           { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
         ];
-        // Leader already played (trick[0]), human just played — baaki sab remaining hain
         const alreadyPlayed = state.currentTrick.map(e => e.player);
-        const remaining = allRobots.filter(r => !alreadyPlayed.includes(r.key));
+        const remaining     = allRobots.filter(r => !alreadyPlayed.includes(r.key));
 
         fireRobotsInOrder(remaining, ledSuit);
       }
     }
 
     /* ══ FIRE ROBOTS IN ORDER ══
-       robots array ko 1500ms gaps se khelata hai.
-       Sab ke khelne ke baad resolveTrick call hota hai.
+       Plays each robot card with 1500ms gaps for clear TalkBack announcements.
+       Calls resolveTrick after all robots have played.
     ══ */
     function fireRobotsInOrder(robots, ledSuit) {
       let completedCount = 0;
@@ -1490,23 +1298,19 @@
     }
 
     /* ══ GET AI CARD ══
-       One function, three modes.
-       Returns the best card for the AI based on mode and game state.
-       ledSuit = null جب AI خود lead کر رہا ہو
+       Three-mode AI. Returns best card object for the given mode.
+       ledSuit = null when the AI is leading (no constraint).
     ══ */
     function getAICard(hand, ledSuit, trump, mode, trickSoFar) {
       if (!hand || hand.length === 0) return null;
 
-      // Step 1: Filter valid cards (must follow suit if possible; null ledSuit = all valid)
       const followSuit = ledSuit ? hand.filter(c => c.suit === ledSuit) : [];
       const trumpCards = hand.filter(c => c.suit === trump);
       const validCards = (ledSuit && followSuit.length > 0) ? followSuit : hand;
 
-      // Step 2: Sort helpers
       const byValueAsc  = arr => [...arr].sort((a,b) => a.value - b.value);
       const byValueDesc = arr => [...arr].sort((a,b) => b.value - a.value);
 
-      // Step 3: Current winning card in trick (only if there is a led suit)
       const winnerSoFar = ledSuit ? getWinningCard(trickSoFar, ledSuit, trump) : null;
 
       if (mode === 'partner') {
@@ -1527,7 +1331,7 @@
         if (ledSuit && followSuit.length === 0 && trumpCards.length > 0) return byValueDesc(trumpCards)[0];
         return byValueDesc(validCards)[0];
 
-      } else {
+      } else { /* defensive */
         if (winnerSoFar && winnerSoFar.team === 'B') {
           return byValueAsc(validCards)[0];
         }
@@ -1541,7 +1345,7 @@
 
     /* ══ CARD BEATS ══ */
     function cardBeats(card, against, ledSuit, trump) {
-      if (!against) return true; // nothing to beat
+      if (!against) return true;
       if (card.suit === trump && against.suit !== trump) return true;
       if (card.suit === against.suit) return card.value > against.value;
       return false;
@@ -1558,11 +1362,8 @@
     }
 
     /* ══ RESOLVE TRICK ══
-       ٹرک ختم ہونے کے بعد:
-       - winner کون ہے دیکھو
-       - اگلے ٹرک کا leader سیٹ کرو
-       - اگر Robot جیتا تو Robot 1 خود بخود لیڈ کارڈ کھیلے گا
-       - اگر Human جیتا تو Human کو lead کرنے دو
+       Determines winner, updates score, sets next leader,
+       and fires the next trick sequence.
     ══ */
     function resolveTrick(ledSuit) {
       const winner = getWinningCard(state.currentTrick, ledSuit, state.trump);
@@ -1579,35 +1380,32 @@
         announce('Opponents win this trick. Score: Your team ' + state.scoreHuman + ', Opponents ' + state.scoreAI + '.');
       }
 
-      state.history.push('--- Trick won by: ' + (isHumanTeam ? 'Your Team (' + winner.player + ')' : 'Opponents (' + winner.player + ')') + ' ---');
+      state.history.push('--- Trick won by: '
+        + (isHumanTeam ? 'Your Team (' + winner.player + ')' : 'Opponents (' + winner.player + ')') + ' ---');
       updateHistoryBtn();
       updateScoreDisplay();
 
-      // گیم ختم چیک
+      /* ── Check game end ── */
       if (state.scoreHuman >= 7 || state.scoreAI >= 7) {
         setTimeout(() => endGame(state.scoreHuman >= 7), 1000);
         return;
       }
 
-      // اگلے ٹرک کا لیڈر سیٹ کریں
-      state.leader = winner.player; // human / r1 / r2 / r3
-
-      // ریست ٹرک
+      state.leader      = winner.player;
       state.currentTrick = [];
 
-      // ٹرک زون کے کارڈ صاف کریں
+      /* Clear visual trick zone after a short pause */
       setTimeout(() => {
         const trickCards = document.getElementById('trick-cards');
         if (trickCards) trickCards.innerHTML = '';
       }, 1200);
 
       if (state.leader === 'human') {
-        // ── Human leads next ──
+        /* ── Human leads next ── */
         setTimeout(() => {
           state.phase = 'playing';
           updateTrickZoneLabel('Your team won. You lead the next trick. Play any card.');
           announce('Your team wins! You lead the next trick. Play any card.');
-          // Saare remaining cards properly reset karo — opacity aur pointerEvents dono
           document.querySelectorAll('.card-human').forEach(btn => {
             btn.disabled = false;
             btn.style.opacity = '1';
@@ -1620,9 +1418,9 @@
         }, 1500);
 
       } else {
-        // ── Robot leads next ──
+        /* ── Robot leads next ── */
         setTimeout(() => {
-          const leaderKey   = state.leader; // r1 / r2 / r3
+          const leaderKey   = state.leader;
           const leaderLabel = leaderKey === 'r1' ? 'Your partner Robot 1'
                             : leaderKey === 'r2' ? 'Opponent Robot 2'
                             : 'Opponent Robot 3';
@@ -1630,7 +1428,6 @@
           const leaderMode  = (leaderKey === 'r1') ? 'partner'
                             : (leaderKey === 'r2') ? 'aggressive' : 'defensive';
 
-          // Leader apna card khelta hai — koi bhi suit choose kar sakta hai
           const leaderCard = getAICard(
             state.hands[leaderKey],
             null,
@@ -1641,7 +1438,7 @@
           if (!leaderCard) return;
 
           state.hands[leaderKey] = state.hands[leaderKey].filter(c => c.label !== leaderCard.label);
-          state.currentTrick = [{ card: leaderCard, player: leaderKey, team: leaderTeam }];
+          state.currentTrick     = [{ card: leaderCard, player: leaderKey, team: leaderTeam }];
 
           showCardInTrick(leaderCard, 0);
           playSound('cardFlip');
@@ -1650,37 +1447,45 @@
           state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
           updateHistoryBtn();
 
-          // Human ko follow karne ka mauka do — announcement sunne ke baad filter lagao
           setTimeout(() => {
             state.phase = 'playing';
             applyCardFilter(leaderCard.suit);
-          }, 1800); // 1800ms — enough time for TalkBack to finish announcing lead
+          }, 1800);
 
         }, 1500);
       }
     }
 
-    /* ══ END GAME ══ */
+    /* ══ END GAME ══
+       FIX: announce() is called with full final score and win/loss status
+       BEFORE the visual animations, so TalkBack is never cut off.
+       Scores are announced clearly as a single complete sentence.
+    ══ */
     function endGame(humanWon) {
       state.phase = 'ended';
 
-      // Disable ALL remaining human cards immediately
+      /* Disable all remaining human cards immediately */
       document.querySelectorAll('.card-human').forEach(btn => {
         btn.disabled = true;
         btn.style.pointerEvents = 'none';
         btn.setAttribute('aria-label', btn.getAttribute('data-label') + '. Game over. Card cannot be played.');
       });
 
+      /* ── Build final message with complete score details ── */
+      const finalScore = 'Final score: Your team ' + state.scoreHuman + ' tricks, Opponents ' + state.scoreAI + ' tricks.';
       const msg = humanWon
-        ? 'Congratulations! Your team wins the game! Final score: ' + state.scoreHuman + ' to ' + state.scoreAI + '. Tap Play Again to start a new game.'
-        : 'Game over. Opponents win. Final score: ' + state.scoreHuman + ' to ' + state.scoreAI + '. Tap Play Again to start a new game.';
+        ? 'Congratulations! Your team wins the game! ' + finalScore + ' Tap Play Again to start a new game.'
+        : 'Game over. Opponents win. ' + finalScore + ' Tap Play Again to start a new game.';
 
+      /* ── Audio FIRST — announce before any visual changes ── */
       announce(msg);
       playSound(humanWon ? 'win' : 'lose');
+
+      /* ── Visual updates after audio dispatch ── */
       document.getElementById('trick-status').textContent = humanWon ? '🎉 Your Team Wins!' : '❌ Opponents Win';
       updateTrickZoneLabel(msg);
 
-      // Add Play Again button if not already present
+      /* Play Again button */
       if (!document.getElementById('btn-play-again')) {
         const btn = document.createElement('button');
         btn.id = 'btn-play-again';
@@ -1698,17 +1503,31 @@
       }
     }
 
-    /* ══ HELPERS ══ */
+    /* ══ SHOW CARD IN TRICK ZONE ══
+       Renders a played card in the trick zone.
+       Uses buildCardSpans() for consistent real-card visuals.
+       Entire card div is aria-hidden — TalkBack reads the live region only.
+    ══ */
     function showCardInTrick(card, index) {
       const trickCards = document.getElementById('trick-cards');
       if (index === 0) trickCards.innerHTML = '';
+
       const c = document.createElement('div');
-      c.className = 'card-played' + (card.red ? ' red-card' : '');
-      c.textContent = card.display;
-      c.setAttribute('aria-hidden', 'true');
+      c.className = 'card-played' + (card.red ? ' suit-red' : '');
+      c.setAttribute('aria-hidden', 'true');  /* TalkBack reads live region only */
+
+      const suitSymbol = card.display.replace(/[^♠♥♣♦]/g, '');
+      const rankShort  = card.display.replace(/[♠♥♣♦]/g, '');
+
+      const [tlSpan, centerSpan, brSpan] = buildCardSpans(suitSymbol, rankShort, card.red);
+      c.appendChild(tlSpan);
+      c.appendChild(centerSpan);
+      c.appendChild(brSpan);
+
       trickCards.appendChild(c);
     }
 
+    /* ══ HELPERS ══ */
     function updateTrickZoneLabel(msg) {
       document.getElementById('trick-status').textContent = msg;
       document.getElementById('trick-zone').setAttribute('aria-label', msg);
@@ -1754,230 +1573,6 @@
       announce(type === 'score' ? 'Score panel closed.' : 'History panel closed.');
       document.getElementById('btn-' + type).focus();
     }
-
-    /* ══════════════════════════════════════════
-       VISUAL SYNC LAYER
-       Ye sab functions existing logic ke BAAD
-       call hote hain — koi bhi timing ya aria
-       nahi badlti.
-    ══════════════════════════════════════════ */
-
-    /* ── Build a real visual card element ── */
-    function buildVisCard(card) {
-      const el = document.createElement('div');
-      el.className = 'vis-card' + (card.red ? ' red' : '');
-      const suit = card.red
-        ? (card.suit === 'Hearts' ? '♥' : '♦')
-        : (card.suit === 'Spades' ? '♠' : '♣');
-      const rank = card.display.replace(/[♠♥♣♦]/g, '');
-      el.innerHTML =
-        '<span class="vc-tl">' + rank + '<br>' + suit + '</span>' +
-        '<span class="vc-center">' + suit + '</span>' +
-        '<span class="vc-br">' + rank + '<br>' + suit + '</span>';
-      el.setAttribute('aria-hidden', 'true');
-      return el;
-    }
-
-    /* ── Show card in player slot (visual only) ── */
-    function showCardInSlot(playerKey, card) {
-      const areaId = 'slot-card-' + playerKey;
-      const area = document.getElementById(areaId);
-      if (!area) return;
-      area.innerHTML = '';
-      const el = buildVisCard(card);
-      el.classList.add('anim-play');
-      area.appendChild(el);
-    }
-
-    /* ── Clear all 4 slots (with fade animation) ── */
-    function clearAllSlots() {
-      ['human','r1','r2','r3'].forEach(key => {
-        const area = document.getElementById('slot-card-' + key);
-        if (!area) return;
-        const existing = area.querySelector('.vis-card');
-        if (existing) {
-          existing.classList.add('slot-card-clearing');
-          setTimeout(() => { area.innerHTML = '<div class="slot-empty"></div>'; }, 370);
-        } else {
-          area.innerHTML = '<div class="slot-empty"></div>';
-        }
-      });
-    }
-
-    /* ── Trick win glow ── */
-    function visualTrickWin(winnerPlayer) {
-      // Remove any existing glow
-      document.querySelectorAll('.player-slot').forEach(s => {
-        s.classList.remove('glow-win','glow-lose');
-      });
-      const winSlot = document.getElementById('slot-' + winnerPlayer);
-      if (winSlot) {
-        winSlot.classList.add('glow-win');
-        setTimeout(() => winSlot.classList.remove('glow-win'), 1100);
-      }
-    }
-
-    /* ── Trick lose dim ── */
-    function visualTrickLose(winnerPlayer) {
-      document.querySelectorAll('.player-slot').forEach(s => {
-        s.classList.remove('glow-win','glow-lose');
-      });
-      // Dim the losers (everyone except winner)
-      ['human','r1','r2','r3'].forEach(key => {
-        if (key !== winnerPlayer) {
-          const sl = document.getElementById('slot-' + key);
-          if (sl) {
-            sl.classList.add('glow-lose');
-            setTimeout(() => sl.classList.remove('glow-lose'), 1100);
-          }
-        }
-      });
-    }
-
-    /* ── Game win celebration ── */
-    function visualGameWin() {
-      const grid = document.getElementById('player-grid');
-      if (grid) {
-        grid.classList.add('game-win-anim');
-        setTimeout(() => grid.classList.remove('game-win-anim'), 1600);
-      }
-    }
-
-    /* ── Game lose fade ── */
-    function visualGameLose() {
-      const grid = document.getElementById('player-grid');
-      if (grid) {
-        grid.classList.add('game-lose-anim');
-        setTimeout(() => grid.classList.remove('game-lose-anim'), 1500);
-      }
-    }
-
-    /* ── Shuffle fan animation ── */
-    function runShuffleAnimation() {
-      const container = document.getElementById('shuffle-cards-anim');
-      if (!container) return;
-      container.innerHTML = '';
-      const positions = [
-        { tx: '-52px', rot: '-22deg', delay: '0s'    },
-        { tx: '-26px', rot: '-11deg', delay: '0.07s' },
-        { tx:   '0px', rot:   '0deg', delay: '0.14s' },
-        { tx:  '26px', rot:  '11deg', delay: '0.21s' },
-        { tx:  '52px', rot:  '22deg', delay: '0.28s' },
-      ];
-      positions.forEach(p => {
-        const c = document.createElement('div');
-        c.className = 'shuffle-card-vis';
-        c.style.cssText =
-          '--tx:' + p.tx + ';--rot:' + p.rot + ';' +
-          'animation-delay:' + p.delay + ';' +
-          'animation-duration:0.9s;';
-        container.appendChild(c);
-      });
-    }
-
-    /* ── Update AI card count visual ── */
-    function updateAICardVisual(count) {
-      const row = document.getElementById('ai-cards-visual');
-      if (!row) return;
-      row.innerHTML = '';
-      const show = Math.min(count, 10);
-      for (let i = 0; i < show; i++) {
-        const b = document.createElement('div');
-        b.className = 'vis-card-back';
-        b.setAttribute('aria-hidden','true');
-        row.appendChild(b);
-      }
-    }
-
-    /* ══════════════════════════════════════════
-       HOOK INTO EXISTING FUNCTIONS
-       We WRAP the originals — never replace them.
-       Original logic runs first, visual runs after.
-    ══════════════════════════════════════════ */
-
-    /* Wrap showCardInTrick to also update player slot */
-    const _origShowCardInTrick = showCardInTrick;
-    showCardInTrick = function(card, index) {
-      _origShowCardInTrick(card, index);
-      // state.currentTrick may not yet contain this card (human lead case)
-      // So we track who's playing via the trick length at call time
-      // If index === 0 and currentTrick is empty → it's the human OR a robot leader
-      // We read from currentTrick if available, otherwise infer from state
-      const entry = state.currentTrick[index];
-      if (entry) {
-        showCardInSlot(entry.player, entry.card);
-      }
-      // Human lead case: currentTrick not yet set — handled by playCard wrapper below
-    };
-
-    /* Wrap resolveTrick to add glow/dim + clear slots */
-    const _origResolveTrick = resolveTrick;
-    resolveTrick = function(ledSuit) {
-      // Determine winner for visual BEFORE calling original
-      const winner = getWinningCard(state.currentTrick, ledSuit, state.trump);
-      const isHumanTeam = winner && winner.team === 'A';
-
-      if (winner) {
-        if (isHumanTeam) {
-          visualTrickWin(winner.player);
-        } else {
-          visualTrickLose(winner.player);
-        }
-      }
-
-      // Clear slots after glow (synced with existing 1200ms trick-cards clear)
-      setTimeout(() => clearAllSlots(), 1200);
-
-      _origResolveTrick(ledSuit);
-    };
-
-    /* Wrap endGame to trigger win/lose visual */
-    const _origEndGame = endGame;
-    endGame = function(humanWon) {
-      _origEndGame(humanWon);
-      if (humanWon) {
-        setTimeout(() => visualGameWin(), 200);
-      } else {
-        setTimeout(() => visualGameLose(), 200);
-      }
-    };
-
-    /* Wrap doShuffle to show fan animation first, then proceed */
-    const _origDoShuffle = doShuffle;
-    doShuffle = function() {
-      runShuffleAnimation();
-      _origDoShuffle();
-      // Update AI card backs after deal
-      setTimeout(() => updateAICardVisual(13), 700);
-    };
-
-    /* Wrap quitGame to reset visual slots and AI backs */
-    const _origQuitGame = quitGame;
-    quitGame = function() {
-      clearAllSlots();
-      updateAICardVisual(7);
-      document.getElementById('player-grid')?.classList.remove('game-win-anim','game-lose-anim');
-      _origQuitGame();
-    };
-
-    /* Run shuffle fan animation when shuffle screen first appears */
-    (function() {
-      const origBtnPlay = document.getElementById('btn-play');
-      if (origBtnPlay) {
-        origBtnPlay.addEventListener('click', function() {
-          setTimeout(() => runShuffleAnimation(), 350);
-        });
-      }
-    })();
-
-    /* Also hook playCard to show human card in slot */
-    const _origPlayCard = playCard;
-    playCard = function(card, btn) {
-      _origPlayCard(card, btn);
-      // Human slot — works in both lead and follow cases since
-      // we call it after _origPlayCard which sets currentTrick
-      showCardInSlot('human', card);
-    };
   </script>
 
 </body>
