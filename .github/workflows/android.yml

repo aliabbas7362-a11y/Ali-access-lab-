@@ -1,14 +1,12 @@
 name: Build Android APK
-
 on:
   push:
-    branches: [ "**" ]
+    branches:
+      - "**"
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -17,7 +15,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install Dependencies
         run: |
@@ -33,7 +30,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare Web Assets & Sync Capacitor
+      - name: Prepare Web Assets & Sync
         run: |
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
