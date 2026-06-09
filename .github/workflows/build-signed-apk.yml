@@ -1,0 +1,91 @@
+name: Build Signed APK with Capacitor
+
+on:
+  push:
+    branches: [ main, setup-signed-apk ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build web app
+      run: npm run build || true
+
+    - name: Add Capacitor to project
+      run: |
+        npm install @capacitor/core @capacitor/cli @capacitor/android
+        npx cap init Ali-Access-Lab com.aliabbas.accesslab --web-dir=.
+
+    - name: Generate Keystore
+      run: |
+        keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 \
+        -validity 10000 \
+        -alias release-key \
+        -storepass "aliabbas@2024" \
+        -keypass "aliabbas@2024" \
+        -dname "CN=Ali Abbas, OU=Development, O=Ali Access Lab, L=Pakistan, S=Punjab, C=PK"
+
+    - name: Copy Keystore to Android
+      run: |
+        mkdir -p android/app
+        cp release.jks android/app/release.jks
+
+    - name: Setup Capacitor Android
+      run: |
+        npx cap add android
+        npx cap sync
+
+    - name: Build APK with Gradle
+      working-directory: ./android
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleRelease \
+        -Pandroid.injected.signing.store.file=app/release.jks \
+        -Pandroid.injected.signing.store.password="aliabbas@2024" \
+        -Pandroid.injected.signing.key.alias="release-key" \
+        -Pandroid.injected.signing.key.password="aliabbas@2024"
+
+    - name: Upload APK to Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: android/app/build/outputs/apk/release/*.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload APK as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: signed-apk
+        path: android/app/build/outputs/apk/release/*.apk
+        retention-days: 30
+
+    - name: Print APK Location
+      run: |
+        echo "✅ Signed APK built successfully!"
+        echo "Location: android/app/build/outputs/apk/release/"
+        ls -lh android/app/build/outputs/apk/release/ || echo "APK folder not found yet"
