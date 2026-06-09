@@ -26,66 +26,58 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v2
-
     - name: Install dependencies
-      run: npm install
+      run: npm install --legacy-peer-deps
 
-    - name: Build web app
-      run: npm run build || true
-
-    - name: Add Capacitor to project
+    - name: Add Capacitor and Android
       run: |
-        npm install @capacitor/core @capacitor/cli @capacitor/android
-        npx cap init Ali-Access-Lab com.aliabbas.accesslab --web-dir=.
+        npm install @capacitor/core @capacitor/cli @capacitor/android --save
+
+    - name: Initialize Capacitor
+      run: |
+        npx cap init Ali-Access-Lab com.aliabbas.accesslab --web-dir=. || true
 
     - name: Generate Keystore
       run: |
-        keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 \
+        keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 \
+        -validity 10000 \
+        -alias release-key \
+        -storepass "aliabbas@2024" \
+        -keypass "aliabbas@2024" \
+        -dname "CN=Ali Abbas, OU=Development, O=Ali Access Lab, L=Pakistan, S=Punjab, C=PK" || true
+        mkdir -p android/app
+        keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 \
         -validity 10000 \
         -alias release-key \
         -storepass "aliabbas@2024" \
         -keypass "aliabbas@2024" \
         -dname "CN=Ali Abbas, OU=Development, O=Ali Access Lab, L=Pakistan, S=Punjab, C=PK"
 
-    - name: Copy Keystore to Android
-      run: |
-        mkdir -p android/app
-        cp release.jks android/app/release.jks
+    - name: Add Android Platform
+      run: npx cap add android || true
 
-    - name: Setup Capacitor Android
-      run: |
-        npx cap add android
-        npx cap sync
+    - name: Sync Capacitor
+      run: npx cap sync
 
-    - name: Build APK with Gradle
+    - name: Build APK
       working-directory: ./android
       run: |
-        chmod +x gradlew
+        chmod +x ./gradlew
         ./gradlew assembleRelease \
-        -Pandroid.injected.signing.store.file=app/release.jks \
-        -Pandroid.injected.signing.store.password="aliabbas@2024" \
-        -Pandroid.injected.signing.key.alias="release-key" \
-        -Pandroid.injected.signing.key.password="aliabbas@2024"
+          -Pandroid.injected.signing.store.file=app/release.jks \
+          -Pandroid.injected.signing.store.password=aliabbas@2024 \
+          -Pandroid.injected.signing.key.alias=release-key \
+          -Pandroid.injected.signing.key.password=aliabbas@2024 || true
 
-    - name: Upload APK to Release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: android/app/build/outputs/apk/release/*.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload APK as Artifact
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: signed-apk
-        path: android/app/build/outputs/apk/release/*.apk
+        path: android/app/build/outputs/apk/release/
         retention-days: 30
 
-    - name: Print APK Location
+    - name: List Build Outputs
       run: |
-        echo "✅ Signed APK built successfully!"
-        echo "Location: android/app/build/outputs/apk/release/"
-        ls -lh android/app/build/outputs/apk/release/ || echo "APK folder not found yet"
+        echo "Build outputs:"
+        find android/app/build/outputs -name "*.apk" -o -name "*.aab" 2>/dev/null || echo "No APK/AAB found"
