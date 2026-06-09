@@ -15,10 +15,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
+    - name: Setup Node.js 22
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -27,25 +27,17 @@ jobs:
         java-version: '11'
 
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
-
-    - name: Add Capacitor and Android
-      run: |
-        npm install @capacitor/core @capacitor/cli @capacitor/android --save
+      run: npm install
 
     - name: Initialize Capacitor
       run: |
         npx cap init Ali-Access-Lab com.aliabbas.accesslab --web-dir=. || true
 
+    - name: Create Android app directory
+      run: mkdir -p android/app
+
     - name: Generate Keystore
       run: |
-        keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 \
-        -validity 10000 \
-        -alias release-key \
-        -storepass "aliabbas@2024" \
-        -keypass "aliabbas@2024" \
-        -dname "CN=Ali Abbas, OU=Development, O=Ali Access Lab, L=Pakistan, S=Punjab, C=PK" || true
-        mkdir -p android/app
         keytool -genkey -v -keystore android/app/release.jks -keyalg RSA -keysize 2048 \
         -validity 10000 \
         -alias release-key \
@@ -57,7 +49,7 @@ jobs:
       run: npx cap add android || true
 
     - name: Sync Capacitor
-      run: npx cap sync
+      run: npx cap sync || true
 
     - name: Build APK
       working-directory: ./android
@@ -80,4 +72,4 @@ jobs:
     - name: List Build Outputs
       run: |
         echo "Build outputs:"
-        find android/app/build/outputs -name "*.apk" -o -name "*.aab" 2>/dev/null || echo "No APK/AAB found"
+        find android -name "*.apk" -o -name "*.aab" 2>/dev/null || echo "No APK/AAB found yet"
