@@ -1,0 +1,20 @@
+{
+  "name": "ali-access-lab",
+  "version": "1.0.0",
+  "description": "Ali Access Lab - Game Depot APK",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Web build complete'",
+    "start": "echo 'Start development server'"
+  },
+  "keywords": ["game", "depot", "capacitor", "android"],
+  "author": "Ali Abbas",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/core": "latest",
+    "@capacitor/android": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}
