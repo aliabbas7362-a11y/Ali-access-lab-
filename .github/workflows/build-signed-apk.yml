@@ -25,10 +25,10 @@ jobs:
         java-version: '11'
 
     - name: Install npm dependencies
-      run: npm install --legacy-peer-deps || npm install
+      run: npm install
 
-    - name: Install Capacitor CLI globally
-      run: npm install -g @capacitor/cli
+    - name: Install Capacitor CLI
+      run: npm install -g @capacitor/cli @capacitor/core @capacitor/android
 
     - name: Create capacitor.config.json
       run: |
@@ -45,8 +45,15 @@ jobs:
         }
         EOF
 
-    - name: Add Capacitor Android
-      run: npx @capacitor/cli add android --web-dir=.
+    - name: Initialize Capacitor if not already done
+      run: |
+        if [ ! -f "capacitor.config.json" ]; then
+          npx @capacitor/cli init
+        fi
+
+    - name: Add Android Platform
+      run: |
+        npx @capacitor/cli add android || echo "Android platform already exists"
 
     - name: Create keystore directory
       run: mkdir -p android/app
@@ -60,6 +67,9 @@ jobs:
           -keypass "aliabbas@2024" \
           -dname "CN=Ali Abbas,OU=Development,O=Ali Access Lab,L=Pakistan,S=Punjab,C=PK"
 
+    - name: Sync Capacitor
+      run: npx @capacitor/cli sync android
+
     - name: Build Release APK
       working-directory: ./android
       run: |
@@ -72,12 +82,14 @@ jobs:
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: signed-apk
-        path: android/app/build/outputs/apk/release/*.apk
+        path: android/app/build/outputs/apk/release/
         retention-days: 30
 
-    - name: Display APK Location
+    - name: Display Build Status
       run: |
-        echo "✅ APK Build Complete!"
-        ls -lh android/app/build/outputs/apk/release/ || echo "No APK found"
+        echo "✅ Build Process Complete!"
+        echo "Looking for APK files..."
+        find android -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
