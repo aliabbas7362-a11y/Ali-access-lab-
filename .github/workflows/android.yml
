@@ -37,8 +37,8 @@ jobs:
           java-version: '17'
 
       - name: Build APK
+        working-directory: android
         run: |
-          cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
