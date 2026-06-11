@@ -1,30 +1,43 @@
-name: Verify Android Build Setup
+name: Build Signed APK
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main # Agar aapki branch ka naam alag hai toh yahan change kar sakte hain
 
 jobs:
-  verify:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-level: '18'
 
-      - name: List root files
-        run: ls -la
+      # Yeh step missing gradlew file ko khud generate karegi
+      - name: Setup Gradle and Generate Wrapper
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: current
 
-      - name: Install dependencies
-        run: npm install
+      - name: Generate Gradle Wrapper File
+        run: gradle wrapper
 
-      - name: Try adding Android platform
-        run: |
-          npm install @capacitor/android
-          npx cap add android
+      # Ab yeh step fail nahi hogi kyunki file generate ho chuki hai
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
-      - name: List files after Android add
-        run: ls -la
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      # Agar aap Signed APK bana rahe hain toh yahan signing steps aayengi
