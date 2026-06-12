@@ -13,35 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug workspace (IMPORTANT)
-        run: |
-          pwd
-          ls -la
-          find . -name gradlew -type f
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 18
 
-      - name: Make gradlew executable (SAFE)
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor CLI
+        run: npm install @capacitor/cli @capacitor/android
+
+      - name: Sync Android project (THIS FIXES EVERYTHING)
+        run: npx cap sync android
+
+      - name: Build APK
         run: |
-          GRADLEW_PATH=$(find . -name gradlew -type f | head -n 1)
-
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "ERROR: gradlew NOT FOUND in repo"
-            exit 1
-          fi
-
-          chmod +x "$GRADLEW_PATH"
-
-      - name: Build Release APK
-        run: |
-          GRADLEW_PATH=$(find . -name gradlew -type f | head -n 1)
-          "$GRADLEW_PATH" assembleRelease
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
