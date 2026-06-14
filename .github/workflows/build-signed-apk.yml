@@ -29,7 +29,7 @@ jobs:
         cat > capacitor.config.json << 'EOF'
         {
           "appId": "com.aliabbas.courtpiece",
-          "appName": "Court Piece",
+          "appName": "Card Game",
           "webDir": "www",
           "server": {
             "androidScheme": "https"
