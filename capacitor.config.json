@@ -1,1 +1,9 @@
-placeholder
+{
+  "appId": "com.aliaccesslabs.cardgame",
+  "appName": "Card Game",
+  "webDir": "www",
+  "server": {
+    "url": "https://aliabbas7362-a11y.github.io/Ali-access-lab-/",
+    "cleartext": false
+  }
+}
