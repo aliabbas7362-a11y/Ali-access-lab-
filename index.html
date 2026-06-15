@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Card Game</title>
+  <!-- Firebase SDK (compat version — works with plain <script> tags, no build tools) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1289,6 +1293,24 @@
 
   <script>
   /* ════════════════════════════════════════════
+     FIREBASE INITIALIZATION
+     Real config from "Card Game" Firebase project.
+     ════════════════════════════════════════════ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAH9_Z2FTBzbvTbWd9iuRtXxumsRn3DaWI",
+    authDomain: "card-game-a1e68.firebaseapp.com",
+    projectId: "card-game-a1e68",
+    storageBucket: "card-game-a1e68.firebasestorage.app",
+    messagingSenderId: "495670908374",
+    appId: "1:495670908374:web:3e4237cace81ff82d38077",
+    measurementId: "G-C7JNMM7TE2"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  /* ════════════════════════════════════════════
      STATE
      ════════════════════════════════════════════ */
   const state = {
@@ -1562,26 +1584,64 @@
     }
   }
 
-  /* ── Google Sign-In (Firebase-ready placeholder) ── */
+  /* ── Google Sign-In (Firebase) ── */
   function handleGoogleSignIn() {
-    /* TODO: Replace with Firebase Google Auth when ready.
-       firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
-         .then(result => { ... })
-    */
-    announce('Google Sign-In not connected yet. Firebase integration coming in Version 2.');
-    closeDrawer('profile');
+    announce('Opening Google Sign-In. Please wait.');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then((result) => {
+        const user = result.user;
+        profile.signedIn  = true;
+        profile.name      = user.displayName || 'Player';
+        profile.email     = user.email || '';
+        profile.avatarUrl = user.photoURL || '';
+        updateProfileUI();
+        closeDrawer('profile');
+        announce('Signed in as ' + profile.name + '.');
+
+        /* Save/update profile in Firestore */
+        db.collection('users').doc(user.uid).set({
+          name:  profile.name,
+          email: profile.email,
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch((err) => {
+          console.error('Firestore save error:', err);
+        });
+      })
+      .catch((error) => {
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      });
   }
 
   function handleSignOut() {
-    /* TODO: firebase.auth().signOut() */
-    profile.signedIn  = false;
-    profile.name      = '';
-    profile.email     = '';
-    profile.avatarUrl = '';
-    updateProfileUI();
-    closeDrawer('profile');
-    announce('Signed out.');
+    auth.signOut().then(() => {
+      profile.signedIn  = false;
+      profile.name      = '';
+      profile.email     = '';
+      profile.avatarUrl = '';
+      updateProfileUI();
+      closeDrawer('profile');
+      announce('Signed out.');
+    }).catch((error) => {
+      announce('Sign-out failed. Please try again.');
+    });
   }
+
+  /* ── Auth state listener — keeps UI in sync if already signed in ── */
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      profile.signedIn  = true;
+      profile.name      = user.displayName || 'Player';
+      profile.email     = user.email || '';
+      profile.avatarUrl = user.photoURL || '';
+    } else {
+      profile.signedIn  = false;
+      profile.name      = '';
+      profile.email     = '';
+      profile.avatarUrl = '';
+    }
+    updateProfileUI();
+  });
 
   /* ════════════════════════════════════════════
      DASHBOARD NAVIGATION
