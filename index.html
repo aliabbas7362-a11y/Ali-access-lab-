@@ -1298,7 +1298,7 @@
      ════════════════════════════════════════════ */
   const firebaseConfig = {
     apiKey: "AIzaSyAH9_Z2FTBzbvTbWd9iuRtXxumsRn3DaWI",
-    authDomain: "aliabbas7362-a11y.github.io",
+    authDomain: "card-game-a1e68.firebaseapp.com",
     projectId: "card-game-a1e68",
     storageBucket: "card-game-a1e68.firebasestorage.app",
     messagingSenderId: "495670908374",
@@ -1585,14 +1585,32 @@
   }
 
   /* ── Google Sign-In (Firebase) ──
-     Uses signInWithRedirect instead of signInWithPopup because
-     popups are blocked inside Android WebView/APK environments.
-     Redirect works in both regular browsers and WebView apps.
+     Uses signInWithPopup for browser (GitHub Pages).
+     APK/WebView mein popup block hota hai — us ke liye
+     alag solution baad mein add hoga.
   ── */
   function handleGoogleSignIn() {
     announce('Opening Google Sign-In. Please wait.');
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithRedirect(provider).catch((error) => {
+    auth.signInWithPopup(provider).then((result) => {
+      const user = result.user;
+      profile.signedIn  = true;
+      profile.name      = user.displayName || 'Player';
+      profile.email     = user.email || '';
+      profile.avatarUrl = user.photoURL || '';
+      updateProfileUI();
+      closeDrawer('profile');
+      announce('Signed in as ' + profile.name + '.');
+
+      /* Save/update profile in Firestore */
+      db.collection('users').doc(user.uid).set({
+        name:  profile.name,
+        email: profile.email,
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch((err) => {
+        console.error('Firestore save error:', err);
+      });
+    }).catch((error) => {
       announce('Sign-in failed. ' + (error.message || 'Please try again.'));
     });
   }
@@ -1610,32 +1628,6 @@
       announce('Sign-out failed. Please try again.');
     });
   }
-
-  /* ── Handle redirect result after returning from Google sign-in ── */
-  auth.getRedirectResult().then((result) => {
-    if (result && result.user) {
-      const user = result.user;
-      profile.signedIn  = true;
-      profile.name      = user.displayName || 'Player';
-      profile.email     = user.email || '';
-      profile.avatarUrl = user.photoURL || '';
-      updateProfileUI();
-      announce('Signed in as ' + profile.name + '.');
-
-      /* Save/update profile in Firestore */
-      db.collection('users').doc(user.uid).set({
-        name:  profile.name,
-        email: profile.email,
-        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).catch((err) => {
-        console.error('Firestore save error:', err);
-      });
-    }
-  }).catch((error) => {
-    if (error && error.code) {
-      console.error('Redirect sign-in error:', error.message);
-    }
-  });
 
   /* ── Auth state listener — keeps UI in sync if already signed in ── */
   auth.onAuthStateChanged((user) => {
