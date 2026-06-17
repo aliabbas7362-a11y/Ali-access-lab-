@@ -1316,8 +1316,17 @@
   const state = {
     sound:        true,
     talkback:     true,
-    scoreHuman:   0,   /* Team A = Human + R1 */
-    scoreAI:      0,   /* Team B = R2  + R3  */
+    scoreHuman:   0,   /* Team A tricks in current round */
+    scoreAI:      0,   /* Team B tricks in current round */
+
+    /* ── Multi-round / Kot scoring ── */
+    pointsHuman:    0,  /* Total match points — Team A */
+    pointsAI:       0,  /* Total match points — Team B */
+    roundsWonHuman: 0,  /* Consecutive rounds won by Team A */
+    roundsWonAI:    0,  /* Consecutive rounds won by Team B */
+    roundNumber:    1,  /* Current round number */
+    trumpCaller:   'human', /* Who called trump this round */
+
     history:      [],
     trump:        null,
     deck:         [],
@@ -1326,7 +1335,7 @@
     phase:        'trump-select',
     currentTrick: [],
     leader:       'human',
-    tricksPlayed: 0     /* counts 0-13; used to enforce full-round rule */
+    tricksPlayed: 0
   };
 
   /* ════════════════════════════════════════════
@@ -1763,13 +1772,17 @@
      ════════════════════════════════════════════ */
   function quitGame() {
     clearAllAnnouncements();
-    state.scoreHuman   = 0; state.scoreAI  = 0;
-    state.history      = []; state.trump    = null;
-    state.phase        = 'trump-select';
-    state.currentTrick = []; state.leader   = 'human';
-    state.tricksPlayed = 0;
-    state.hands        = { human: [], r1: [], r2: [], r3: [] };
-    state.deck         = []; state.deckRest = [];
+    /* -- Poora state reset karo — naya match -- */
+    state.scoreHuman     = 0; state.scoreAI      = 0;
+    state.pointsHuman    = 0; state.pointsAI     = 0;
+    state.roundsWonHuman = 0; state.roundsWonAI  = 0;
+    state.roundNumber    = 1;
+    state.history        = []; state.trump        = null;
+    state.phase          = 'trump-select';
+    state.currentTrick   = []; state.leader       = 'human';
+    state.tricksPlayed   = 0;
+    state.hands          = { human: [], r1: [], r2: [], r3: [] };
+    state.deck           = []; state.deckRest     = [];
 
     document.getElementById('score-display').textContent = '0 — 0';
     document.getElementById('btn-score').setAttribute('aria-label',
@@ -2196,14 +2209,14 @@
           : 'Opponents (' + winner.player + ')') + ' ---');
     updateHistoryBtn();
 
-    /* ── COURT (SIR) CHECK — only possible at exactly trick 7 ── */
+    /* ── KOT CHECK — pehli 7 tricks ek hi team le to Kot ── */
     if (state.tricksPlayed === 7) {
       if (state.scoreHuman === 7 && state.scoreAI === 0) {
-        setTimeout(() => endGame('court_human'), 2500);
+        setTimeout(() => endRound('kot_human'), 2500);
         return;
       }
       if (state.scoreAI === 7 && state.scoreHuman === 0) {
-        setTimeout(() => endGame('court_ai'), 2500);
+        setTimeout(() => endRound('kot_ai'), 2500);
         return;
       }
     }
@@ -2211,7 +2224,7 @@
     /* ── FULL 13 TRICKS PLAYED ── */
     if (state.tricksPlayed === 13) {
       setTimeout(() => {
-        endGame(state.scoreHuman >= 7 ? 'normal_human' : 'normal_ai');
+        endRound(state.scoreHuman >= 7 ? 'normal_human' : 'normal_ai');
       }, 2500);
       return;
     }
@@ -2278,78 +2291,182 @@
   }
 
   /* ════════════════════════════════════════════
-     END GAME
-     result values:
-       'court_human'  → Human team Court (Sir) Victory — 7-0
-       'court_ai'     → AI team Court Victory — 0-7
-       'normal_human' → Human team wins 13-trick count (7+)
-       'normal_ai'    → AI team wins 13-trick count (7+)
+     END ROUND — ek round khatam hone pe points calculate karo
+     result: 'normal_human' | 'normal_ai' | 'kot_human' | 'kot_ai'
      ════════════════════════════════════════════ */
-  function endGame(result) {
+  function endRound(result) {
     state.phase = 'ended';
 
-    /* Disable all remaining human cards */
+    /* -- Cards disable karo -- */
     document.querySelectorAll('.card-human').forEach(btn => {
       btn.disabled = true;
       btn.style.pointerEvents = 'none';
       btn.setAttribute('aria-disabled', 'true');
-      btn.setAttribute('aria-label',
-        (btn.getAttribute('data-label') || 'Card') + '. Disabled. Game over.');
     });
 
-    let icon, title, detail, msg;
-    const scoreText = 'Your team ' + state.scoreHuman
-      + ' — Opponents ' + state.scoreAI + ' (out of 13 tricks)';
+    let humanPoints = 0;
+    let aiPoints    = 0;
+    let roundMsg    = '';
 
-    switch (result) {
-      case 'court_human':
-        icon   = '🏆';
-        title  = 'COURT VICTORY!';
-        detail = 'Your team won the first 7 tricks in a row. Opponents scored zero.';
-        msg    = 'Court! Your team wins! You took the first 7 tricks with opponents at zero. '
-               + scoreText + '. Double tap Play Again to start a new game.';
-        break;
-      case 'court_ai':
-        icon   = '💀';
-        title  = 'Opponents Court!';
-        detail = 'Opponents won the first 7 tricks in a row. Your team scored zero.';
-        msg    = 'Court! Opponents win. They took the first 7 tricks with you at zero. '
-               + scoreText + '. Double tap Play Again to start a new game.';
-        break;
-      case 'normal_human':
-        icon   = '🎉';
-        title  = 'Your Team Wins!';
-        detail = 'Well played! Your team won ' + state.scoreHuman + ' tricks.';
-        msg    = 'Congratulations! Your team wins with ' + state.scoreHuman + ' tricks. '
-               + scoreText + '. Double tap Play Again to start a new game.';
-        break;
-      case 'normal_ai':
-        icon   = '❌';
-        title  = 'Opponents Win';
-        detail = 'Opponents won ' + state.scoreAI + ' tricks. Better luck next time!';
-        msg    = 'Game over. Opponents win with ' + state.scoreAI + ' tricks. '
-               + scoreText + '. Double tap Play Again to start a new game.';
-        break;
+    /* -- Points calculate karo authentic Rang rules ke hisaab se -- */
+    /* Trump caller team = Team A (human+r1) by default first round  */
+    const callerWon = (result === 'normal_human' || result === 'kot_human');
+
+    if (result === 'kot_human') {
+      /* Kot — trump caller team jeeti — +3 points */
+      humanPoints = 3;
+      state.roundsWonHuman++;
+      state.roundsWonAI = 0;
+      roundMsg = 'KOT! Pehli 7 tricks aapki team ne jeeti! +3 points!';
+    } else if (result === 'kot_ai') {
+      /* Kot — opposing team — +4 points */
+      aiPoints = 4;
+      state.roundsWonAI++;
+      state.roundsWonHuman = 0;
+      roundMsg = 'KOT! Opponents ne pehli 7 tricks jeeti! +4 points unhe!';
+    } else if (result === 'normal_human') {
+      /* Normal win — trump caller team +1 */
+      humanPoints = 1;
+      state.roundsWonHuman++;
+      state.roundsWonAI = 0;
+      roundMsg = 'Round ' + state.roundNumber + ' aapki team ne jeeta! +1 point.';
+    } else {
+      /* Normal loss — opposing team +2 */
+      aiPoints = 2;
+      state.roundsWonAI++;
+      state.roundsWonHuman = 0;
+      roundMsg = 'Round ' + state.roundNumber + ' opponents ne jeeta! +2 points unhe.';
     }
 
-    /* Sound first */
-    playSound(
-      (result === 'court_human' || result === 'normal_human') ? 'win' : 'lose'
-    );
+    /* -- 7 consecutive rounds = Kot bonus -- */
+    if (state.roundsWonHuman === 7) {
+      humanPoints += 3;
+      roundMsg += ' 7 rounds jeet ke MEGA KOT! Bonus +3 points!';
+      state.roundsWonHuman = 0;
+    }
+    if (state.roundsWonAI === 7) {
+      aiPoints += 3;
+      roundMsg += ' Opponents ne 7 rounds jeet ke MEGA KOT! +3 bonus unhe!';
+      state.roundsWonAI = 0;
+    }
 
-    /* Show overlay */
+    state.pointsHuman += humanPoints;
+    state.pointsAI    += aiPoints;
+    state.roundNumber++;
+
+    /* -- Match khatam? 10 points target -- */
+    if (state.pointsHuman >= 10 || state.pointsAI >= 10) {
+      setTimeout(() => {
+        endMatch(state.pointsHuman >= 10 ? 'human' : 'ai', roundMsg);
+      }, 800);
+      return;
+    }
+
+    /* -- Match chal raha hai — next round dikhao -- */
+    playSound(callerWon ? 'trickWin' : 'trickLose');
+
     const overlay = document.getElementById('gameover-overlay');
-    document.getElementById('gameover-icon').textContent        = icon;
-    document.getElementById('gameover-title-text').textContent  = title;
-    document.getElementById('gameover-score-text').textContent  = scoreText;
-    document.getElementById('gameover-detail-text').textContent = detail;
+    document.getElementById('gameover-icon').textContent =
+      callerWon ? '🎯' : '😤';
+    document.getElementById('gameover-title-text').textContent =
+      callerWon ? 'Round Jeet Gaye!' : 'Round Haar Gaye';
+    document.getElementById('gameover-score-text').textContent =
+      'Match Points — Aap: ' + state.pointsHuman + ' | Opponents: ' + state.pointsAI;
+    document.getElementById('gameover-detail-text').textContent =
+      roundMsg + ' | 10 points target. Agla round shuru karo.';
 
     overlay.removeAttribute('inert');
     overlay.removeAttribute('aria-hidden');
     overlay.classList.add('active');
 
-    /* Wire up Play Again button in overlay */
     const playAgainBtn = document.getElementById('btn-play-again-overlay');
+    playAgainBtn.textContent = 'Next Round';
+    playAgainBtn.setAttribute('aria-label', 'Next Round. Double tap to start.');
+    playAgainBtn.onclick = (e) => {
+      e.stopPropagation();
+      overlay.classList.remove('active');
+      overlay.setAttribute('inert', '');
+      overlay.setAttribute('aria-hidden', 'true');
+      startNextRound();
+    };
+
+    setTimeout(() => {
+      announce(roundMsg + ' Match points: Aap ' + state.pointsHuman
+        + ', Opponents ' + state.pointsAI + '. Double tap Next Round to continue.');
+      setTimeout(() => playAgainBtn.focus(), 600);
+    }, 500);
+  }
+
+  /* ════════════════════════════════════════════
+     START NEXT ROUND — naya round, same match
+     ════════════════════════════════════════════ */
+  function startNextRound() {
+    /* Sirf round-specific state reset karo — match points rakho */
+    state.scoreHuman   = 0;
+    state.scoreAI      = 0;
+    state.trump        = null;
+    state.deck         = [];
+    state.hands        = { human: [], r1: [], r2: [], r3: [] };
+    state.deckRest     = [];
+    state.phase        = 'trump-select';
+    state.currentTrick = [];
+    state.leader       = 'human';
+    state.tricksPlayed = 0;
+
+    /* Trick zone saaf karo */
+    const trickCards = document.getElementById('trick-cards');
+    if (trickCards) trickCards.innerHTML = '';
+    updateTrickZoneLabel('Waiting for first card\u2026');
+    updateScoreDisplay();
+
+    /* Naya round shuffle aur deal */
+    state.deck = shuffleDeck(buildDeck());
+    playSound('shuffle');
+    const dealt       = dealFirst5(state.deck);
+    state.hands.human = dealt.human;
+    state.hands.r1    = dealt.r1;
+    state.hands.r2    = dealt.r2;
+    state.hands.r3    = dealt.r3;
+    state.deckRest    = dealt.rest;
+
+    renderHand(state.hands.human, true);
+    showTrumpSelector();
+    updateAICardCount();
+
+    const cardNames = state.hands.human.map(c => c.label).join(', ');
+    setTimeout(() => {
+      announce('Round ' + state.roundNumber + ' shuru! Match points: Aap '
+        + state.pointsHuman + ', Opponents ' + state.pointsAI
+        + '. Aapke 5 cards: ' + cardNames + '. Trump suit select karein.');
+      const sel = document.getElementById('trump-selector');
+      if (sel) sel.querySelector('button').focus();
+    }, 400);
+  }
+
+  /* ════════════════════════════════════════════
+     END MATCH — 10 points poore ho gaye
+     ════════════════════════════════════════════ */
+  function endMatch(winner, lastRoundMsg) {
+    const humanWon = winner === 'human';
+    playSound(humanWon ? 'win' : 'lose');
+
+    const overlay = document.getElementById('gameover-overlay');
+    document.getElementById('gameover-icon').textContent =
+      humanWon ? '🏆' : '💀';
+    document.getElementById('gameover-title-text').textContent =
+      humanWon ? 'MATCH JEET GAYE!' : 'MATCH HAAR GAYE';
+    document.getElementById('gameover-score-text').textContent =
+      'Final: Aap ' + state.pointsHuman + ' — Opponents ' + state.pointsAI;
+    document.getElementById('gameover-detail-text').textContent =
+      lastRoundMsg + ' | ' + state.roundNumber + ' rounds khele.';
+
+    overlay.removeAttribute('inert');
+    overlay.removeAttribute('aria-hidden');
+    overlay.classList.add('active');
+
+    const playAgainBtn = document.getElementById('btn-play-again-overlay');
+    playAgainBtn.textContent = 'New Match';
+    playAgainBtn.setAttribute('aria-label', 'New Match. Double tap to start fresh.');
     playAgainBtn.onclick = (e) => {
       e.stopPropagation();
       overlay.classList.remove('active');
@@ -2358,10 +2475,14 @@
       quitGame();
     };
 
-    /* Announce after a short gap so sound doesn't clash */
+    const msg = humanWon
+      ? 'Mubarak! Aapki team ne match jeeta! Final score: Aap '
+        + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.'
+      : 'Opponents ne match jeeta. Final score: Aap '
+        + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.';
+
     setTimeout(() => {
       announce(msg);
-      /* Focus the Play Again button so TalkBack lands on it */
       setTimeout(() => playAgainBtn.focus(), 600);
     }, 500);
   }
@@ -2415,11 +2536,15 @@
   }
 
   function updateScoreDisplay() {
+    /* Round tricks dikhao upar, match points bhi */
     document.getElementById('score-display').textContent =
       state.scoreHuman + ' — ' + state.scoreAI;
     document.getElementById('btn-score').setAttribute('aria-label',
-      'View score. Your team: ' + state.scoreHuman
-      + ' tricks. Opponents: ' + state.scoreAI + ' tricks.');
+      'View score. Round tricks: Aap ' + state.scoreHuman
+      + ', Opponents ' + state.scoreAI
+      + '. Match points: Aap ' + state.pointsHuman
+      + ', Opponents ' + state.pointsAI
+      + '. Round ' + state.roundNumber + '.');
   }
 
   /* ════════════════════════════════════════════
