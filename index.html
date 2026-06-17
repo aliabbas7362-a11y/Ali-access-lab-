@@ -1585,33 +1585,60 @@
   }
 
   /* ── Google Sign-In (Firebase) ──
-     Uses signInWithPopup for browser (GitHub Pages).
-     APK/WebView mein popup block hota hai — us ke liye
-     alag solution baad mein add hoga.
+     Browser (GitHub Pages) => signInWithPopup
+     APK (Capacitor WebView)  => signInWithRedirect
   ── */
+
+  /* Detect if running inside Capacitor APK */
+  const isCapacitor = (window.Capacitor && window.Capacitor.isNative) ? true : false;
+
+  /* Shared function to save user after sign-in */
+  function onSignInSuccess(user) {
+    profile.signedIn  = true;
+    profile.name      = user.displayName || 'Player';
+    profile.email     = user.email || '';
+    profile.avatarUrl = user.photoURL || '';
+    updateProfileUI();
+    closeDrawer('profile');
+    announce('Signed in as ' + profile.name + '.');
+    db.collection('users').doc(user.uid).set({
+      name:  profile.name,
+      email: profile.email,
+      lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch((err) => {
+      console.error('Firestore save error:', err);
+    });
+  }
+
   function handleGoogleSignIn() {
     announce('Opening Google Sign-In. Please wait.');
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).then((result) => {
-      const user = result.user;
-      profile.signedIn  = true;
-      profile.name      = user.displayName || 'Player';
-      profile.email     = user.email || '';
-      profile.avatarUrl = user.photoURL || '';
-      updateProfileUI();
-      closeDrawer('profile');
-      announce('Signed in as ' + profile.name + '.');
 
-      /* Save/update profile in Firestore */
-      db.collection('users').doc(user.uid).set({
-        name:  profile.name,
-        email: profile.email,
-        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).catch((err) => {
-        console.error('Firestore save error:', err);
+    if (isCapacitor) {
+      /* APK: use redirect — popup blocked in WebView */
+      auth.signInWithRedirect(provider).catch((error) => {
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
       });
+    } else {
+      /* Browser: use popup */
+      auth.signInWithPopup(provider).then((result) => {
+        onSignInSuccess(result.user);
+      }).catch((error) => {
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      });
+    }
+  }
+
+  /* Handle redirect result when APK returns from Google sign-in */
+  if (isCapacitor) {
+    auth.getRedirectResult().then((result) => {
+      if (result && result.user) {
+        onSignInSuccess(result.user);
+      }
     }).catch((error) => {
-      announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      if (error && error.code) {
+        console.error('Redirect sign-in error:', error.message);
+      }
     });
   }
 
