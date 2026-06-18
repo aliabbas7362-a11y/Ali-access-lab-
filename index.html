@@ -556,4 +556,2257 @@
       position: fixed; inset: 0;
       flex-direction: column;
       background:
-        radial-gradient(ellipse 100% 70% at 50% 40%, rgba(15,35,18,0.9) 0%, 
+        radial-gradient(ellipse 100% 70% at 50% 40%, rgba(15,35,18,0.9) 0%, transparent 80%),
+        var(--felt);
+      display: none;
+      overflow: hidden;
+    }
+    #screen-game.active { display: flex; }
+
+    /* ── TOP BAR ── */
+    .game-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(10,15,20,0.85);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      flex-shrink: 0;
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    }
+    .game-topbar-title {
+      font-size: 1rem; font-weight: bold; color: var(--gold);
+      letter-spacing: 1px; pointer-events: none;
+    }
+    .btn-small {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: var(--r-sm);
+      padding: 7px 14px; font-family: var(--font); font-size: 0.8rem;
+      cursor: pointer; min-height: 38px;
+    }
+    .btn-small:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .btn-small:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* ── TRUMP BAR ── */
+    .trump-bar {
+      background: rgba(10,15,20,0.7); border-bottom: 1px solid var(--border);
+      padding: 7px 14px; font-size: 0.82rem; color: var(--text-muted);
+      text-align: center; flex-shrink: 0;
+    }
+
+    /* ── SCROLLABLE MIDDLE ZONE ── */
+    .game-middle {
+      flex: 1; display: flex; flex-direction: column;
+      gap: 10px; padding: 10px 12px;
+      overflow-y: auto; overflow-x: hidden;
+      min-height: 0;
+    }
+
+    /* ── OPPONENT AREA ── */
+    .ai-zone {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+    .zone-label {
+      font-size: 0.7rem; color: var(--text-muted);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .ai-cards-row {
+      display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;
+    }
+    .card-back {
+      width: 30px; height: 44px;
+      background: linear-gradient(135deg, #1a2e5a 0%, #0f1e3d 100%);
+      border: 1px solid #2a3f6a;
+      border-radius: 5px; display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: rgba(255,255,255,0.2);
+    }
+
+    /* ── TRICK ZONE ── */
+    .trick-zone {
+      background: rgba(0,0,0,0.25);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      text-align: center; min-height: 100px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    }
+    .trick-zone-label {
+      font-size: 0.7rem; color: var(--text-muted);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .trick-played-cards { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── INFO BAR ── */
+    .game-info-bar { display: flex; gap: 10px; }
+    .info-btn {
+      flex: 1; background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px; text-align: center; cursor: pointer;
+      font-family: var(--font); min-height: 52px;
+    }
+    .info-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .info-btn:hover { border-color: var(--text-muted); }
+    .info-btn-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+    .info-btn-value { font-size: 1rem; font-weight: bold; color: var(--text); margin-top: 2px; }
+
+    /* human zone defined below near card styles */
+
+    /* ═══════════════════════════════════════
+       PLAYING CARD BASE STYLES
+       ─────────────────────────────────────── */
+    .card-played {
+      position: relative; width: 50px; height: 72px;
+      background: #fff; border-radius: 7px;
+      border: 1.5px solid #bbb;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0; flex-direction: column; flex-shrink: 0;
+    }
+
+    /* #human-cards-row defined in human-zone section above */
+
+    .card-human {
+      position: relative; width: 54px; height: 78px;
+      background: #fff;
+      border-radius: 9px;
+      border: 2px solid #bbb;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0; flex-direction: column;
+      cursor: pointer; flex-shrink: 0;
+      transition: border-color 0.15s, transform 0.12s, box-shadow 0.12s;
+    }
+    .card-human:focus-visible {
+      outline: none; border-color: var(--gold);
+      transform: translateY(-10px);
+      box-shadow: 0 10px 24px rgba(232,184,75,0.55), 0 2px 4px rgba(0,0,0,0.4);
+    }
+    .card-human:hover:not(:disabled) {
+      border-color: var(--gold); transform: translateY(-7px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.55);
+    }
+    /* DISABLED = must follow suit / game ended */
+    .card-human:disabled,
+    .card-human[aria-disabled="true"] {
+      opacity: 0.28; cursor: not-allowed;
+      transform: none !important; box-shadow: none !important;
+      pointer-events: none;
+      filter: grayscale(60%);
+    }
+
+    /* ── CARD CORNERS & CENTER ── */
+    .vc-tl {
+      position: absolute; top: 4px; left: 5px;
+      font-size: 0.6rem; font-weight: bold;
+      font-family: 'Georgia', serif; line-height: 1.2;
+      color: #1a1a1a; pointer-events: none; text-align: left;
+    }
+    .vc-br {
+      position: absolute; bottom: 4px; right: 5px;
+      font-size: 0.6rem; font-weight: bold;
+      font-family: 'Georgia', serif; line-height: 1.2;
+      color: #1a1a1a; transform: rotate(180deg);
+      pointer-events: none; text-align: left;
+    }
+    .vc-center {
+      font-size: 1.55rem; font-weight: bold;
+      font-family: 'Georgia', serif; color: #1a1a1a;
+      pointer-events: none; line-height: 1;
+    }
+    .suit-red { color: #c0392b !important; }
+    .vc-tl.suit-red, .vc-br.suit-red, .vc-center.suit-red { color: #c0392b !important; }
+
+    /* ── TRICK STATUS TEXT ── */
+    #trick-status {
+      font-size: 0.8rem; color: var(--text-muted);
+      line-height: 1.4; max-width: 280px; text-align: center;
+    }
+
+    /* ── GAME OVER OVERLAY ── */
+    #gameover-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.88);
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 24px; gap: 18px;
+      text-align: center;
+    }
+    #gameover-overlay.active { display: flex; }
+    .gameover-icon  { font-size: 3.2rem; line-height: 1; }
+    .gameover-title {
+      font-size: clamp(1.6rem, 7vw, 2.4rem);
+      font-weight: bold; color: var(--gold);
+      letter-spacing: 2px;
+    }
+    .gameover-score {
+      font-size: 1.05rem; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 12px 24px;
+    }
+    .gameover-detail {
+      font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; max-width: 300px;
+    }
+
+    /* ── HUMAN HAND — bottom-right strip ── */
+    #human-zone {
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.32);
+      border-top: 1px solid var(--border);
+      padding-bottom: calc(6px + var(--safe-bottom));
+    }
+    .human-zone-label {
+      font-size: 0.68rem; color: var(--text-muted);
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 7px 14px 4px; text-align: right;
+    }
+    #human-cards-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: flex-end;
+      gap: 6px;
+      padding: 4px 14px 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="skip-link" href="#main-content" aria-hidden="true" tabindex="-1">Skip to main content</a>
+
+  <!-- LIVE REGIONS: TalkBack only -->
+  <div id="live-region-a" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
+  <div id="live-region-b" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
+
+  <!-- ══════════════════════════════════════
+       DASHBOARD SCREEN
+       ══════════════════════════════════════ -->
+  <div id="screen-home" class="screen active" role="main" aria-label="Card Game — Dashboard">
+
+    <!-- TOP BAR -->
+    <div class="dash-topbar">
+
+      <!-- Left: 3-dot + Notification bell -->
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="dash-more-btn"
+          id="btn-more-options"
+          aria-label="More options. Settings and Privacy Policy."
+          aria-haspopup="dialog"
+          onclick="openMoreOptions()">
+          ⋮
+        </button>
+        <button class="dash-notif-btn"
+          id="btn-notifications"
+          aria-label="Notifications. No new notifications."
+          aria-haspopup="dialog"
+          onclick="openDrawer('notifications')">
+          🔔
+          <span class="notif-badge" id="notif-badge" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <!-- App Title -->
+      <span class="dash-app-title" aria-hidden="true">Card Game</span>
+
+      <!-- Profile -->
+      <button class="dash-profile-btn"
+        id="btn-profile"
+        aria-label="Profile. Not signed in. Double tap to sign in with Google."
+        aria-haspopup="dialog"
+        onclick="openDrawer('profile')">
+        <span class="profile-avatar-placeholder" id="profile-topbar-avatar" aria-hidden="true">👤</span>
+      </button>
+
+    </div>
+
+    <!-- SCROLLABLE BODY -->
+    <div class="dash-body">
+
+      <!-- Greeting -->
+      <div class="dash-greeting" aria-live="polite" id="dash-greeting">
+        <div class="dash-greeting-name" id="dash-greeting-name">Welcome!</div>
+        <div class="dash-greeting-sub">Choose a game to play</div>
+      </div>
+
+      <!-- Game Selection -->
+      <div class="dash-section-label" aria-hidden="true">Games</div>
+      <div class="dash-game-grid" role="list" aria-label="Available games">
+
+        <!-- Court Piece -->
+        <button class="game-card" role="listitem"
+          id="btn-launch-courtpiece"
+          aria-label="Court Piece. Card game. Human versus 3 robots. Double tap to play."
+          onclick="launchCourtPiece()">
+          <div class="game-card-badge" aria-hidden="true">v1.0</div>
+          <div class="game-card-icon" aria-hidden="true">🃏</div>
+          <div class="game-card-name" aria-hidden="true">Court Piece</div>
+        </button>
+
+        <!-- Coming Soon placeholder -->
+        <button class="game-card" role="listitem"
+          aria-label="More games coming soon. Not available yet."
+          aria-disabled="true" disabled>
+          <div class="game-card-badge soon" aria-hidden="true">Soon</div>
+          <div class="game-card-icon" aria-hidden="true">🎮</div>
+          <div class="game-card-name" aria-hidden="true">More Games</div>
+        </button>
+
+      </div>
+
+    </div><!-- /dash-body -->
+
+  </div><!-- /screen-home -->
+
+  <!-- ══════════════════════════════════════
+       PRIVACY POLICY SCREEN
+       ══════════════════════════════════════ -->
+  <div id="screen-privacy" class="screen" role="main" aria-label="Privacy Policy">
+
+    <div class="privacy-topbar">
+      <button class="drawer-back-btn"
+        aria-label="Back. Return to dashboard."
+        onclick="closePrivacy()">&#8592;</button>
+      <span class="privacy-title">Privacy Policy</span>
+    </div>
+
+    <div class="privacy-body" role="document">
+      <h2>Introduction</h2>
+      <p>Card Game is developed by Abbas Ali, a blind developer from Quetta, Pakistan. This app is designed with accessibility-first principles for blind and visually impaired users. Currently the app runs fully offline. Online multiplayer and additional features are planned for future versions.</p>
+
+      <h2>Data Collection</h2>
+      <p>Currently, this app does not collect, store, or transmit any personal data to external servers. All game data including scores and settings is stored locally on your device only. This will be updated when online features are introduced.</p>
+
+      <h2>Google Sign-In (Optional)</h2>
+      <p>The app offers optional Google Sign-In for profile features. If you choose to sign in, only your Google display name and profile picture are used within the app. We do not access your email, contacts, or any other Google account data without your permission.</p>
+
+      <h2>Notification Permission</h2>
+      <p>This app will request permission to send you notifications. This permission is required to inform you about new game updates, features, and announcements. You can deny this permission and the app will still work normally. You can change this setting at any time in your device settings.</p>
+
+      <h2>Future Permissions</h2>
+      <p>In future versions, the app may request camera permission to allow you to select a custom profile avatar, and microphone permission to support voice chat in online multiplayer mode. These permissions will only be requested when those features are available and will always be optional.</p>
+
+      <h2>Monetization</h2>
+      <p>This app currently has no advertisements or in-app purchases. Future versions may include hybrid monetization such as optional cosmetic items or premium features. Any monetization will be clearly disclosed and will not affect core gameplay.</p>
+
+      <h2>Sound &amp; Storage</h2>
+      <p>The app uses audio sound effects stored locally. All game preferences are saved on your device using browser local storage. No data leaves your device in the current offline version.</p>
+
+      <h2>Children</h2>
+      <p>This app does not knowingly collect data from children under 13. The games are suitable for all ages.</p>
+
+      <h2>Contact</h2>
+      <p>Developed by Abbas Ali — Blind Developer, Quetta, Balochistan, Pakistan. Developer contact details and social media links will be added in a future update.</p>
+
+      <h2>Last Updated</h2>
+      <p>June 2026</p>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SHUFFLE SCREEN
+       ══════════════════════════════════════ -->
+  <div id="shuffle-screen" role="dialog"
+    aria-modal="true"
+    aria-labelledby="shuffle-title"
+    aria-describedby="shuffle-desc">
+
+    <!-- Topbar with back button -->
+    <div class="shuffle-topbar">
+      <button class="drawer-back-btn"
+        aria-label="Back. Return to dashboard."
+        onclick="backToDashboard()">&#8592;</button>
+      <span class="shuffle-topbar-title">Court Piece</span>
+    </div>
+
+    <!-- Center content -->
+    <div class="shuffle-body">
+      <div class="shuffle-icon" aria-hidden="true">🃏</div>
+      <p class="shuffle-title" id="shuffle-title" tabindex="-1">Ready to Play?</p>
+      <p class="shuffle-desc" id="shuffle-desc">
+        Tap Shuffle and Deal to begin. You will receive 5 cards and then select the trump suit.
+      </p>
+      <button class="btn-shuffle"
+        aria-label="Shuffle cards and deal. Game will begin after shuffle."
+        onclick="doShuffle()">
+        🔀 Shuffle &amp; Deal
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
+       GAME SCREEN
+       ══════════════════════════════════════ -->
+  <div id="screen-game" role="main" aria-label="Court Piece game screen">
+
+    <!-- TOP BAR -->
+    <div class="game-topbar" role="banner">
+      <span class="game-topbar-title" aria-hidden="true">♣ Court Piece</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-small"
+          id="btn-settings-game"
+          aria-label="Open Settings"
+          aria-haspopup="dialog"
+          onclick="openDrawer('settings')">
+          ⚙️
+        </button>
+        <button class="btn-small"
+          aria-label="Quit game and return to home screen"
+          onclick="quitGame()">
+          Quit
+        </button>
+      </div>
+    </div>
+
+    <!-- TRUMP BAR -->
+    <div class="trump-bar" role="status"
+      id="trump-indicator" tabindex="0"
+      aria-label="Trump suit: Not selected yet">
+      Trump: <span id="trump-display">Not selected yet</span>
+    </div>
+
+    <!-- SCROLLABLE MIDDLE -->
+    <div class="game-middle">
+
+      <!-- OPPONENTS — face-down cards -->
+      <div class="ai-zone" role="region" aria-label="Opponents area. Their cards are hidden.">
+        <p class="zone-label">Opponents</p>
+        <div class="ai-cards-row" aria-hidden="true" id="ai-cards-visual">
+          <div class="card-back">🂠</div>
+          <div class="card-back">🂠</div>
+          <div class="card-back">🂠</div>
+          <div class="card-back">🂠</div>
+          <div class="card-back">🂠</div>
+          <div class="card-back">🂠</div>
+          <div class="card-back">🂠</div>
+        </div>
+      </div>
+
+      <!-- TRICK ZONE -->
+      <div class="trick-zone" role="region"
+        id="trick-zone"
+        aria-label="Current trick area. No cards played yet.">
+        <p class="trick-zone-label">Current Trick</p>
+        <div class="trick-played-cards" id="trick-cards" aria-hidden="true"></div>
+        <p id="trick-status" aria-hidden="true">Waiting for first card…</p>
+      </div>
+
+      <!-- SCORE + HISTORY -->
+      <div class="game-info-bar" role="region" aria-label="Score and history">
+        <button class="info-btn"
+          aria-label="View score. Your team: 0 tricks. Opponents: 0 tricks."
+          aria-haspopup="dialog"
+          id="btn-score"
+          onclick="openDrawer('score')">
+          <div class="info-btn-label">Score</div>
+          <div class="info-btn-value" id="score-display">0 — 0</div>
+        </button>
+        <button class="info-btn"
+          aria-label="View move history. No moves yet."
+          aria-haspopup="dialog"
+          id="btn-history"
+          onclick="openDrawer('history')">
+          <div class="info-btn-label">History</div>
+          <div class="info-btn-value">📋</div>
+        </button>
+      </div>
+
+    </div><!-- /game-middle -->
+
+    <!-- HUMAN HAND — bottom-right -->
+    <div id="human-zone" role="region" aria-label="Your cards">
+      <p class="human-zone-label">Your Cards</p>
+      <div id="human-cards-row"
+        role="list"
+        aria-label="Your hand. Select a card to play.">
+        <p style="color:var(--text-muted);font-size:0.85rem;padding:8px 12px;" id="cards-placeholder">
+          Shuffle to receive your cards.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /screen-game -->
+
+  <!-- ══════════════════════════════════════
+       GAME OVER OVERLAY
+       ══════════════════════════════════════ -->
+  <div id="gameover-overlay"
+    role="dialog" aria-modal="true"
+    aria-labelledby="gameover-title-text"
+    aria-describedby="gameover-detail-text"
+    inert aria-hidden="true">
+
+    <div class="gameover-icon" id="gameover-icon" aria-hidden="true"></div>
+    <div class="gameover-title" id="gameover-title-text"></div>
+    <div class="gameover-score" id="gameover-score-text" aria-hidden="true"></div>
+    <div class="gameover-detail" id="gameover-detail-text"></div>
+
+    <button class="btn btn-play" id="btn-play-again-overlay"
+      aria-label="Play Again. Start a new game of Court Piece."
+      style="max-width:280px;margin-top:8px;">
+      🔄 Play Again
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SLIDE DRAWER — SETTINGS
+       ══════════════════════════════════════ -->
+  <div id="drawer-settings" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-settings-title"
+    inert aria-hidden="true">
+
+    <!-- scrim (tap to close) -->
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('settings')"></div>
+
+    <div class="slide-drawer__panel">
+      <!-- back bar -->
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Settings panel."
+          onclick="closeDrawer('settings')">&#8592;</button>
+        <span class="drawer-title" id="drawer-settings-title">Settings</span>
+      </div>
+
+      <!-- body -->
+      <div class="drawer-body">
+        <p class="drawer-section-heading">Audio &amp; Accessibility</p>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Sound Effects</div>
+            <div class="toggle-desc">Card flip and game sounds</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-sound" checked
+              role="switch" aria-checked="true"
+              aria-label="Sound Effects. Currently on. Double tap to toggle."
+              onchange="handleToggle(this,'sound')" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">TalkBack Announcements</div>
+            <div class="toggle-desc">Automatic card and trick announcements</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-talkback" checked
+              role="switch" aria-checked="true"
+              aria-label="TalkBack Announcements. Currently on. Double tap to toggle."
+              onchange="handleToggle(this,'talkback')" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <p class="drawer-section-heading" style="margin-top:28px;">About</p>
+        <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;">
+          Court Piece v2.0<br>
+          Developed by Abbas Ali — Blind Developer<br>
+          Full 13-trick authentic Rung rules
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SLIDE DRAWER — SCORE
+       ══════════════════════════════════════ -->
+  <div id="drawer-score" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-score-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('score')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Score panel."
+          onclick="closeDrawer('score')">&#8592;</button>
+        <span class="drawer-title" id="drawer-score-title">Score</span>
+      </div>
+      <div class="drawer-body">
+        <p class="drawer-section-heading">Current Round</p>
+        <div class="panel-row"><span>Your Team</span><span id="score-human">0 tricks</span></div>
+        <div class="panel-row"><span>Opponents</span><span id="score-ai">0 tricks</span></div>
+        <div class="panel-row"><span>Tricks Played</span><span id="score-tricks-played">0 of 13</span></div>
+
+        <p class="drawer-section-heading" style="margin-top:24px;">Rules</p>
+        <div class="panel-row"><span>Win condition</span><span>7+ tricks</span></div>
+        <div class="panel-row"><span>Court (Sir)</span><span>7-0 in first 7</span></div>
+        <div class="panel-row"><span>Round length</span><span>All 13 tricks</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SLIDE DRAWER — HISTORY
+       ══════════════════════════════════════ -->
+  <div id="drawer-history" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-history-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('history')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close History panel."
+          onclick="closeDrawer('history')">&#8592;</button>
+        <span class="drawer-title" id="drawer-history-title">Move History</span>
+      </div>
+      <div class="drawer-body">
+        <p class="drawer-section-heading">All Moves</p>
+        <div id="history-list">
+          <p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SLIDE DRAWER — NOTIFICATIONS
+       ══════════════════════════════════════ -->
+  <div id="drawer-notifications" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-notifications-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('notifications')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Notifications panel."
+          onclick="closeDrawer('notifications')">&#8592;</button>
+        <span class="drawer-title" id="drawer-notifications-title">Notifications</span>
+      </div>
+      <div class="drawer-body">
+        <div id="notifications-list">
+          <div class="notif-empty">
+            <div class="notif-empty-icon" aria-hidden="true">🔔</div>
+            No notifications yet.<br>
+            Enable notifications to get updates about new games and features.
+          </div>
+        </div>
+        <div style="margin-top:24px;">
+          <button class="btn btn-outline" style="width:100%;font-size:0.9rem;"
+            id="btn-enable-notif"
+            aria-label="Enable notifications. Double tap to allow notifications from this app."
+            onclick="requestNotificationPermission()">
+            🔔 Enable Notifications
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="drawer-profile" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-profile-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('profile')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Profile panel."
+          onclick="closeDrawer('profile')">&#8592;</button>
+        <span class="drawer-title" id="drawer-profile-title">Profile</span>
+      </div>
+      <div class="drawer-body">
+
+        <!-- Avatar + name (shown when signed in) -->
+        <div id="profile-signed-in" style="display:none;">
+          <div class="profile-panel-avatar" id="profile-panel-avatar-wrap">
+            <span aria-hidden="true">👤</span>
+          </div>
+          <div class="profile-panel-name" id="profile-panel-name"></div>
+          <div class="profile-panel-email" id="profile-panel-email"></div>
+          <button class="btn-signout"
+            aria-label="Sign out. Double tap to sign out of your Google account."
+            onclick="handleSignOut()">
+            Sign Out
+          </button>
+        </div>
+
+        <!-- Sign-in prompt (shown when not signed in) -->
+        <div id="profile-signed-out">
+          <div class="profile-panel-avatar" aria-hidden="true">👤</div>
+          <div class="profile-panel-name">Not signed in</div>
+          <div class="profile-panel-email" style="margin-bottom:20px;">
+            Sign in to save your progress and stats
+          </div>
+          <button class="btn-google-signin"
+            aria-label="Continue with Google. Sign in to your account."
+            onclick="handleGoogleSignIn()">
+            <!-- Google G logo SVG -->
+            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              <path fill="none" d="M0 0h48v48H0z"/>
+            </svg>
+            Continue with Google
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MORE OPTIONS DIALOG
+       ══════════════════════════════════════ -->
+  <div id="more-options-dialog"
+    role="dialog" aria-modal="true" aria-label="More options"
+    inert aria-hidden="true">
+
+    <div class="dialog-scrim" aria-hidden="true" onclick="closeMoreOptions()"></div>
+
+    <div class="more-options-menu" role="menu">
+      <button class="more-options-item" role="menuitem"
+        aria-label="Settings. Sound and TalkBack options."
+        onclick="closeMoreOptions(); openDrawer('settings');">
+        <span class="moi-icon" aria-hidden="true">⚙️</span>
+        Settings
+      </button>
+      <button class="more-options-item" role="menuitem"
+        aria-label="Privacy Policy. View app privacy information."
+        onclick="closeMoreOptions(); openPrivacy();">
+        <span class="moi-icon" aria-hidden="true">🔒</span>
+        Privacy Policy
+      </button>
+    </div>
+  </div>
+
+  <script>
+  /* ════════════════════════════════════════════
+     FIREBASE INITIALIZATION
+     Real config from "Card Game" Firebase project.
+     ════════════════════════════════════════════ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAH9_Z2FTBzbvTbWd9iuRtXxumsRn3DaWI",
+    authDomain: "card-game-a1e68.firebaseapp.com",
+    projectId: "card-game-a1e68",
+    storageBucket: "card-game-a1e68.firebasestorage.app",
+    messagingSenderId: "495670908374",
+    appId: "1:495670908374:web:3e4237cace81ff82d38077",
+    measurementId: "G-C7JNMM7TE2"
+  };
+
+  /* ════════════════════════════════════════════
+     STATE — Authentic Rang/Court Piece ke mutabiq
+     Scoring: +1 normal win, +3 Kot win (trump caller)
+              +2 normal loss, +4 Kot loss (opponent)
+     Match target: 10 points
+     
+     ZARURI: State ko Firebase se PEHLE declare karo.
+     Firebase initializeApp() kabhi kabhi onAuthStateChanged
+     ko synchronously fire karta hai (cached user ke liye),
+     jo announce() call karta hai jo state.talkback use karta hai.
+     Agar state baad mein ho toh "Cannot access state before
+     initialization" TDZ crash aata hai.
+     ════════════════════════════════════════════ */
+  const state = {
+    sound:        true,
+    talkback:     true,
+
+    /* ── Current round trick counts ── */
+    scoreHuman:   0,   /* Team A (human+r1) ke tricks is round mein */
+    scoreAI:      0,   /* Team B (r2+r3) ke tricks is round mein */
+
+    /* ── Multi-round match points ── */
+    pointsHuman:    0,  /* Team A ke total match points */
+    pointsAI:       0,  /* Team B ke total match points */
+    roundsWonHuman: 0,  /* Team A ne lagatar kitne rounds jeete (Kot streak ke liye) */
+    roundsWonAI:    0,  /* Team B ne lagatar kitne rounds jeete */
+    roundNumber:    1,  /* Abhi kaun sa round chal raha hai */
+    trumpCaller:   'human', /* Is round mein trump kisne chuna */
+
+    history:      [],
+    trump:        null,   /* Abhi ka trump suit */
+    deck:         [],
+    hands:        { human: [], r1: [], r2: [], r3: [] },
+    deckRest:     [],
+    phase:        'trump-select', /* 'trump-select' | 'playing' | 'ai-turn' | 'ended' */
+    currentTrick: [],   /* Is waqt ki trick mein played cards */
+    leader:       'human', /* Yeh trick kaun lead kar raha hai */
+    tricksPlayed: 0     /* Is round mein kitni tricks ho chuki hain (max 13) */
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  /* ════════════════════════════════════════════
+     SOUND
+     ════════════════════════════════════════════ */
+  const SFX = {
+    cardFlip:  new Audio('sounds/card-flip.mp3'),
+    shuffle:   new Audio('sounds/shuffle.mp3'),
+    win:       new Audio('sounds/win.mp3'),
+    lose:      new Audio('sounds/lose.mp3'),
+    trickWin:  new Audio('sounds/trick-win.mp3'),
+    trickLose: new Audio('sounds/trick-lose.mp3')
+  };
+  Object.values(SFX).forEach(s => { s.volume = 1.0; });
+
+  function playSound(key) {
+    if (!state.sound) return;
+    try { const s = SFX[key]; if (!s) return; s.currentTime = 0; s.play().catch(()=>{}); }
+    catch(e) {}
+  }
+
+  /* ════════════════════════════════════════════
+     DECK DATA — Standard 52 cards
+     Har suit mein A sabse bada, 2 sabse chota
+     Trump order: A > K > Q > J > 10 > 9 > ... > 2
+     ════════════════════════════════════════════ */
+  const SUITS = [
+    { name: 'Spades',   symbol: '♠', red: false },
+    { name: 'Hearts',   symbol: '♥', red: true  },
+    { name: 'Clubs',    symbol: '♣', red: false },
+    { name: 'Diamonds', symbol: '♦', red: true  }
+  ];
+  const RANKS = [
+    { name: 'Ace',   short: 'A',  value: 14 },
+    { name: 'King',  short: 'K',  value: 13 },
+    { name: 'Queen', short: 'Q',  value: 12 },
+    { name: 'Jack',  short: 'J',  value: 11 },
+    { name: 'Ten',   short: '10', value: 10 },
+    { name: 'Nine',  short: '9',  value:  9 },
+    { name: 'Eight', short: '8',  value:  8 },
+    { name: 'Seven', short: '7',  value:  7 },
+    { name: 'Six',   short: '6',  value:  6 },
+    { name: 'Five',  short: '5',  value:  5 },
+    { name: 'Four',  short: '4',  value:  4 },
+    { name: 'Three', short: '3',  value:  3 },
+    { name: 'Two',   short: '2',  value:  2 }
+  ];
+
+  /* ── 52 cards ka poora deck banao ── */
+  function createDeck() {
+    const deck = [];
+    for (const suit of SUITS)
+      for (const rank of RANKS)
+        deck.push({
+          label:   rank.name + ' of ' + suit.name,
+          display: rank.short + suit.symbol,
+          suit:    suit.name,
+          rank:    rank.name,
+          value:   rank.value,
+          red:     suit.red
+        });
+    return deck;
+  }
+
+  /* Backward compat alias */
+  function buildDeck() { return createDeck(); }
+
+  /* ── Fisher-Yates shuffle — properly random ── */
+  function shuffleDeck(deck) {
+    const d = [...deck];
+    for (let i = d.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [d[i], d[j]] = [d[j], d[i]];
+    }
+    return d;
+  }
+
+  /* ── Shuffle karke deal karo aur hands banao ──
+     Authentic Rang rule: pehle 5 cards deal, trump select, phir baaki 8
+     4 players = 4 x 13 = 52 cards total
+  ── */
+  function shuffleAndDeal(deck) {
+    /* Pehle 5 cards har player ko */
+    const first5 = {
+      human: deck.slice(0,  5),
+      r1:    deck.slice(5,  10),
+      r2:    deck.slice(10, 15),
+      r3:    deck.slice(15, 20),
+      rest:  deck.slice(20)     /* Baaki 32 cards — trump select ke baad milenge */
+    };
+    return first5;
+  }
+
+  /* Backward compat alias */
+  function dealFirst5(deck) { return shuffleAndDeal(deck); }
+
+  /* ── Trump select ke baad baaki 8 cards har player ko ── */
+  function dealRemaining(hands, rest) {
+    return {
+      human: hands.human.concat(rest.slice(0,  8)),
+      r1:    hands.r1.concat(   rest.slice(8,  16)),
+      r2:    hands.r2.concat(   rest.slice(16, 24)),
+      r3:    hands.r3.concat(   rest.slice(24, 32))
+    };
+  }
+
+  /* ════════════════════════════════════════════
+     ANNOUNCE — dual alternating live regions
+     ════════════════════════════════════════════ */
+  let _tick = false;
+  function announce(msg) {
+    if (!state.talkback) return;
+    _tick = !_tick;
+    const activeId = _tick ? 'live-region-a' : 'live-region-b';
+    const clearId  = _tick ? 'live-region-b' : 'live-region-a';
+    document.getElementById(clearId).textContent = '';
+    setTimeout(() => {
+      const el = document.getElementById(activeId);
+      el.textContent = msg;
+      setTimeout(() => { el.textContent = ''; }, 4000);
+    }, 80);
+  }
+
+  function clearAllAnnouncements() {
+    document.getElementById('live-region-a').textContent = '';
+    document.getElementById('live-region-b').textContent = '';
+  }
+
+  /* ════════════════════════════════════════════
+     CARD VISUAL BUILDER
+     ════════════════════════════════════════════ */
+  function buildCardSpans(suitSymbol, rankShort, isRed) {
+    const redClass   = isRed ? ' suit-red' : '';
+    const cornerText = rankShort + suitSymbol;
+
+    const tl = document.createElement('span');
+    tl.className = 'vc-tl' + redClass;
+    tl.setAttribute('aria-hidden', 'true');
+    tl.textContent = cornerText;
+
+    const center = document.createElement('span');
+    center.className = 'vc-center' + redClass;
+    center.setAttribute('aria-hidden', 'true');
+    center.textContent = suitSymbol;
+
+    const br = document.createElement('span');
+    br.className = 'vc-br' + redClass;
+    br.setAttribute('aria-hidden', 'true');
+    br.textContent = cornerText;
+
+    return [tl, center, br];
+  }
+
+  /* ════════════════════════════════════════════
+     RIPPLE HELPER
+     ════════════════════════════════════════════ */
+  function addRipple(btn) {
+    btn.classList.remove('rippling');
+    void btn.offsetWidth; /* reflow */
+    btn.classList.add('rippling');
+    btn.addEventListener('animationend', () => btn.classList.remove('rippling'), { once: true });
+  }
+
+  /* ════════════════════════════════════════════
+     NOTIFICATION PERMISSION
+     ════════════════════════════════════════════ */
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      announce('Notifications are not supported in this browser. Install the app as a PWA for full notification support.');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      announce('Notifications are already enabled.');
+      updateNotifButtonState();
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      announce('Notifications are blocked. Please go to your browser or device settings and allow notifications for this app.');
+      return;
+    }
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        announce('Notifications enabled. You will receive updates about new games and features.');
+        updateNotifButtonState();
+      } else {
+        announce('Notification permission denied. You can enable it later from your device settings.');
+      }
+    });
+  }
+
+  function updateNotifButtonState() {
+    const btn = document.getElementById('btn-enable-notif');
+    if (!btn) return;
+    if (!('Notification' in window) || Notification.permission === 'denied') {
+      btn.textContent = '🔕 Notifications Blocked';
+      btn.setAttribute('aria-label', 'Notifications are blocked. Go to device settings to enable them.');
+      btn.disabled = true;
+    } else if (Notification.permission === 'granted') {
+      btn.textContent = '✅ Notifications Enabled';
+      btn.setAttribute('aria-label', 'Notifications are already enabled.');
+      btn.disabled = true;
+    } else {
+      btn.textContent = '🔔 Enable Notifications';
+      btn.setAttribute('aria-label', 'Enable notifications. Double tap to allow notifications from this app.');
+      btn.disabled = false;
+    }
+  }
+
+  /* Ask on first load (only if not yet decided) */
+  function maybeAskNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      /* Small delay so the dashboard loads first */
+      setTimeout(() => {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            announce('Notifications enabled.');
+            updateNotifButtonState();
+          }
+        });
+      }, 2000);
+    }
+  }
+  const profile = {
+    signedIn:   false,
+    name:       '',
+    email:      '',
+    avatarUrl:  ''
+  };
+
+  function updateProfileUI() {
+    const topbarAvatar = document.getElementById('profile-topbar-avatar');
+    const profileBtn   = document.getElementById('btn-profile');
+    const signedInDiv  = document.getElementById('profile-signed-in');
+    const signedOutDiv = document.getElementById('profile-signed-out');
+
+    if (profile.signedIn) {
+      /* Topbar avatar */
+      if (profile.avatarUrl) {
+        topbarAvatar.outerHTML = '<img id="profile-topbar-avatar" class="profile-avatar-img" src="'
+          + profile.avatarUrl + '" alt="" aria-hidden="true">';
+      } else {
+        document.getElementById('profile-topbar-avatar').textContent = profile.name.charAt(0).toUpperCase();
+      }
+      profileBtn.classList.add('signed-in');
+      profileBtn.setAttribute('aria-label',
+        'Profile. Signed in as ' + profile.name + '. Double tap to open profile.');
+
+      /* Panel */
+      document.getElementById('profile-panel-name').textContent  = profile.name;
+      document.getElementById('profile-panel-email').textContent = profile.email;
+      const avatarWrap = document.getElementById('profile-panel-avatar-wrap');
+      if (profile.avatarUrl) {
+        avatarWrap.innerHTML = '<img src="' + profile.avatarUrl
+          + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      } else {
+        avatarWrap.textContent = profile.name.charAt(0).toUpperCase();
+      }
+      signedInDiv.style.display  = 'block';
+      signedOutDiv.style.display = 'none';
+
+      /* Greeting */
+      document.getElementById('dash-greeting-name').textContent = 'Welcome, ' + profile.name.split(' ')[0] + '!';
+
+    } else {
+      signedInDiv.style.display  = 'none';
+      signedOutDiv.style.display = 'block';
+      profileBtn.classList.remove('signed-in');
+      profileBtn.setAttribute('aria-label',
+        'Profile. Not signed in. Double tap to sign in with Google.');
+      document.getElementById('dash-greeting-name').textContent = 'Welcome!';
+    }
+  }
+
+  /* ── Google Sign-In (Firebase) ──
+     Browser (GitHub Pages) => signInWithPopup
+     APK (Capacitor WebView)  => signInWithRedirect
+  ── */
+
+  /* Detect if running inside Capacitor APK */
+  const isCapacitor = (window.Capacitor && window.Capacitor.isNative) ? true : false;
+
+  /* Shared function to save user after sign-in */
+  function onSignInSuccess(user) {
+    profile.signedIn  = true;
+    profile.name      = user.displayName || 'Player';
+    profile.email     = user.email || '';
+    profile.avatarUrl = user.photoURL || '';
+    updateProfileUI();
+    closeDrawer('profile');
+    announce('Signed in as ' + profile.name + '.');
+    db.collection('users').doc(user.uid).set({
+      name:  profile.name,
+      email: profile.email,
+      lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch((err) => {
+      console.error('Firestore save error:', err);
+    });
+  }
+
+  function handleGoogleSignIn() {
+    announce('Opening Google Sign-In. Please wait.');
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    if (isCapacitor) {
+      /* APK: use redirect — popup blocked in WebView */
+      auth.signInWithRedirect(provider).catch((error) => {
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      });
+    } else {
+      /* Browser: use popup */
+      auth.signInWithPopup(provider).then((result) => {
+        onSignInSuccess(result.user);
+      }).catch((error) => {
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      });
+    }
+  }
+
+  /* Handle redirect result when APK returns from Google sign-in */
+  if (isCapacitor) {
+    auth.getRedirectResult().then((result) => {
+      if (result && result.user) {
+        onSignInSuccess(result.user);
+      }
+    }).catch((error) => {
+      if (error && error.code) {
+        console.error('Redirect sign-in error:', error.message);
+      }
+    });
+  }
+
+  function handleSignOut() {
+    auth.signOut().then(() => {
+      profile.signedIn  = false;
+      profile.name      = '';
+      profile.email     = '';
+      profile.avatarUrl = '';
+      updateProfileUI();
+      closeDrawer('profile');
+      announce('Signed out.');
+    }).catch((error) => {
+      announce('Sign-out failed. Please try again.');
+    });
+  }
+
+  /* ── Auth state listener — keeps UI in sync if already signed in ── */
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      profile.signedIn  = true;
+      profile.name      = user.displayName || 'Player';
+      profile.email     = user.email || '';
+      profile.avatarUrl = user.photoURL || '';
+    } else {
+      profile.signedIn  = false;
+      profile.name      = '';
+      profile.email     = '';
+      profile.avatarUrl = '';
+    }
+    updateProfileUI();
+  });
+
+  /* ════════════════════════════════════════════
+     DASHBOARD NAVIGATION
+     ════════════════════════════════════════════ */
+  function backToDashboard() {
+    clearAllAnnouncements();
+    document.getElementById('shuffle-screen').classList.remove('active');
+    document.getElementById('screen-game').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    setTimeout(() => {
+      document.getElementById('btn-launch-courtpiece').focus();
+      announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
+    }, 150);
+  }
+
+  function launchCourtPiece() {
+    document.getElementById('screen-home').classList.remove('active');
+    document.getElementById('shuffle-screen').classList.add('active');
+    setTimeout(() => {
+      document.getElementById('shuffle-title').focus();
+      announce('Court Piece. Tap Shuffle and Deal to begin.');
+    }, 300);
+  }
+
+  function openMoreOptions() {
+    const dialog = document.getElementById('more-options-dialog');
+    dialog.removeAttribute('inert');
+    dialog.removeAttribute('aria-hidden');
+    dialog.classList.add('open');
+    announce('More options. Settings and Privacy Policy.');
+    setTimeout(() => {
+      dialog.querySelector('.more-options-item').focus();
+    }, 100);
+  }
+
+  function closeMoreOptions() {
+    const dialog = document.getElementById('more-options-dialog');
+    dialog.classList.remove('open');
+    setTimeout(() => {
+      dialog.setAttribute('inert', '');
+      dialog.setAttribute('aria-hidden', 'true');
+    }, 200);
+    setTimeout(() => document.getElementById('btn-more-options').focus(), 50);
+  }
+
+  function openPrivacy() {
+    document.getElementById('screen-home').classList.remove('active');
+    document.getElementById('screen-privacy').classList.add('active');
+    announce('Privacy Policy page opened.');
+    setTimeout(() => {
+      document.querySelector('.privacy-topbar .drawer-back-btn').focus();
+    }, 200);
+  }
+
+  function closePrivacy() {
+    document.getElementById('screen-privacy').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    announce('Back to dashboard.');
+  }
+
+  /* ════════════════════════════════════════════
+     INIT
+     ════════════════════════════════════════════ */
+  window.addEventListener('load', () => {
+    clearAllAnnouncements();
+    updateProfileUI();
+    maybeAskNotificationPermission();
+    announce('Card Game. Dashboard loaded. Choose a game to play.');
+  });
+
+  /* ════════════════════════════════════════════
+     SETTINGS TOGGLE (legacy alias — now uses drawer)
+     ════════════════════════════════════════════ */
+  /* toggleSettings defined below in drawer section */
+
+  function handleToggle(input, type) {
+    const isOn = input.checked;
+    input.setAttribute('aria-checked', String(isOn));
+    state[type] = isOn;
+    if (type === 'sound') {
+      input.setAttribute('aria-label', 'Sound. Currently ' + (isOn?'on':'off') + '. Double tap to toggle.');
+      announce('Sound ' + (isOn ? 'turned on.' : 'turned off.'));
+    } else {
+      input.setAttribute('aria-label', 'TalkBack Announcements. Currently ' + (isOn?'on':'off') + '. Double tap to toggle.');
+      announce('TalkBack announcements ' + (isOn ? 'turned on.' : 'turned off.'));
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     QUIT
+     ════════════════════════════════════════════ */
+  function quitGame() {
+    clearAllAnnouncements();
+    /* -- Poora state reset karo — naya match -- */
+    state.scoreHuman     = 0; state.scoreAI      = 0;
+    state.pointsHuman    = 0; state.pointsAI     = 0;
+    state.roundsWonHuman = 0; state.roundsWonAI  = 0;
+    state.roundNumber    = 1;
+    state.history        = []; state.trump        = null;
+    state.phase          = 'trump-select';
+    state.currentTrick   = []; state.leader       = 'human';
+    state.tricksPlayed   = 0;
+    state.hands          = { human: [], r1: [], r2: [], r3: [] };
+    state.deck           = []; state.deckRest     = [];
+
+    document.getElementById('score-display').textContent = '0 — 0';
+    document.getElementById('btn-score').setAttribute('aria-label',
+      'View score. Your team: 0 tricks. Opponents: 0 tricks.');
+    document.getElementById('trick-cards').innerHTML = '';
+    document.getElementById('trick-status').textContent = 'Waiting for first card…';
+    document.getElementById('trick-zone').setAttribute('aria-label',
+      'Current trick area. No cards played yet.');
+    document.getElementById('trump-indicator').innerHTML =
+      'Trump: <span id="trump-display">Not selected yet</span>';
+    document.getElementById('trump-indicator').setAttribute('aria-label',
+      'Trump suit: Not selected yet');
+    document.getElementById('human-cards-row').innerHTML =
+      '<p style="color:var(--text-muted);font-size:0.85rem;padding:8px 12px;" id="cards-placeholder">Shuffle to receive your cards.</p>';
+    document.getElementById('history-list').innerHTML =
+      '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
+    document.getElementById('btn-history').setAttribute('aria-label',
+      'View move history. No moves yet.');
+    document.getElementById('btn-play-again')?.remove();
+
+    /* Reset gameover overlay */
+    const overlay = document.getElementById('gameover-overlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.setAttribute('inert', '');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    /* reset AI card count visual */
+    const aiRow = document.getElementById('ai-cards-visual');
+    if (aiRow) {
+      aiRow.innerHTML = '';
+      for (let i = 0; i < 7; i++) {
+        const cb = document.createElement('div');
+        cb.className = 'card-back'; cb.textContent = '🂠';
+        aiRow.appendChild(cb);
+      }
+    }
+
+    document.getElementById('screen-game').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    setTimeout(() => {
+      document.getElementById('btn-launch-courtpiece').focus();
+      announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
+    }, 150);
+  }
+
+  /* ════════════════════════════════════════════
+     SHUFFLE & DEAL
+     ════════════════════════════════════════════ */
+  function doShuffle() {
+    clearAllAnnouncements();
+    document.getElementById('shuffle-screen').classList.remove('active');
+    document.getElementById('screen-game').classList.add('active');
+
+    state.deck = shuffleDeck(buildDeck());
+    playSound('shuffle');
+    const dealt       = dealFirst5(state.deck);
+    state.hands.human = dealt.human;
+    state.hands.r1    = dealt.r1;
+    state.hands.r2    = dealt.r2;
+    state.hands.r3    = dealt.r3;
+    state.deckRest    = dealt.rest;
+    state.phase       = 'trump-select';
+    state.leader      = 'human';
+    state.tricksPlayed = 0;
+
+    renderHand(state.hands.human, true);
+    showTrumpSelector();
+
+    const cardNames = state.hands.human.map(c => c.label).join(', ');
+    setTimeout(() => {
+      announce('Cards dealt. Your first 5 cards: ' + cardNames + '. Select trump suit.');
+      const sel = document.getElementById('trump-selector');
+      if (sel) sel.querySelector('button').focus();
+    }, 400);
+  }
+
+  /* ════════════════════════════════════════════
+     TRUMP SELECTOR
+     ════════════════════════════════════════════ */
+  function showTrumpSelector() {
+    document.getElementById('trump-selector')?.remove();
+    const zone = document.getElementById('trump-indicator');
+    zone.innerHTML = 'Select Trump (Rung):';
+    zone.setAttribute('aria-label', 'Select trump suit. Four suit buttons. Choose one.');
+
+    const selector = document.createElement('div');
+    selector.id = 'trump-selector';
+    selector.setAttribute('role', 'group');
+    selector.setAttribute('aria-label', 'Trump suit buttons. Choose one suit.');
+    selector.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;';
+
+    SUITS.forEach(suit => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-small';
+      btn.style.cssText = 'font-size:1.1rem;padding:10px 14px;min-height:44px;color:'
+        + (suit.red ? '#c0392b' : 'var(--text)') + ';';
+      btn.textContent  = suit.symbol + ' ' + suit.name;
+      btn.setAttribute('aria-label', suit.name + ' — Double tap to set as trump.');
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectTrump(suit.name, suit.symbol, suit.red);
+      });
+      selector.appendChild(btn);
+    });
+
+    zone.appendChild(selector);
+  }
+
+  function selectTrump(suitName, suitSymbol, isRed) {
+    state.trump = suitName;
+    const zone  = document.getElementById('trump-indicator');
+    zone.innerHTML = 'Trump (Rung): <span style="color:'
+      + (isRed ? '#c0392b' : 'var(--text)')
+      + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
+    zone.setAttribute('aria-label', 'Trump suit: ' + suitName);
+
+    announce(suitName + ' selected as trump. Dealing remaining 8 cards. Please wait.');
+
+    setTimeout(() => {
+      state.hands  = dealRemaining(state.hands, state.deckRest);
+      state.phase  = 'playing';
+      renderHand(state.hands.human, false);
+      updateAICardCount();
+
+      announce(
+        'All 13 cards dealt. Trump: ' + suitName
+        + '. Your turn. Go to your cards and double tap to play.'
+      );
+    }, 600);
+  }
+
+  /* ════════════════════════════════════════════
+     RENDER HUMAN HAND
+     ════════════════════════════════════════════ */
+  function renderHand(hand, locked) {
+    const row = document.getElementById('human-cards-row');
+    document.getElementById('cards-placeholder')?.remove();
+    row.innerHTML = '';
+
+    hand.forEach(card => {
+      const suitSymbol = card.display.replace(/[^♠♥♣♦]/g, '');
+      const rankShort  = card.display.replace(/[♠♥♣♦]/g, '');
+      const isRed      = card.red;
+
+      const btn = document.createElement('button');
+      btn.className = 'card-human' + (isRed ? ' suit-red' : '');
+      btn.setAttribute('role', 'listitem');
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('aria-hidden', 'false');
+      btn.setAttribute('data-label', card.label);
+
+      if (locked) {
+        btn.disabled = true;
+        btn.setAttribute('aria-label', card.label + '. Disabled. Waiting for trump selection.');
+      } else {
+        btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          playCard(card, btn);
+        });
+      }
+
+      const [tl, center, br] = buildCardSpans(suitSymbol, rankShort, isRed);
+      btn.appendChild(tl); btn.appendChild(center); btn.appendChild(br);
+      row.appendChild(btn);
+    });
+  }
+
+  /* ════════════════════════════════════════════
+     isValidMove — RENEG CHECK (Follow Suit Rule)
+     
+     Authentic Rang rule:
+     Agar player ke paas lead suit hai toh woh ZAROOR
+     wahi suit khelni chahiye. Nahi khelna "Reneg" hai
+     jo illegal move hai. Opponent ko Kot milta hai.
+     
+     Is function mein hum buttons ko disable karke
+     galat cards physically rok dete hain — yeh safest
+     approach hai TalkBack ke liye.
+     ════════════════════════════════════════════ */
+  function isValidMove(card, ledSuit) {
+    if (!ledSuit) return true; /* Lead karte waqt koi bhi card chalen */
+    const hasLedSuit = state.hands.human.some(c => c.suit === ledSuit);
+    if (!hasLedSuit) return true; /* Us suit mein koi card nahi — kuch bhi chala sakte hain */
+    return card.suit === ledSuit; /* Sirf led suit wale cards valid hain */
+  }
+
+  /* ── Card filter apply karo — led suit enforce karo ── */
+  function applyCardFilter(ledSuit) {
+    const unplayed   = state.hands.human;
+    const hasLedSuit = unplayed.some(c => c.suit === ledSuit);
+
+    document.querySelectorAll('.card-human').forEach(btn => {
+      const cardLabel = btn.getAttribute('data-label');
+      const card = unplayed.find(c => c.label === cardLabel);
+      if (!card) return;
+
+      if (hasLedSuit) {
+        if (card.suit === ledSuit) {
+          /* Yeh card valid hai — enable karo */
+          btn.disabled = false;
+          btn.style.opacity = '';
+          btn.style.pointerEvents = '';
+          btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+          btn.removeAttribute('aria-disabled');
+        } else {
+          /* RENEG blocked: is suit ka card nahi chal sakta — disable karo */
+          btn.disabled = true;
+          btn.style.opacity = '0.28';
+          btn.style.pointerEvents = 'none';
+          btn.setAttribute('aria-disabled', 'true');
+          btn.setAttribute('aria-label',
+            card.label
+            + '. Disabled. Reneg! You must follow '
+            + ledSuit + ' suit. This card cannot be played.');
+        }
+      } else {
+        /* Is player ke paas led suit nahi — kuch bhi chal sakta hai, trump bhi */
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.style.pointerEvents = '';
+        btn.setAttribute('aria-label',
+          card.label + '. Double tap to play. (You have no '
+          + ledSuit + ' — play any card or trump to cut.)');
+        btn.removeAttribute('aria-disabled');
+      }
+    });
+
+    if (hasLedSuit) {
+      announce(
+        'REQUIRED: You must follow ' + ledSuit + ' suit. '
+        + 'Only ' + ledSuit + ' cards are playable. '
+        + 'Other cards are Reneg and disabled.'
+      );
+    } else {
+      announce(
+        'You have no ' + ledSuit + '. '
+        + 'Play any card — or cut with trump.'
+      );
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     playCard — HUMAN KA TURN
+     
+     Jab human card play kare:
+     1. Phase check karo (sirf 'playing' phase mein)
+     2. Card hand se hata do
+     3. Agar human lead kar raha hai — saare robots chalao
+     4. Agar human follow kar raha hai — jo robot baaki hain unhe chalao
+     ════════════════════════════════════════════ */
+  function playCard(card, btn) {
+    if (state.phase !== 'playing') return;
+    if (btn.disabled) return;
+
+    state.phase = 'ai-turn';
+    btn.disabled = true;
+    btn.setAttribute('aria-label', card.label + '. This card has been played.');
+    playSound('cardFlip');
+    setTimeout(() => { btn.remove(); }, 100);
+
+    state.hands.human = state.hands.human.filter(c => c.label !== card.label);
+    updateAICardCount();
+
+    if (state.leader === 'human') {
+      /* Human trick lead kar raha hai */
+      showCardInTrick(card, 0);
+      updateTrickZoneLabel('You played ' + card.label + '. Waiting for opponents...');
+      announce('You played ' + card.label + '. You are leading this trick.');
+      state.history.push('You played ' + card.label + ' (lead)');
+      updateHistoryBtn();
+      state.currentTrick = [{ card: card, player: 'human', team: 'A' }];
+
+      fireRobotsInOrder([
+        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
+      ], card.suit);
+
+    } else {
+      /* Human ek robot ke peeche follow kar raha hai */
+      const ledSuit = state.currentTrick[0].card.suit;
+      showCardInTrick(card, state.currentTrick.length);
+      updateTrickZoneLabel('You played ' + card.label + '. Remaining robots playing...');
+      announce('You played ' + card.label + '.');
+      state.history.push('You played ' + card.label);
+      updateHistoryBtn();
+      state.currentTrick.push({ card: card, player: 'human', team: 'A' });
+
+      const alreadyPlayed = state.currentTrick.map(e => e.player);
+      const remaining = [
+        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
+      ].filter(r => !alreadyPlayed.includes(r.key));
+
+      fireRobotsInOrder(remaining, ledSuit);
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     fireRobotsInOrder — ek ek karke robots khelte hain
+     Har robot ke beech 1.5 second ka gap hai taakah
+     TalkBack har announcement theek se padh sake
+     ════════════════════════════════════════════ */
+  function fireRobotsInOrder(robots, ledSuit) {
+    let done = 0;
+    robots.forEach((robot, i) => {
+      setTimeout(() => {
+        const chosen = getAICard(
+          state.hands[robot.key],
+          ledSuit, state.trump, robot.mode, state.currentTrick
+        );
+
+        if (chosen) {
+          state.hands[robot.key] = state.hands[robot.key].filter(c => c.label !== chosen.label);
+          state.currentTrick.push({ card: chosen, player: robot.key, team: robot.team });
+          showCardInTrick(chosen, state.currentTrick.length - 1);
+          playSound('cardFlip');
+
+          /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare */
+          setTimeout(() => {
+            announce(robot.label + ' played ' + chosen.label + '.');
+          }, 800);
+
+          state.history.push(robot.label + ' played ' + chosen.label);
+          updateHistoryBtn();
+        }
+
+        done++;
+        if (done === robots.length) {
+          setTimeout(() => resolveTrick(ledSuit), 1200);
+        }
+      }, (i + 1) * 1500);
+    });
+  }
+
+  /* ════════════════════════════════════════════
+     AI CARD SELECTION — three modes
+     Strictly follows suit if player has it, else plays any card.
+     ════════════════════════════════════════════ */
+  function getAICard(hand, ledSuit, trump, mode, trickSoFar) {
+    if (!hand || hand.length === 0) return null;
+
+    const followSuit = ledSuit ? hand.filter(c => c.suit === ledSuit) : [];
+    const trumpCards = hand.filter(c => c.suit === trump);
+    /* AI also enforces follow-suit: must play led suit if available */
+    const validCards = (ledSuit && followSuit.length > 0) ? followSuit : hand;
+
+    const asc  = arr => [...arr].sort((a,b) => a.value - b.value);
+    const desc = arr => [...arr].sort((a,b) => b.value - a.value);
+
+    const winnerSoFar = ledSuit ? getWinningCard(trickSoFar, ledSuit, trump) : null;
+
+    if (mode === 'partner') {
+      /* If team already winning, play lowest valid to preserve high cards */
+      if (winnerSoFar && winnerSoFar.team === 'A') return asc(validCards)[0];
+      const canBeat = winnerSoFar
+        ? validCards.filter(c => cardBeats(c, winnerSoFar.card, ledSuit, trump)) : [];
+      if (canBeat.length > 0) return asc(canBeat)[0];
+      return asc(validCards)[0];
+
+    } else if (mode === 'aggressive') {
+      const canBeat = winnerSoFar
+        ? validCards.filter(c => cardBeats(c, winnerSoFar.card, ledSuit, trump)) : validCards;
+      if (canBeat.length > 0) return desc(canBeat)[0];
+      /* No led suit and has trump → Kaat with highest trump */
+      if (ledSuit && followSuit.length === 0 && trumpCards.length > 0) return desc(trumpCards)[0];
+      return desc(validCards)[0];
+
+    } else { /* defensive */
+      if (winnerSoFar && winnerSoFar.team === 'B') return asc(validCards)[0];
+      const canBeat = winnerSoFar
+        ? validCards.filter(c => cardBeats(c, winnerSoFar.card, ledSuit, trump)) : validCards;
+      if (canBeat.length > 0) return asc(canBeat)[0];
+      return asc(validCards)[0];
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     cardBeats — kya yeh card doosre card ko jeetta hai?
+
+     Authentic Rang rules ke mutabiq:
+     1. Trump card kisi bhi non-trump ko haata deta hai (Kaat)
+     2. Agar dono trump hain, zyada value wala jeetta hai
+     3. Agar koi trump nahi, sirf led suit mein competition hai
+     4. Off-suit non-trump cards kabhi nahi jeette
+     ════════════════════════════════════════════ */
+  function cardBeats(card, against, ledSuit, trump) {
+    if (!against) return true;
+    /* Trump Kaat: card trump hai, against nahi — card jeetta hai */
+    if (card.suit === trump && against.suit !== trump) return true;
+    /* Dono trump: zyada value wala jeetta hai */
+    if (card.suit === trump && against.suit === trump) return card.value > against.value;
+    /* Card trump nahi lekin against trump hai — card haarta hai */
+    if (card.suit !== trump && against.suit === trump) return false;
+    /* Dono non-trump: sirf led suit hi compete kar sakti hai */
+    if (card.suit === ledSuit && against.suit !== ledSuit) return true;
+    if (card.suit === ledSuit && against.suit === ledSuit) return card.value > against.value;
+    return false; /* Off-suit non-trump kabhi nahi jeetta */
+  }
+
+  /* ════════════════════════════════════════════
+     decideWinner — trick mein sabse acha card kaun sa hai?
+     Poori trick scan karke winning entry return karo
+     ════════════════════════════════════════════ */
+  function decideWinner(trick, ledSuit, trump) {
+    if (!trick || trick.length === 0) return null;
+    return trick.reduce((best, entry) => {
+      if (!best) return entry;
+      return cardBeats(entry.card, best.card, ledSuit, trump) ? entry : best;
+    }, null);
+  }
+
+  /* Backward compat alias */
+  function getWinningCard(trick, ledSuit, trump) {
+    return decideWinner(trick, ledSuit, trump);
+  }
+
+  /* ════════════════════════════════════════════
+     resolveTrick — ek trick khatam hone ke baad
+     winner decide karo, score update karo,
+     aur Kot check karo (pehli 7 tricks rule)
+     
+     Authentic Rang rules:
+     - 13 tricks total per round
+     - Agar pehli 7 tricks ek team ke paas jaati hain
+       aur doosri team ka score ZERO hai => KOT
+     - Warna 13 tricks poori hone pe normal end
+     ════════════════════════════════════════════ */
+  function resolveTrick(ledSuit) {
+    const winner = decideWinner(state.currentTrick, ledSuit, state.trump);
+    if (!winner) return;
+
+    const isHumanTeam = winner.team === 'A';
+
+    const winnerLabel = winner.player === 'human' ? 'You'
+                      : winner.player === 'r1'    ? 'Your partner Robot 1'
+                      : winner.player === 'r2'    ? 'Opponent Robot 2'
+                      :                             'Opponent Robot 3';
+
+    if (isHumanTeam) {
+      state.scoreHuman++;
+      playSound('trickWin');
+      announce(
+        'Your team won this trick! '
+        + winnerLabel + ' took it with ' + winner.card.label + '. '
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
+      );
+    } else {
+      state.scoreAI++;
+      playSound('trickLose');
+      announce(
+        'Opponents won the trick. '
+        + winnerLabel + ' took it with ' + winner.card.label + '. '
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
+      );
+    }
+
+    state.tricksPlayed++;
+    updateScoreDisplay();
+    updateTrickZoneLabel(
+      (isHumanTeam ? 'Your team won trick ' : 'Opponents won trick ')
+      + state.tricksPlayed + '. Winner: ' + winnerLabel + '.'
+    );
+
+    state.history.push(
+      '--- Trick ' + state.tricksPlayed + ' won by: '
+      + (isHumanTeam ? 'Your Team (' + winner.player + ')' : 'Opponents (' + winner.player + ')') + ' ---'
+    );
+    updateHistoryBtn();
+
+    /* ── KOT CHECK — AUTHENTIC RANG RULE ──
+       Sirf tab Kot hoga jab:
+       - Trick number 7 complete ho
+       - Aur ek team ke paas SARI 7 hain, doosri ka ZERO
+       Yeh check sirf trick 7 pe hoga — baad mein nahi
+    ── */
+    if (state.tricksPlayed === 7) {
+      if (state.scoreHuman === 7 && state.scoreAI === 0) {
+        /* KOT — Aapki team ne pehli 7 tricks sari li, opponent zero */
+        setTimeout(() => endRound('kot_human'), 2500);
+        return;
+      }
+      if (state.scoreAI === 7 && state.scoreHuman === 0) {
+        /* KOT — Opponents ne pehli 7 tricks sari li, aapki team zero */
+        setTimeout(() => endRound('kot_ai'), 2500);
+        return;
+      }
+      /* Dono teams ke paas kuch tricks hain — Kot nahi, 13 tak khelo */
+    }
+
+    /* ── 13 TRICKS POORI HO GAYI — NORMAL ROUND END ── */
+    if (state.tricksPlayed === 13) {
+      setTimeout(() => {
+        /* Jo team 7+ tricks le woh jeetti hai */
+        endRound(state.scoreHuman >= 7 ? 'normal_human' : 'normal_ai');
+      }, 2500);
+      return;
+    }
+
+    /* ── Agli trick ke liye tayaar karo ── */
+    state.leader       = winner.player;
+    state.currentTrick = [];
+
+    setTimeout(() => {
+      const trickCards = document.getElementById('trick-cards');
+      if (trickCards) trickCards.innerHTML = '';
+    }, 2000);
+
+    if (state.leader === 'human') {
+      /* Human lead karega agli trick mein */
+      setTimeout(() => {
+        state.phase = 'playing';
+        const nextMsg = 'Trick ' + (state.tricksPlayed + 1) + ' — You lead. Play any card.';
+        updateTrickZoneLabel(nextMsg);
+        setTimeout(() => announce(nextMsg), 600);
+        /* Saare cards enable karo — human lead pe koi restriction nahi */
+        document.querySelectorAll('.card-human').forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = '';
+          btn.style.pointerEvents = '';
+          btn.removeAttribute('aria-disabled');
+          const lbl = btn.getAttribute('data-label');
+          if (lbl) btn.setAttribute('aria-label', lbl + '. Double tap to play.');
+        });
+      }, 2800);
+
+    } else {
+      /* Ek robot lead karega — pehle robot ka card dikhao, phir human se poochho */
+      setTimeout(() => {
+        const key         = state.leader;
+        const leaderLabel = key === 'r1' ? 'Your partner Robot 1'
+                          : key === 'r2' ? 'Opponent Robot 2'
+                          :                'Opponent Robot 3';
+        const leaderTeam  = (key === 'r1') ? 'A' : 'B';
+        const leaderMode  = (key === 'r1') ? 'partner' : (key === 'r2') ? 'aggressive' : 'defensive';
+
+        /* Safety check: agar robot ka haath khali hai toh skip */
+        if (!state.hands[key] || state.hands[key].length === 0) return;
+
+        const leaderCard = getAICard(
+          state.hands[key], null, state.trump, leaderMode, []
+        );
+        if (!leaderCard) return;
+
+        state.hands[key]   = state.hands[key].filter(c => c.label !== leaderCard.label);
+        state.currentTrick = [{ card: leaderCard, player: key, team: leaderTeam }];
+
+        showCardInTrick(leaderCard, 0);
+        playSound('cardFlip');
+        updateAICardCount();
+
+        const leadMsg = leaderLabel + ' led trick ' + (state.tricksPlayed + 1)
+          + ' with ' + leaderCard.label + '. '
+          + 'If you have ' + leaderCard.suit + ', you must follow suit.';
+        updateTrickZoneLabel(leadMsg);
+        setTimeout(() => announce(leadMsg), 800);
+
+        state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
+        updateHistoryBtn();
+
+        /* Human ko filter lagao aur turn do */
+        setTimeout(() => {
+          state.phase = 'playing';
+          applyCardFilter(leaderCard.suit);
+        }, 2200);
+      }, 2800);
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     calculatePoints — round khatam hone pe points decide karo
+
+     Authentic Pakistani Rang scoring:
+     - Trump caller team 7+ tricks jeete  => +1 point (caller team)
+     - Trump caller team haare            => +2 points (opponent team)
+     - KOT: pehli 7 tricks, opponent zero => +3 points (caller team)
+     - KOT: pehli 7 tricks, caller zero   => +4 points (opponent team)
+     - 7 rounds lagatar jeeto             => extra Kot (+3 ya +4 bonus)
+     
+     Match khatam: Pehli team jo 10 points poore kare
+     ════════════════════════════════════════════ */
+  function calculatePoints(result) {
+    let humanPoints = 0;
+    let aiPoints    = 0;
+    let roundMsg    = '';
+
+    switch (result) {
+      case 'kot_human':
+        humanPoints = 3;
+        state.roundsWonHuman++;
+        state.roundsWonAI = 0;
+        roundMsg = 'KOT! Your team took all first 7 tricks! +3 points!';
+        break;
+
+      case 'kot_ai':
+        aiPoints = 4;
+        state.roundsWonAI++;
+        state.roundsWonHuman = 0;
+        roundMsg = 'KOT! Opponents took all first 7 tricks! They get +4 points!';
+        break;
+
+      case 'normal_human':
+        humanPoints = 1;
+        state.roundsWonHuman++;
+        state.roundsWonAI = 0;
+        roundMsg = 'Round ' + state.roundNumber + ' won by your team! +1 point. '
+          + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
+        break;
+
+      case 'normal_ai':
+      default:
+        aiPoints = 2;
+        state.roundsWonAI++;
+        state.roundsWonHuman = 0;
+        roundMsg = 'Round ' + state.roundNumber + ' won by opponents! They get +2 points. '
+          + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
+        break;
+    }
+
+    /* ── 7 LAGATAR ROUNDS JEETNAY KA BONUS (Mega Kot streak) ──
+       Authentic rule: 7 consecutive deals = court = Kot equivalent
+    ── */
+    if (state.roundsWonHuman === 7) {
+      humanPoints += 3;
+      roundMsg += ' | 7 rounds in a row — MEGA KOT! Bonus +3 points!';
+      state.roundsWonHuman = 0;
+    }
+    if (state.roundsWonAI === 7) {
+      aiPoints += 3;
+      roundMsg += ' | Opponents won 7 rounds in a row — MEGA KOT! They get +3 bonus!';
+      state.roundsWonAI = 0;
+    }
+
+    return { humanPoints, aiPoints, roundMsg };
+  }
+
+  /* ════════════════════════════════════════════
+     endRound — round khatam karo, points update karo,
+     match check karo, ya agla round shuru karo
+     ════════════════════════════════════════════ */
+  function endRound(result) {
+    state.phase = 'ended';
+
+    /* Saare human cards disable karo — round over */
+    document.querySelectorAll('.card-human').forEach(btn => {
+      btn.disabled = true;
+      btn.style.pointerEvents = 'none';
+      btn.setAttribute('aria-disabled', 'true');
+    });
+
+    const { humanPoints, aiPoints, roundMsg } = calculatePoints(result);
+
+    state.pointsHuman += humanPoints;
+    state.pointsAI    += aiPoints;
+    state.roundNumber++;
+
+    /* History mein round result likho */
+    state.history.push(
+      '=== Round ' + (state.roundNumber - 1) + ' ended: '
+      + roundMsg + ' | Match: ' + state.pointsHuman + ' — ' + state.pointsAI + ' ==='
+    );
+    updateHistoryBtn();
+
+    const callerWon = (result === 'normal_human' || result === 'kot_human');
+
+    /* ── MATCH KHATAM? 10 POINTS TARGET ── */
+    if (state.pointsHuman >= 10 || state.pointsAI >= 10) {
+      setTimeout(() => {
+        endMatch(state.pointsHuman >= 10 ? 'human' : 'ai', roundMsg);
+      }, 800);
+      return;
+    }
+
+    /* ── Match abhi chal raha hai — round result dikhao, agla round ka button do ── */
+    playSound(callerWon ? 'trickWin' : 'trickLose');
+
+    const overlay = document.getElementById('gameover-overlay');
+    document.getElementById('gameover-icon').textContent =
+      callerWon ? '🎯' : '😤';
+    document.getElementById('gameover-title-text').textContent =
+      callerWon ? 'Round Won!' : 'Round Lost';
+    document.getElementById('gameover-score-text').textContent =
+      'Match Points — You: ' + state.pointsHuman + ' | Opponents: ' + state.pointsAI;
+    document.getElementById('gameover-detail-text').textContent =
+      roundMsg + ' | Target: 10 points. Start next round.';
+
+    overlay.removeAttribute('inert');
+    overlay.removeAttribute('aria-hidden');
+    overlay.classList.add('active');
+
+    const playAgainBtn = document.getElementById('btn-play-again-overlay');
+    playAgainBtn.textContent = 'Next Round';
+    playAgainBtn.setAttribute('aria-label', 'Next Round. Double tap to start.');
+    playAgainBtn.onclick = (e) => {
+      e.stopPropagation();
+      overlay.classList.remove('active');
+      overlay.setAttribute('inert', '');
+      overlay.setAttribute('aria-hidden', 'true');
+      startNewRound();
+    };
+
+    setTimeout(() => {
+      announce(
+        roundMsg
+        + ' Match points: You ' + state.pointsHuman
+        + ', Opponents ' + state.pointsAI
+        + '. Target 10 points. Double tap Next Round button.'
+      );
+      setTimeout(() => playAgainBtn.focus(), 600);
+    }, 500);
+  }
+
+  /* ════════════════════════════════════════════
+     startNewRound — agla round same match mein shuru karo
+     (startNextRound ka alias — dono kaam karte hain)
+     
+     Match points NAHI reset hote — sirf round state reset hoti hai:
+     - scoreHuman, scoreAI = 0 (is round ki tricks)
+     - trump = null (naya trump select hoga)
+     - hands = khali (naye cards deal honge)
+     - tricksPlayed = 0
+     - leader = 'human' (default — pehle round mein human trump caller)
+     
+     Jo bacha rehta hai (match ke liye):
+     - pointsHuman, pointsAI (match points)
+     - roundsWonHuman, roundsWonAI (streak)
+     - roundNumber (increment hota hai endRound mein)
+     - history (poori match ki history)
+     ════════════════════════════════════════════ */
+  function startNewRound() { startNextRound(); }
+
+  /* ════════════════════════════════════════════
+     START NEXT ROUND — naya round, same match
+     Round shuru hone ka poora process:
+     1. Round state reset
+     2. Deck shuffle + 5 cards deal
+     3. Trump selector dikhao
+     4. Human trump select kare, phir 8 cards deal
+     ════════════════════════════════════════════ */
+  function startNextRound() {
+    /* Sirf round-specific state reset karo — match points rakho */
+    state.scoreHuman   = 0;
+    state.scoreAI      = 0;
+    state.trump        = null;
+    state.deck         = [];
+    state.hands        = { human: [], r1: [], r2: [], r3: [] };
+    state.deckRest     = [];
+    state.phase        = 'trump-select';
+    state.currentTrick = [];
+    state.leader       = 'human';
+    state.tricksPlayed = 0;
+
+    /* Trick zone saaf karo */
+    const trickCards = document.getElementById('trick-cards');
+    if (trickCards) trickCards.innerHTML = '';
+    updateTrickZoneLabel('New round — Select trump suit...');
+    updateScoreDisplay();
+
+    /* Naya round shuffle aur deal */
+    state.deck = shuffleDeck(createDeck());
+    playSound('shuffle');
+    const dealt       = shuffleAndDeal(state.deck);
+    state.hands.human = dealt.human;
+    state.hands.r1    = dealt.r1;
+    state.hands.r2    = dealt.r2;
+    state.hands.r3    = dealt.r3;
+    state.deckRest    = dealt.rest;
+
+    renderHand(state.hands.human, true); /* true = locked jab tak trump select na ho */
+    showTrumpSelector();
+    updateAICardCount();
+
+    const cardNames = state.hands.human.map(c => c.label).join(', ');
+    setTimeout(() => {
+      announce(
+        'Round ' + state.roundNumber + ' started! '
+        + 'Match points — You: ' + state.pointsHuman
+        + ', Opponents: ' + state.pointsAI
+        + '. Target: 10 points. '
+        + 'Your 5 cards: ' + cardNames
+        + '. Select trump suit.'
+      );
+      const sel = document.getElementById('trump-selector');
+      if (sel) {
+        const firstBtn = sel.querySelector('button');
+        if (firstBtn) firstBtn.focus();
+      }
+    }, 400);
+  }
+
+  /* ════════════════════════════════════════════
+     END MATCH — 10 points poore ho gaye
+     ════════════════════════════════════════════ */
+  function endMatch(winner, lastRoundMsg) {
+    const humanWon = winner === 'human';
+    playSound(humanWon ? 'win' : 'lose');
+
+    const overlay = document.getElementById('gameover-overlay');
+    document.getElementById('gameover-icon').textContent =
+      humanWon ? '🏆' : '💀';
+    document.getElementById('gameover-title-text').textContent =
+      humanWon ? 'MATCH WON!' : 'MATCH LOST';
+    document.getElementById('gameover-score-text').textContent =
+      'Final: You ' + state.pointsHuman + ' — Opponents ' + state.pointsAI;
+    document.getElementById('gameover-detail-text').textContent =
+      lastRoundMsg + ' | ' + state.roundNumber + ' rounds played.';
+
+    overlay.removeAttribute('inert');
+    overlay.removeAttribute('aria-hidden');
+    overlay.classList.add('active');
+
+    const playAgainBtn = document.getElementById('btn-play-again-overlay');
+    playAgainBtn.textContent = 'New Match';
+    playAgainBtn.setAttribute('aria-label', 'New Match. Double tap to start fresh.');
+    playAgainBtn.onclick = (e) => {
+      e.stopPropagation();
+      overlay.classList.remove('active');
+      overlay.setAttribute('inert', '');
+      overlay.setAttribute('aria-hidden', 'true');
+      quitGame();
+    };
+
+    const msg = humanWon
+      ? 'Congratulations! Your team won the match! Final score: You '
+        + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.'
+      : 'Opponents won the match. Final score: You '
+        + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.';
+
+    setTimeout(() => {
+      announce(msg);
+      setTimeout(() => playAgainBtn.focus(), 600);
+    }, 500);
+  }
+
+  /* ════════════════════════════════════════════
+     SHOW CARD IN TRICK ZONE
+     ════════════════════════════════════════════ */
+  function showCardInTrick(card, index) {
+    const trickCards = document.getElementById('trick-cards');
+    if (index === 0) trickCards.innerHTML = '';
+
+    const c = document.createElement('div');
+    c.className = 'card-played' + (card.red ? ' suit-red' : '');
+    c.setAttribute('aria-hidden', 'true');
+
+    const suitSymbol = card.display.replace(/[^♠♥♣♦]/g, '');
+    const rankShort  = card.display.replace(/[♠♥♣♦]/g, '');
+
+    const [tl, center, br] = buildCardSpans(suitSymbol, rankShort, card.red);
+    c.appendChild(tl); c.appendChild(center); c.appendChild(br);
+    trickCards.appendChild(c);
+  }
+
+  /* ════════════════════════════════════════════
+     AI CARD COUNT VISUAL
+     Keeps face-down card count in sync with tricks played
+     ════════════════════════════════════════════ */
+  function updateAICardCount() {
+    const maxCards  = Math.min(state.hands.r2.length, 13);
+    const aiRow     = document.getElementById('ai-cards-visual');
+    if (!aiRow) return;
+    aiRow.innerHTML = '';
+    for (let i = 0; i < maxCards; i++) {
+      const cb = document.createElement('div');
+      cb.className = 'card-back'; cb.textContent = '🂠';
+      aiRow.appendChild(cb);
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     HELPERS
+     ════════════════════════════════════════════ */
+  function updateTrickZoneLabel(msg) {
+    document.getElementById('trick-status').textContent = msg;
+    document.getElementById('trick-zone').setAttribute('aria-label', msg);
+  }
+
+  function updateHistoryBtn() {
+    document.getElementById('btn-history').setAttribute('aria-label',
+      'View move history. ' + state.history.length + ' moves recorded.');
+  }
+
+  function updateScoreDisplay() {
+    /* Round tricks dikhao upar, match points bhi */
+    document.getElementById('score-display').textContent =
+      state.scoreHuman + ' — ' + state.scoreAI;
+    document.getElementById('btn-score').setAttribute('aria-label',
+      'View score. Round tricks: You ' + state.scoreHuman
+      + ', Opponents ' + state.scoreAI
+      + '. Match points: You ' + state.pointsHuman
+      + ', Opponents ' + state.pointsAI
+      + '. Round ' + state.roundNumber + '.');
+  }
+
+  /* ════════════════════════════════════════════
+     SETTINGS — toggleSettings kept as alias
+     ════════════════════════════════════════════ */
+  function toggleSettings() { openDrawer('settings'); }
+
+  /* ════════════════════════════════════════════
+     SLIDE DRAWER SYSTEM
+     openDrawer(type)  — 'settings' | 'score' | 'history'
+     closeDrawer(type)
+     ════════════════════════════════════════════ */
+  function openDrawer(type) {
+    /* Data populate karo khulne se pehle */
+    if (type === 'score') {
+      document.getElementById('score-human').textContent = state.scoreHuman + ' tricks';
+      document.getElementById('score-ai').textContent    = state.scoreAI    + ' tricks';
+      const tp = document.getElementById('score-tricks-played');
+      if (tp) tp.textContent = state.tricksPlayed + ' of 13';
+      announce(
+        'Score drawer opened. '
+        + 'This round — Your team: ' + state.scoreHuman + ' tricks, '
+        + 'Opponents: ' + state.scoreAI + ' tricks. '
+        + 'Tricks played: ' + state.tricksPlayed + ' of 13. '
+        + 'Match points — You: ' + state.pointsHuman
+        + ', Opponents: ' + state.pointsAI
+        + '. Round: ' + state.roundNumber + '.'
+      );
+    } else if (type === 'history') {
+      const list = document.getElementById('history-list');
+      if (state.history.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
+        announce('History drawer opened. No moves recorded yet.');
+      } else {
+        list.innerHTML = state.history.map((move, i) =>
+          '<div class="panel-row"><span style="color:var(--text-muted);min-width:56px;">Move ' + (i+1) + '</span><span>' + move + '</span></div>'
+        ).join('');
+        announce('History drawer opened. ' + state.history.length + ' moves recorded.');
+      }
+    } else if (type === 'notifications') {
+      updateNotifButtonState();
+      const status = (!('Notification' in window) || Notification.permission === 'denied')
+        ? 'Notifications are blocked.'
+        : Notification.permission === 'granted'
+          ? 'Notifications are enabled.'
+          : 'Notifications are not yet enabled.';
+      announce('Notifications panel opened. ' + status);
+    } else if (type === 'profile') {
+      announce(profile.signedIn
+        ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
+        : 'Profile drawer opened. Not signed in. Sign in with Google to save your progress.');
+    } else {
+      announce('Settings drawer opened. Sound and TalkBack toggles available.');
+    }
+
+    const drawer = document.getElementById('drawer-' + type);
+
+    /* Remove inert BEFORE adding open so TalkBack can reach the panel */
+    drawer.removeAttribute('inert');
+    drawer.removeAttribute('aria-hidden');
+
+    drawer.classList.add('open');
+
+    /* Focus the back button after transition */
+    setTimeout(() => {
+      const backBtn = drawer.querySelector('.drawer-back-btn');
+      if (backBtn) backBtn.focus();
+    }, 340);
+  }
+
+  function closeDrawer(type) {
+    const drawer = document.getElementById('drawer-' + type);
+    drawer.classList.remove('open');
+
+    /* Re-apply inert after transition so TalkBack cannot reach closed drawer */
+    setTimeout(() => {
+      drawer.setAttribute('inert', '');
+      drawer.setAttribute('aria-hidden', 'true');
+    }, 350);
+
+    const labels = { settings:      'Settings drawer closed.',
+                     score:         'Score drawer closed.',
+                     history:       'History drawer closed.',
+                     profile:       'Profile drawer closed.',
+                     notifications: 'Notifications panel closed.' };
+    announce(labels[type] || 'Panel closed.');
+
+    const triggers = {
+      settings:      document.getElementById('btn-settings-game') || document.getElementById('btn-more-options'),
+      score:         document.getElementById('btn-score'),
+      history:       document.getElementById('btn-history'),
+      profile:       document.getElementById('btn-profile'),
+      notifications: document.getElementById('btn-notifications')
+    };
+    const t = triggers[type];
+    if (t) setTimeout(() => t.focus(), 50);
+  }
+  </script>
+
+</body>
+</html>
