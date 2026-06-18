@@ -1306,37 +1306,49 @@
     measurementId: "G-C7JNMM7TE2"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db   = firebase.firestore();
-
   /* ════════════════════════════════════════════
-     STATE
+     STATE — Authentic Rang/Court Piece ke mutabiq
+     Scoring: +1 normal win, +3 Kot win (trump caller)
+              +2 normal loss, +4 Kot loss (opponent)
+     Match target: 10 points
+     
+     ZARURI: State ko Firebase se PEHLE declare karo.
+     Firebase initializeApp() kabhi kabhi onAuthStateChanged
+     ko synchronously fire karta hai (cached user ke liye),
+     jo announce() call karta hai jo state.talkback use karta hai.
+     Agar state baad mein ho toh "Cannot access state before
+     initialization" TDZ crash aata hai.
      ════════════════════════════════════════════ */
   const state = {
     sound:        true,
     talkback:     true,
-    scoreHuman:   0,   /* Team A tricks in current round */
-    scoreAI:      0,   /* Team B tricks in current round */
 
-    /* ── Multi-round / Kot scoring ── */
-    pointsHuman:    0,  /* Total match points — Team A */
-    pointsAI:       0,  /* Total match points — Team B */
-    roundsWonHuman: 0,  /* Consecutive rounds won by Team A */
-    roundsWonAI:    0,  /* Consecutive rounds won by Team B */
-    roundNumber:    1,  /* Current round number */
-    trumpCaller:   'human', /* Who called trump this round */
+    /* ── Current round trick counts ── */
+    scoreHuman:   0,   /* Team A (human+r1) ke tricks is round mein */
+    scoreAI:      0,   /* Team B (r2+r3) ke tricks is round mein */
+
+    /* ── Multi-round match points ── */
+    pointsHuman:    0,  /* Team A ke total match points */
+    pointsAI:       0,  /* Team B ke total match points */
+    roundsWonHuman: 0,  /* Team A ne lagatar kitne rounds jeete (Kot streak ke liye) */
+    roundsWonAI:    0,  /* Team B ne lagatar kitne rounds jeete */
+    roundNumber:    1,  /* Abhi kaun sa round chal raha hai */
+    trumpCaller:   'human', /* Is round mein trump kisne chuna */
 
     history:      [],
-    trump:        null,
+    trump:        null,   /* Abhi ka trump suit */
     deck:         [],
     hands:        { human: [], r1: [], r2: [], r3: [] },
     deckRest:     [],
-    phase:        'trump-select',
-    currentTrick: [],
-    leader:       'human',
-    tricksPlayed: 0
+    phase:        'trump-select', /* 'trump-select' | 'playing' | 'ai-turn' | 'ended' */
+    currentTrick: [],   /* Is waqt ki trick mein played cards */
+    leader:       'human', /* Yeh trick kaun lead kar raha hai */
+    tricksPlayed: 0     /* Is round mein kitni tricks ho chuki hain (max 13) */
   };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
 
   /* ════════════════════════════════════════════
      SOUND
@@ -1358,7 +1370,9 @@
   }
 
   /* ════════════════════════════════════════════
-     DECK DATA
+     DECK DATA — Standard 52 cards
+     Har suit mein A sabse bada, 2 sabse chota
+     Trump order: A > K > Q > J > 10 > 9 > ... > 2
      ════════════════════════════════════════════ */
   const SUITS = [
     { name: 'Spades',   symbol: '♠', red: false },
@@ -1382,7 +1396,8 @@
     { name: 'Two',   short: '2',  value:  2 }
   ];
 
-  function buildDeck() {
+  /* ── 52 cards ka poora deck banao ── */
+  function createDeck() {
     const deck = [];
     for (const suit of SUITS)
       for (const rank of RANKS)
@@ -1397,6 +1412,10 @@
     return deck;
   }
 
+  /* Backward compat alias */
+  function buildDeck() { return createDeck(); }
+
+  /* ── Fisher-Yates shuffle — properly random ── */
   function shuffleDeck(deck) {
     const d = [...deck];
     for (let i = d.length - 1; i > 0; i--) {
@@ -1406,16 +1425,26 @@
     return d;
   }
 
-  function dealFirst5(deck) {
-    return {
+  /* ── Shuffle karke deal karo aur hands banao ──
+     Authentic Rang rule: pehle 5 cards deal, trump select, phir baaki 8
+     4 players = 4 x 13 = 52 cards total
+  ── */
+  function shuffleAndDeal(deck) {
+    /* Pehle 5 cards har player ko */
+    const first5 = {
       human: deck.slice(0,  5),
       r1:    deck.slice(5,  10),
       r2:    deck.slice(10, 15),
       r3:    deck.slice(15, 20),
-      rest:  deck.slice(20)
+      rest:  deck.slice(20)     /* Baaki 32 cards — trump select ke baad milenge */
     };
+    return first5;
   }
 
+  /* Backward compat alias */
+  function dealFirst5(deck) { return shuffleAndDeal(deck); }
+
+  /* ── Trump select ke baad baaki 8 cards har player ko ── */
   function dealRemaining(hands, rest) {
     return {
       human: hands.human.concat(rest.slice(0,  8)),
@@ -1687,11 +1716,7 @@
   function backToDashboard() {
     document.getElementById('shuffle-screen').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
-    announce('Back on dashboard.');
-    setTimeout(() => document.getElementById('btn-launch-courtpiece').focus(), 150);
-  }
-
-  function launchCourtPiece() {
+    announce('Dashboard par wapas.');
     clearAllAnnouncements();
     document.getElementById('screen-home').classList.remove('active');
     const sh = document.getElementById('shuffle-screen');
@@ -1707,7 +1732,7 @@
     dialog.removeAttribute('inert');
     dialog.removeAttribute('aria-hidden');
     dialog.classList.add('open');
-    announce('More options. Settings and Privacy Policy.');
+    announce('Zyada options. Settings aur Privacy Policy.');
     setTimeout(() => {
       dialog.querySelector('.more-options-item').focus();
     }, 100);
@@ -1726,7 +1751,7 @@
   function openPrivacy() {
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-privacy').classList.add('active');
-    announce('Privacy Policy page opened.');
+    announce('Privacy Policy page khul gaya.');
     setTimeout(() => {
       document.querySelector('.privacy-topbar .drawer-back-btn').focus();
     }, 200);
@@ -1735,8 +1760,7 @@
   function closePrivacy() {
     document.getElementById('screen-privacy').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
-    announce('Back on dashboard.');
-    setTimeout(() => document.getElementById('btn-more-options').focus(), 150);
+    announce('Dashboard par wapas.');
   }
 
   /* ════════════════════════════════════════════
@@ -1826,7 +1850,7 @@
     document.getElementById('screen-home').classList.add('active');
     setTimeout(() => {
       document.getElementById('btn-launch-courtpiece').focus();
-      announce('Back on dashboard. Court Piece button is focused. Double tap to play again.');
+      announce('Dashboard par wapas. Court Piece button focused hai. Double tap karke dobara khelein.');
     }, 150);
   }
 
@@ -1855,7 +1879,7 @@
 
     const cardNames = state.hands.human.map(c => c.label).join(', ');
     setTimeout(() => {
-      announce('Cards dealt. Your first 5 cards: ' + cardNames + '. Please select your trump suit.');
+      announce('Cards deal ho gayi. Aapke pehle 5 cards: ' + cardNames + '. Trump suit chunein.');
       const sel = document.getElementById('trump-selector');
       if (sel) sel.querySelector('button').focus();
     }, 400);
@@ -1867,13 +1891,13 @@
   function showTrumpSelector() {
     document.getElementById('trump-selector')?.remove();
     const zone = document.getElementById('trump-indicator');
-    zone.innerHTML = 'Select Trump Suit:';
-    zone.setAttribute('aria-label', 'Select your trump suit. Four suit buttons follow.');
+    zone.innerHTML = 'Trump (Rung) chunein:';
+    zone.setAttribute('aria-label', 'Trump suit chunein. Chaar suit buttons hain. Ek chunen.');
 
     const selector = document.createElement('div');
     selector.id = 'trump-selector';
     selector.setAttribute('role', 'group');
-    selector.setAttribute('aria-label', 'Trump suit buttons. Choose one.');
+    selector.setAttribute('aria-label', 'Trump suit buttons. Ek suit chunein.');
     selector.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;';
 
     SUITS.forEach(suit => {
@@ -1882,7 +1906,7 @@
       btn.style.cssText = 'font-size:1.1rem;padding:10px 14px;min-height:44px;color:'
         + (suit.red ? '#c0392b' : 'var(--text)') + ';';
       btn.textContent  = suit.symbol + ' ' + suit.name;
-      btn.setAttribute('aria-label', suit.name + '. Double tap to select as trump suit.');
+      btn.setAttribute('aria-label', suit.name + ' — Trump banane ke liye double tap karein.');
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         selectTrump(suit.name, suit.symbol, suit.red);
@@ -1899,9 +1923,9 @@
     zone.innerHTML = 'Trump (Rung): <span style="color:'
       + (isRed ? '#c0392b' : 'var(--text)')
       + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
-    zone.setAttribute('aria-label', 'Trump suit is ' + suitName);
+    zone.setAttribute('aria-label', 'Trump suit: ' + suitName);
 
-    announce('Trump suit selected: ' + suitName + '. Dealing remaining 8 cards. Please wait.');
+    announce(suitName + ' trump select ho gaya. Baaki 8 cards deal ho rahe hain. Intezaar karein.');
 
     setTimeout(() => {
       state.hands  = dealRemaining(state.hands, state.deckRest);
@@ -1909,9 +1933,10 @@
       renderHand(state.hands.human, false);
       updateAICardCount();
 
-      announce('All 13 cards dealt. Trump is ' + suitName
-        + '. Your turn. Swipe to your cards and double tap to play.');
-      /* NO auto-focus — user navigates themselves */
+      announce(
+        'Saare 13 cards mil gaye. Trump: ' + suitName
+        + '. Aapki baari hai. Apne cards par jaayein aur double tap karke khelein.'
+      );
     }, 600);
   }
 
@@ -1953,10 +1978,25 @@
   }
 
   /* ════════════════════════════════════════════
-     CARD FILTER — ENFORCE FOLLOW SUIT
-     "If player HAS the led suit, they MUST play it."
-     Cards of wrong suit get disabled + labelled "disabled".
+     isValidMove — RENEG CHECK (Follow Suit Rule)
+     
+     Authentic Rang rule:
+     Agar player ke paas lead suit hai toh woh ZAROOR
+     wahi suit khelni chahiye. Nahi khelna "Reneg" hai
+     jo illegal move hai. Opponent ko Kot milta hai.
+     
+     Is function mein hum buttons ko disable karke
+     galat cards physically rok dete hain — yeh safest
+     approach hai TalkBack ke liye.
      ════════════════════════════════════════════ */
+  function isValidMove(card, ledSuit) {
+    if (!ledSuit) return true; /* Lead karte waqt koi bhi card chalen */
+    const hasLedSuit = state.hands.human.some(c => c.suit === ledSuit);
+    if (!hasLedSuit) return true; /* Us suit mein koi card nahi — kuch bhi chala sakte hain */
+    return card.suit === ledSuit; /* Sirf led suit wale cards valid hain */
+  }
+
+  /* ── Card filter apply karo — led suit enforce karo ── */
   function applyCardFilter(ledSuit) {
     const unplayed   = state.hands.human;
     const hasLedSuit = unplayed.some(c => c.suit === ledSuit);
@@ -1968,42 +2008,57 @@
 
       if (hasLedSuit) {
         if (card.suit === ledSuit) {
+          /* Yeh card valid hai — enable karo */
           btn.disabled = false;
           btn.style.opacity = '';
           btn.style.pointerEvents = '';
           btn.setAttribute('aria-label', card.label + '. Double tap to play.');
           btn.removeAttribute('aria-disabled');
         } else {
-          /* MUST follow suit — disable off-suit card */
+          /* RENEG blocked: is suit ka card nahi chal sakta — disable karo */
           btn.disabled = true;
           btn.style.opacity = '0.28';
           btn.style.pointerEvents = 'none';
           btn.setAttribute('aria-disabled', 'true');
           btn.setAttribute('aria-label',
-            card.label + '. Disabled. You must follow suit: ' + ledSuit + '.');
+            card.label
+            + '. Disabled. Reneg hoga! Aapko '
+            + ledSuit + ' suit follow karni hai. Yeh card nahi chal sakta.');
         }
       } else {
-        /* No led suit in hand — all cards playable (can Kaat with trump) */
+        /* Is player ke paas led suit nahi — kuch bhi chal sakta hai, trump bhi */
         btn.disabled = false;
         btn.style.opacity = '';
         btn.style.pointerEvents = '';
-        btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+        btn.setAttribute('aria-label',
+          card.label + '. Double tap to play. (Aapke paas '
+          + ledSuit + ' nahi — koi bhi card chalain, ya trump se Kaat karein.)');
         btn.removeAttribute('aria-disabled');
       }
     });
 
     if (hasLedSuit) {
-      announce('You must follow suit: ' + ledSuit
-        + '. Only ' + ledSuit + ' cards are playable. Other cards are disabled.');
+      announce(
+        'ZARURI: Aapko ' + ledSuit + ' suit follow karni hai. '
+        + 'Sirf ' + ledSuit + ' cards playable hain. '
+        + 'Doosre cards Reneg hain aur disabled hain.'
+      );
     } else {
-      announce('You have no ' + ledSuit
-        + ' cards. You may play any card, including Trump to Kaat.');
+      announce(
+        'Aapke paas ' + ledSuit + ' nahi. '
+        + 'Koi bhi card chalain — ya Trump lagake Kaat karein.'
+      );
     }
-    /* NO auto-focus — TalkBack user navigates to their cards themselves */
   }
 
   /* ════════════════════════════════════════════
-     PLAY CARD — HUMAN
+     playCard — HUMAN KA TURN
+     
+     Jab human card play kare:
+     1. Phase check karo (sirf 'playing' phase mein)
+     2. Card hand se hata do
+     3. Agar human lead kar raha hai — saare robots chalao
+     4. Agar human follow kar raha hai — jo robot baaki hain unhe chalao
      ════════════════════════════════════════════ */
   function playCard(card, btn) {
     if (state.phase !== 'playing') return;
@@ -2011,7 +2066,7 @@
 
     state.phase = 'ai-turn';
     btn.disabled = true;
-    btn.setAttribute('aria-label', card.label + '. Already played.');
+    btn.setAttribute('aria-label', card.label + '. Yeh card chal chuka hai.');
     playSound('cardFlip');
     setTimeout(() => { btn.remove(); }, 100);
 
@@ -2019,35 +2074,35 @@
     updateAICardCount();
 
     if (state.leader === 'human') {
-      /* Human leads trick */
+      /* Human trick lead kar raha hai */
       showCardInTrick(card, 0);
-      updateTrickZoneLabel('You played ' + card.label + '. Waiting for opponents.');
-      announce('You played ' + card.label + '. You are leading this trick.');
-      state.history.push('You played ' + card.label + ' (lead)');
+      updateTrickZoneLabel('Aapne ' + card.label + ' chalaya. Opponents ka intezaar...');
+      announce('Aapne ' + card.label + ' chalaya. Aap is trick ke lead mein hain.');
+      state.history.push('Aapne ' + card.label + ' chalaya (lead)');
       updateHistoryBtn();
       state.currentTrick = [{ card: card, player: 'human', team: 'A' }];
 
       fireRobotsInOrder([
-        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
-        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
-        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
+        { key: 'r1', label: 'Aapka partner Robot 1', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',       team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',       team: 'B', mode: 'defensive'  }
       ], card.suit);
 
     } else {
-      /* Human follows a robot lead */
+      /* Human ek robot ke peeche follow kar raha hai */
       const ledSuit = state.currentTrick[0].card.suit;
       showCardInTrick(card, state.currentTrick.length);
-      updateTrickZoneLabel('You played ' + card.label + '. Opponents still playing.');
-      announce('You played ' + card.label + '.');
-      state.history.push('You played ' + card.label);
+      updateTrickZoneLabel('Aapne ' + card.label + ' chalaya. Baaki robots khel rahe hain...');
+      announce('Aapne ' + card.label + ' chalaya.');
+      state.history.push('Aapne ' + card.label + ' chalaya');
       updateHistoryBtn();
       state.currentTrick.push({ card: card, player: 'human', team: 'A' });
 
       const alreadyPlayed = state.currentTrick.map(e => e.player);
       const remaining = [
-        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
-        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
-        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
+        { key: 'r1', label: 'Aapka partner Robot 1', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',       team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',       team: 'B', mode: 'defensive'  }
       ].filter(r => !alreadyPlayed.includes(r.key));
 
       fireRobotsInOrder(remaining, ledSuit);
@@ -2055,7 +2110,9 @@
   }
 
   /* ════════════════════════════════════════════
-     FIRE ROBOTS IN ORDER
+     fireRobotsInOrder — ek ek karke robots khelte hain
+     Har robot ke beech 1.5 second ka gap hai taakah
+     TalkBack har announcement theek se padh sake
      ════════════════════════════════════════════ */
   function fireRobotsInOrder(robots, ledSuit) {
     let done = 0;
@@ -2072,13 +2129,12 @@
           showCardInTrick(chosen, state.currentTrick.length - 1);
           playSound('cardFlip');
 
-          /* Stagger each robot's announcement by 800ms so TalkBack
-             reads each one fully before the next fires */
+          /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare */
           setTimeout(() => {
-            announce(robot.label + ' played ' + chosen.label + '.');
+            announce(robot.label + ' ne ' + chosen.label + ' chalaya.');
           }, 800);
 
-          state.history.push(robot.label + ' played ' + chosen.label);
+          state.history.push(robot.label + ' ne ' + chosen.label + ' chalaya');
           updateHistoryBtn();
         }
 
@@ -2133,28 +2189,33 @@
   }
 
   /* ════════════════════════════════════════════
-     CARD BEATS — handles Kaat (trump cut) logic
-     A trump card beats any non-trump card.
-     Within same suit, higher value wins.
+     cardBeats — kya yeh card doosre card ko jeetta hai?
+
+     Authentic Rang rules ke mutabiq:
+     1. Trump card kisi bhi non-trump ko haata deta hai (Kaat)
+     2. Agar dono trump hain, zyada value wala jeetta hai
+     3. Agar koi trump nahi, sirf led suit mein competition hai
+     4. Off-suit non-trump cards kabhi nahi jeette
      ════════════════════════════════════════════ */
   function cardBeats(card, against, ledSuit, trump) {
     if (!against) return true;
-    /* Trump Kaat: card is trump, against is not → card wins */
+    /* Trump Kaat: card trump hai, against nahi — card jeetta hai */
     if (card.suit === trump && against.suit !== trump) return true;
-    /* Both trump: higher value wins */
+    /* Dono trump: zyada value wala jeetta hai */
     if (card.suit === trump && against.suit === trump) return card.value > against.value;
-    /* Card is not trump but against is trump → card loses */
+    /* Card trump nahi lekin against trump hai — card haarta hai */
     if (card.suit !== trump && against.suit === trump) return false;
-    /* Neither is trump: must match led suit to compete */
+    /* Dono non-trump: sirf led suit hi compete kar sakti hai */
     if (card.suit === ledSuit && against.suit !== ledSuit) return true;
     if (card.suit === ledSuit && against.suit === ledSuit) return card.value > against.value;
-    return false;
+    return false; /* Off-suit non-trump kabhi nahi jeetta */
   }
 
   /* ════════════════════════════════════════════
-     GET WINNING CARD IN TRICK
+     decideWinner — trick mein sabse acha card kaun sa hai?
+     Poori trick scan karke winning entry return karo
      ════════════════════════════════════════════ */
-  function getWinningCard(trick, ledSuit, trump) {
+  function decideWinner(trick, ledSuit, trump) {
     if (!trick || trick.length === 0) return null;
     return trick.reduce((best, entry) => {
       if (!best) return entry;
@@ -2162,74 +2223,94 @@
     }, null);
   }
 
+  /* Backward compat alias */
+  function getWinningCard(trick, ledSuit, trump) {
+    return decideWinner(trick, ledSuit, trump);
+  }
+
   /* ════════════════════════════════════════════
-     RESOLVE TRICK — full 13-trick enforcement
+     resolveTrick — ek trick khatam hone ke baad
+     winner decide karo, score update karo,
+     aur Kot check karo (pehli 7 tricks rule)
      
-     COURT (SIR) RULE:
-       If one team wins the FIRST 7 tricks in a row
-       and the opponent has exactly ZERO tricks → Court Victory.
-     
-     NORMAL WIN:
-       If opponent gets even 1 trick, play continues
-       for ALL 13 tricks. At the end, 7+ tricks wins.
+     Authentic Rang rules:
+     - 13 tricks total per round
+     - Agar pehli 7 tricks ek team ke paas jaati hain
+       aur doosri team ka score ZERO hai => KOT
+     - Warna 13 tricks poori hone pe normal end
      ════════════════════════════════════════════ */
   function resolveTrick(ledSuit) {
-    const winner = getWinningCard(state.currentTrick, ledSuit, state.trump);
+    const winner = decideWinner(state.currentTrick, ledSuit, state.trump);
     if (!winner) return;
 
     const isHumanTeam = winner.team === 'A';
 
-    const winnerLabel = winner.player === 'human' ? 'You'
-                      : winner.player === 'r1'    ? 'Your partner Robot 1'
+    const winnerLabel = winner.player === 'human' ? 'Aap'
+                      : winner.player === 'r1'    ? 'Aapka partner Robot 1'
                       : winner.player === 'r2'    ? 'Opponent Robot 2'
                       :                             'Opponent Robot 3';
 
     if (isHumanTeam) {
       state.scoreHuman++;
       playSound('trickWin');
-      announce('Your team wins this trick! ' + winnerLabel + ' took it with '
-        + winner.card.label + '. Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.');
+      announce(
+        'Aapki team ne yeh trick jeeti! '
+        + winnerLabel + ' ne ' + winner.card.label + ' se li. '
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
+      );
     } else {
       state.scoreAI++;
       playSound('trickLose');
-      announce('Opponents win this trick. ' + winnerLabel + ' took it with '
-        + winner.card.label + '. Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.');
+      announce(
+        'Opponents ne trick jeeti. '
+        + winnerLabel + ' ne ' + winner.card.label + ' se li. '
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
+      );
     }
 
     state.tricksPlayed++;
     updateScoreDisplay();
     updateTrickZoneLabel(
-      (isHumanTeam ? 'Your team won trick ' : 'Opponents won trick ')
-      + state.tricksPlayed + '. Winner: ' + winnerLabel + '.'
+      (isHumanTeam ? 'Aapki team ne trick ' : 'Opponents ne trick ')
+      + state.tricksPlayed + ' jeeti. Winner: ' + winnerLabel + '.'
     );
 
-    state.history.push('--- Trick ' + state.tricksPlayed + ' won by: '
-      + (isHumanTeam
-          ? 'Your Team (' + winner.player + ')'
-          : 'Opponents (' + winner.player + ')') + ' ---');
+    state.history.push(
+      '--- Trick ' + state.tricksPlayed + ' jeeti: '
+      + (isHumanTeam ? 'Aapki Team (' + winner.player + ')' : 'Opponents (' + winner.player + ')') + ' ---'
+    );
     updateHistoryBtn();
 
-    /* ── KOT CHECK — pehli 7 tricks ek hi team le to Kot ── */
+    /* ── KOT CHECK — AUTHENTIC RANG RULE ──
+       Sirf tab Kot hoga jab:
+       - Trick number 7 complete ho
+       - Aur ek team ke paas SARI 7 hain, doosri ka ZERO
+       Yeh check sirf trick 7 pe hoga — baad mein nahi
+    ── */
     if (state.tricksPlayed === 7) {
       if (state.scoreHuman === 7 && state.scoreAI === 0) {
+        /* KOT — Aapki team ne pehli 7 tricks sari li, opponent zero */
         setTimeout(() => endRound('kot_human'), 2500);
         return;
       }
       if (state.scoreAI === 7 && state.scoreHuman === 0) {
+        /* KOT — Opponents ne pehli 7 tricks sari li, aapki team zero */
         setTimeout(() => endRound('kot_ai'), 2500);
         return;
       }
+      /* Dono teams ke paas kuch tricks hain — Kot nahi, 13 tak khelo */
     }
 
-    /* ── FULL 13 TRICKS PLAYED ── */
+    /* ── 13 TRICKS POORI HO GAYI — NORMAL ROUND END ── */
     if (state.tricksPlayed === 13) {
       setTimeout(() => {
+        /* Jo team 7+ tricks le woh jeetti hai */
         endRound(state.scoreHuman >= 7 ? 'normal_human' : 'normal_ai');
       }, 2500);
       return;
     }
 
-    /* ── Continue to next trick ── */
+    /* ── Agli trick ke liye tayaar karo ── */
     state.leader       = winner.player;
     state.currentTrick = [];
 
@@ -2239,11 +2320,13 @@
     }, 2000);
 
     if (state.leader === 'human') {
+      /* Human lead karega agli trick mein */
       setTimeout(() => {
         state.phase = 'playing';
-        const nextMsg = 'You lead trick ' + (state.tricksPlayed + 1) + '. Play any card.';
+        const nextMsg = 'Trick ' + (state.tricksPlayed + 1) + ' — Aap lead karein. Koi bhi card chalain.';
         updateTrickZoneLabel(nextMsg);
         setTimeout(() => announce(nextMsg), 600);
+        /* Saare cards enable karo — human lead pe koi restriction nahi */
         document.querySelectorAll('.card-human').forEach(btn => {
           btn.disabled = false;
           btn.style.opacity = '';
@@ -2255,13 +2338,17 @@
       }, 2800);
 
     } else {
+      /* Ek robot lead karega — pehle robot ka card dikhao, phir human se poochho */
       setTimeout(() => {
         const key         = state.leader;
-        const leaderLabel = key === 'r1' ? 'Your partner Robot 1'
+        const leaderLabel = key === 'r1' ? 'Aapka partner Robot 1'
                           : key === 'r2' ? 'Opponent Robot 2'
                           :                'Opponent Robot 3';
         const leaderTeam  = (key === 'r1') ? 'A' : 'B';
         const leaderMode  = (key === 'r1') ? 'partner' : (key === 'r2') ? 'aggressive' : 'defensive';
+
+        /* Safety check: agar robot ka haath khali hai toh skip */
+        if (!state.hands[key] || state.hands[key].length === 0) return;
 
         const leaderCard = getAICard(
           state.hands[key], null, state.trump, leaderMode, []
@@ -2273,15 +2360,18 @@
 
         showCardInTrick(leaderCard, 0);
         playSound('cardFlip');
+        updateAICardCount();
 
-        const leadMsg = leaderLabel + ' leads trick ' + (state.tricksPlayed + 1)
-          + ' with ' + leaderCard.label + '. Follow suit ' + leaderCard.suit + ' if you can.';
+        const leadMsg = leaderLabel + ' ne trick ' + (state.tricksPlayed + 1)
+          + ' mein ' + leaderCard.label + ' se lead kiya. '
+          + 'Agar aapke paas ' + leaderCard.suit + ' hai toh wahi chalain.';
         updateTrickZoneLabel(leadMsg);
         setTimeout(() => announce(leadMsg), 800);
 
-        state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
+        state.history.push(leaderLabel + ' ne ' + leaderCard.label + ' khela (lead)');
         updateHistoryBtn();
 
+        /* Human ko filter lagao aur turn do */
         setTimeout(() => {
           state.phase = 'playing';
           applyCardFilter(leaderCard.suit);
@@ -2291,70 +2381,106 @@
   }
 
   /* ════════════════════════════════════════════
-     END ROUND — ek round khatam hone pe points calculate karo
-     result: 'normal_human' | 'normal_ai' | 'kot_human' | 'kot_ai'
+     calculatePoints — round khatam hone pe points decide karo
+
+     Authentic Pakistani Rang scoring:
+     - Trump caller team 7+ tricks jeete  => +1 point (caller team)
+     - Trump caller team haare            => +2 points (opponent team)
+     - KOT: pehli 7 tricks, opponent zero => +3 points (caller team)
+     - KOT: pehli 7 tricks, caller zero   => +4 points (opponent team)
+     - 7 rounds lagatar jeeto             => extra Kot (+3 ya +4 bonus)
+     
+     Match khatam: Pehli team jo 10 points poore kare
+     ════════════════════════════════════════════ */
+  function calculatePoints(result) {
+    let humanPoints = 0;
+    let aiPoints    = 0;
+    let roundMsg    = '';
+
+    switch (result) {
+      case 'kot_human':
+        /* KOT — Trump caller team (Team A) ne pehli 7 tricks li, AI ka zero */
+        humanPoints = 3;
+        state.roundsWonHuman++;
+        state.roundsWonAI = 0;
+        roundMsg = 'KOT! Aapki team ne pehli 7 tricks sari li! +3 points!';
+        break;
+
+      case 'kot_ai':
+        /* KOT — Opponent team (Team B) ne pehli 7 tricks li, aapka zero */
+        aiPoints = 4;
+        state.roundsWonAI++;
+        state.roundsWonHuman = 0;
+        roundMsg = 'KOT! Opponents ne pehli 7 tricks sari li! Unhe +4 points!';
+        break;
+
+      case 'normal_human':
+        /* Normal win — Aapki team ne 7+ tricks li */
+        humanPoints = 1;
+        state.roundsWonHuman++;
+        state.roundsWonAI = 0;
+        roundMsg = 'Round ' + state.roundNumber + ' aapki team ne jeeta! +1 point. '
+          + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
+        break;
+
+      case 'normal_ai':
+      default:
+        /* Normal loss — Opponents ne 7+ tricks li */
+        aiPoints = 2;
+        state.roundsWonAI++;
+        state.roundsWonHuman = 0;
+        roundMsg = 'Round ' + state.roundNumber + ' opponents ne jeeta! Unhe +2 points. '
+          + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
+        break;
+    }
+
+    /* ── 7 LAGATAR ROUNDS JEETNAY KA BONUS (Mega Kot streak) ──
+       Authentic rule: 7 consecutive deals = court = Kot equivalent
+    ── */
+    if (state.roundsWonHuman === 7) {
+      humanPoints += 3;
+      roundMsg += ' | 7 rounds lagatar jeete — MEGA KOT! Bonus +3 points!';
+      state.roundsWonHuman = 0; /* Streak reset */
+    }
+    if (state.roundsWonAI === 7) {
+      aiPoints += 3;
+      roundMsg += ' | Opponents ne 7 rounds lagatar jeete — MEGA KOT! Unhe +3 bonus!';
+      state.roundsWonAI = 0;
+    }
+
+    return { humanPoints, aiPoints, roundMsg };
+  }
+
+  /* ════════════════════════════════════════════
+     endRound — round khatam karo, points update karo,
+     match check karo, ya agla round shuru karo
      ════════════════════════════════════════════ */
   function endRound(result) {
     state.phase = 'ended';
 
-    /* -- Cards disable karo -- */
+    /* Saare human cards disable karo — round over */
     document.querySelectorAll('.card-human').forEach(btn => {
       btn.disabled = true;
       btn.style.pointerEvents = 'none';
       btn.setAttribute('aria-disabled', 'true');
     });
 
-    let humanPoints = 0;
-    let aiPoints    = 0;
-    let roundMsg    = '';
-
-    /* -- Points calculate karo authentic Rang rules ke hisaab se -- */
-    /* Trump caller team = Team A (human+r1) by default first round  */
-    const callerWon = (result === 'normal_human' || result === 'kot_human');
-
-    if (result === 'kot_human') {
-      /* Kot — trump caller team jeeti — +3 points */
-      humanPoints = 3;
-      state.roundsWonHuman++;
-      state.roundsWonAI = 0;
-      roundMsg = 'KOT! Pehli 7 tricks aapki team ne jeeti! +3 points!';
-    } else if (result === 'kot_ai') {
-      /* Kot — opposing team — +4 points */
-      aiPoints = 4;
-      state.roundsWonAI++;
-      state.roundsWonHuman = 0;
-      roundMsg = 'KOT! Opponents ne pehli 7 tricks jeeti! +4 points unhe!';
-    } else if (result === 'normal_human') {
-      /* Normal win — trump caller team +1 */
-      humanPoints = 1;
-      state.roundsWonHuman++;
-      state.roundsWonAI = 0;
-      roundMsg = 'Round ' + state.roundNumber + ' aapki team ne jeeta! +1 point.';
-    } else {
-      /* Normal loss — opposing team +2 */
-      aiPoints = 2;
-      state.roundsWonAI++;
-      state.roundsWonHuman = 0;
-      roundMsg = 'Round ' + state.roundNumber + ' opponents ne jeeta! +2 points unhe.';
-    }
-
-    /* -- 7 consecutive rounds = Kot bonus -- */
-    if (state.roundsWonHuman === 7) {
-      humanPoints += 3;
-      roundMsg += ' 7 rounds jeet ke MEGA KOT! Bonus +3 points!';
-      state.roundsWonHuman = 0;
-    }
-    if (state.roundsWonAI === 7) {
-      aiPoints += 3;
-      roundMsg += ' Opponents ne 7 rounds jeet ke MEGA KOT! +3 bonus unhe!';
-      state.roundsWonAI = 0;
-    }
+    const { humanPoints, aiPoints, roundMsg } = calculatePoints(result);
 
     state.pointsHuman += humanPoints;
     state.pointsAI    += aiPoints;
     state.roundNumber++;
 
-    /* -- Match khatam? 10 points target -- */
+    /* History mein round result likho */
+    state.history.push(
+      '=== Round ' + (state.roundNumber - 1) + ' khatam: '
+      + roundMsg + ' | Match: ' + state.pointsHuman + ' — ' + state.pointsAI + ' ==='
+    );
+    updateHistoryBtn();
+
+    const callerWon = (result === 'normal_human' || result === 'kot_human');
+
+    /* ── MATCH KHATAM? 10 POINTS TARGET ── */
     if (state.pointsHuman >= 10 || state.pointsAI >= 10) {
       setTimeout(() => {
         endMatch(state.pointsHuman >= 10 ? 'human' : 'ai', roundMsg);
@@ -2362,7 +2488,7 @@
       return;
     }
 
-    /* -- Match chal raha hai — next round dikhao -- */
+    /* ── Match abhi chal raha hai — round result dikhao, agla round ka button do ── */
     playSound(callerWon ? 'trickWin' : 'trickLose');
 
     const overlay = document.getElementById('gameover-overlay');
@@ -2373,32 +2499,61 @@
     document.getElementById('gameover-score-text').textContent =
       'Match Points — Aap: ' + state.pointsHuman + ' | Opponents: ' + state.pointsAI;
     document.getElementById('gameover-detail-text').textContent =
-      roundMsg + ' | 10 points target. Agla round shuru karo.';
+      roundMsg + ' | Target: 10 points. Agla round shuru karein.';
 
     overlay.removeAttribute('inert');
     overlay.removeAttribute('aria-hidden');
     overlay.classList.add('active');
 
     const playAgainBtn = document.getElementById('btn-play-again-overlay');
-    playAgainBtn.textContent = 'Next Round';
-    playAgainBtn.setAttribute('aria-label', 'Next Round. Double tap to start.');
+    playAgainBtn.textContent = 'Agla Round';
+    playAgainBtn.setAttribute('aria-label',
+      'Agla Round shuru karo. Double tap karein.');
     playAgainBtn.onclick = (e) => {
       e.stopPropagation();
       overlay.classList.remove('active');
       overlay.setAttribute('inert', '');
       overlay.setAttribute('aria-hidden', 'true');
-      startNextRound();
+      startNewRound();
     };
 
     setTimeout(() => {
-      announce(roundMsg + ' Match points: Aap ' + state.pointsHuman
-        + ', Opponents ' + state.pointsAI + '. Double tap Next Round to continue.');
+      announce(
+        roundMsg
+        + ' Match points: Aap ' + state.pointsHuman
+        + ', Opponents ' + state.pointsAI
+        + '. 10 points target. Agla Round button double tap karein.'
+      );
       setTimeout(() => playAgainBtn.focus(), 600);
     }, 500);
   }
 
   /* ════════════════════════════════════════════
+     startNewRound — agla round same match mein shuru karo
+     (startNextRound ka alias — dono kaam karte hain)
+     
+     Match points NAHI reset hote — sirf round state reset hoti hai:
+     - scoreHuman, scoreAI = 0 (is round ki tricks)
+     - trump = null (naya trump select hoga)
+     - hands = khali (naye cards deal honge)
+     - tricksPlayed = 0
+     - leader = 'human' (default — pehle round mein human trump caller)
+     
+     Jo bacha rehta hai (match ke liye):
+     - pointsHuman, pointsAI (match points)
+     - roundsWonHuman, roundsWonAI (streak)
+     - roundNumber (increment hota hai endRound mein)
+     - history (poori match ki history)
+     ════════════════════════════════════════════ */
+  function startNewRound() { startNextRound(); }
+
+  /* ════════════════════════════════════════════
      START NEXT ROUND — naya round, same match
+     Round shuru hone ka poora process:
+     1. Round state reset
+     2. Deck shuffle + 5 cards deal
+     3. Trump selector dikhao
+     4. Human trump select kare, phir 8 cards deal
      ════════════════════════════════════════════ */
   function startNextRound() {
     /* Sirf round-specific state reset karo — match points rakho */
@@ -2416,30 +2571,38 @@
     /* Trick zone saaf karo */
     const trickCards = document.getElementById('trick-cards');
     if (trickCards) trickCards.innerHTML = '';
-    updateTrickZoneLabel('Waiting for first card\u2026');
+    updateTrickZoneLabel('Naya round — Trump suit select karein...');
     updateScoreDisplay();
 
     /* Naya round shuffle aur deal */
-    state.deck = shuffleDeck(buildDeck());
+    state.deck = shuffleDeck(createDeck());
     playSound('shuffle');
-    const dealt       = dealFirst5(state.deck);
+    const dealt       = shuffleAndDeal(state.deck);
     state.hands.human = dealt.human;
     state.hands.r1    = dealt.r1;
     state.hands.r2    = dealt.r2;
     state.hands.r3    = dealt.r3;
     state.deckRest    = dealt.rest;
 
-    renderHand(state.hands.human, true);
+    renderHand(state.hands.human, true); /* true = locked jab tak trump select na ho */
     showTrumpSelector();
     updateAICardCount();
 
     const cardNames = state.hands.human.map(c => c.label).join(', ');
     setTimeout(() => {
-      announce('Round ' + state.roundNumber + ' shuru! Match points: Aap '
-        + state.pointsHuman + ', Opponents ' + state.pointsAI
-        + '. Aapke 5 cards: ' + cardNames + '. Trump suit select karein.');
+      announce(
+        'Round ' + state.roundNumber + ' shuru! '
+        + 'Match points — Aap: ' + state.pointsHuman
+        + ', Opponents: ' + state.pointsAI
+        + '. Target: 10 points. '
+        + 'Aapke 5 cards: ' + cardNames
+        + '. Trump suit select karein.'
+      );
       const sel = document.getElementById('trump-selector');
-      if (sel) sel.querySelector('button').focus();
+      if (sel) {
+        const firstBtn = sel.querySelector('button');
+        if (firstBtn) firstBtn.focus();
+      }
     }, 400);
   }
 
@@ -2558,40 +2721,46 @@
      closeDrawer(type)
      ════════════════════════════════════════════ */
   function openDrawer(type) {
-    /* Populate data before opening */
+    /* Data populate karo khulne se pehle */
     if (type === 'score') {
       document.getElementById('score-human').textContent = state.scoreHuman + ' tricks';
       document.getElementById('score-ai').textContent    = state.scoreAI    + ' tricks';
       const tp = document.getElementById('score-tricks-played');
       if (tp) tp.textContent = state.tricksPlayed + ' of 13';
-      announce('Score drawer opened. Your team: ' + state.scoreHuman
-        + ' tricks. Opponents: ' + state.scoreAI
-        + '. Tricks played: ' + state.tricksPlayed + ' of 13.');
+      announce(
+        'Score drawer khula. '
+        + 'Is round mein — Aapki team: ' + state.scoreHuman + ' tricks, '
+        + 'Opponents: ' + state.scoreAI + ' tricks. '
+        + 'Tricks kheli gayi: ' + state.tricksPlayed + ' of 13. '
+        + 'Match points — Aap: ' + state.pointsHuman
+        + ', Opponents: ' + state.pointsAI
+        + '. Round number: ' + state.roundNumber + '.'
+      );
     } else if (type === 'history') {
       const list = document.getElementById('history-list');
       if (state.history.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
-        announce('History drawer opened. No moves yet.');
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Abhi koi move nahi.</p>';
+        announce('History drawer khula. Abhi koi move record nahi hua.');
       } else {
         list.innerHTML = state.history.map((move, i) =>
           '<div class="panel-row"><span style="color:var(--text-muted);min-width:56px;">Move ' + (i+1) + '</span><span>' + move + '</span></div>'
         ).join('');
-        announce('History drawer opened. ' + state.history.length + ' moves recorded.');
+        announce('History drawer khula. ' + state.history.length + ' moves record hain.');
       }
     } else if (type === 'notifications') {
       updateNotifButtonState();
       const status = (!('Notification' in window) || Notification.permission === 'denied')
-        ? 'Notifications are blocked.'
+        ? 'Notifications blocked hain.'
         : Notification.permission === 'granted'
-          ? 'Notifications are enabled.'
-          : 'Notifications not yet enabled.';
-      announce('Notifications panel opened. ' + status);
+          ? 'Notifications enabled hain.'
+          : 'Notifications abhi enable nahi hain.';
+      announce('Notifications panel khula. ' + status);
     } else if (type === 'profile') {
       announce(profile.signedIn
-        ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
-        : 'Profile drawer opened. Not signed in. Sign in with Google to save progress.');
+        ? 'Profile drawer khula. ' + profile.name + ' ke naam se sign in hain.'
+        : 'Profile drawer khula. Sign in nahi hain. Google se sign in karke progress save karein.');
     } else {
-      announce('Settings drawer opened. Sound and TalkBack toggles are available.');
+      announce('Settings drawer khula. Sound aur TalkBack toggles available hain.');
     }
 
     const drawer = document.getElementById('drawer-' + type);
@@ -2619,12 +2788,12 @@
       drawer.setAttribute('aria-hidden', 'true');
     }, 350);
 
-    const labels = { settings:      'Settings drawer closed.',
-                     score:         'Score drawer closed.',
-                     history:       'History drawer closed.',
-                     profile:       'Profile drawer closed.',
-                     notifications: 'Notifications panel closed.' };
-    announce(labels[type] || 'Panel closed.');
+    const labels = { settings:      'Settings drawer band hua.',
+                     score:         'Score drawer band hua.',
+                     history:       'History drawer band hua.',
+                     profile:       'Profile drawer band hua.',
+                     notifications: 'Notifications panel band hua.' };
+    announce(labels[type] || 'Panel band hua.');
 
     const triggers = {
       settings:      document.getElementById('btn-settings-game') || document.getElementById('btn-more-options'),
