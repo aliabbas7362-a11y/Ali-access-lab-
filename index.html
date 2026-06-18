@@ -1714,13 +1714,19 @@
      DASHBOARD NAVIGATION
      ════════════════════════════════════════════ */
   function backToDashboard() {
-    document.getElementById('shuffle-screen').classList.remove('active');
-    document.getElementById('screen-home').classList.add('active');
-    announce('Dashboard par wapas.');
     clearAllAnnouncements();
+    document.getElementById('shuffle-screen').classList.remove('active');
+    document.getElementById('screen-game').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    setTimeout(() => {
+      document.getElementById('btn-launch-courtpiece').focus();
+      announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
+    }, 150);
+  }
+
+  function launchCourtPiece() {
     document.getElementById('screen-home').classList.remove('active');
-    const sh = document.getElementById('shuffle-screen');
-    sh.classList.add('active');
+    document.getElementById('shuffle-screen').classList.add('active');
     setTimeout(() => {
       document.getElementById('shuffle-title').focus();
       announce('Court Piece. Tap Shuffle and Deal to begin.');
@@ -1732,7 +1738,7 @@
     dialog.removeAttribute('inert');
     dialog.removeAttribute('aria-hidden');
     dialog.classList.add('open');
-    announce('Zyada options. Settings aur Privacy Policy.');
+    announce('More options. Settings and Privacy Policy.');
     setTimeout(() => {
       dialog.querySelector('.more-options-item').focus();
     }, 100);
@@ -1751,7 +1757,7 @@
   function openPrivacy() {
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-privacy').classList.add('active');
-    announce('Privacy Policy page khul gaya.');
+    announce('Privacy Policy page opened.');
     setTimeout(() => {
       document.querySelector('.privacy-topbar .drawer-back-btn').focus();
     }, 200);
@@ -1760,7 +1766,7 @@
   function closePrivacy() {
     document.getElementById('screen-privacy').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
-    announce('Dashboard par wapas.');
+    announce('Back to dashboard.');
   }
 
   /* ════════════════════════════════════════════
@@ -1850,7 +1856,7 @@
     document.getElementById('screen-home').classList.add('active');
     setTimeout(() => {
       document.getElementById('btn-launch-courtpiece').focus();
-      announce('Dashboard par wapas. Court Piece button focused hai. Double tap karke dobara khelein.');
+      announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
     }, 150);
   }
 
@@ -1879,7 +1885,7 @@
 
     const cardNames = state.hands.human.map(c => c.label).join(', ');
     setTimeout(() => {
-      announce('Cards deal ho gayi. Aapke pehle 5 cards: ' + cardNames + '. Trump suit chunein.');
+      announce('Cards dealt. Your first 5 cards: ' + cardNames + '. Select trump suit.');
       const sel = document.getElementById('trump-selector');
       if (sel) sel.querySelector('button').focus();
     }, 400);
@@ -1891,13 +1897,13 @@
   function showTrumpSelector() {
     document.getElementById('trump-selector')?.remove();
     const zone = document.getElementById('trump-indicator');
-    zone.innerHTML = 'Trump (Rung) chunein:';
-    zone.setAttribute('aria-label', 'Trump suit chunein. Chaar suit buttons hain. Ek chunen.');
+    zone.innerHTML = 'Select Trump (Rung):';
+    zone.setAttribute('aria-label', 'Select trump suit. Four suit buttons. Choose one.');
 
     const selector = document.createElement('div');
     selector.id = 'trump-selector';
     selector.setAttribute('role', 'group');
-    selector.setAttribute('aria-label', 'Trump suit buttons. Ek suit chunein.');
+    selector.setAttribute('aria-label', 'Trump suit buttons. Choose one suit.');
     selector.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;';
 
     SUITS.forEach(suit => {
@@ -1906,7 +1912,7 @@
       btn.style.cssText = 'font-size:1.1rem;padding:10px 14px;min-height:44px;color:'
         + (suit.red ? '#c0392b' : 'var(--text)') + ';';
       btn.textContent  = suit.symbol + ' ' + suit.name;
-      btn.setAttribute('aria-label', suit.name + ' — Trump banane ke liye double tap karein.');
+      btn.setAttribute('aria-label', suit.name + ' — Double tap to set as trump.');
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         selectTrump(suit.name, suit.symbol, suit.red);
@@ -1925,7 +1931,7 @@
       + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
     zone.setAttribute('aria-label', 'Trump suit: ' + suitName);
 
-    announce(suitName + ' trump select ho gaya. Baaki 8 cards deal ho rahe hain. Intezaar karein.');
+    announce(suitName + ' selected as trump. Dealing remaining 8 cards. Please wait.');
 
     setTimeout(() => {
       state.hands  = dealRemaining(state.hands, state.deckRest);
@@ -1934,8 +1940,8 @@
       updateAICardCount();
 
       announce(
-        'Saare 13 cards mil gaye. Trump: ' + suitName
-        + '. Aapki baari hai. Apne cards par jaayein aur double tap karke khelein.'
+        'All 13 cards dealt. Trump: ' + suitName
+        + '. Your turn. Go to your cards and double tap to play.'
       );
     }, 600);
   }
@@ -2022,8 +2028,8 @@
           btn.setAttribute('aria-disabled', 'true');
           btn.setAttribute('aria-label',
             card.label
-            + '. Disabled. Reneg hoga! Aapko '
-            + ledSuit + ' suit follow karni hai. Yeh card nahi chal sakta.');
+            + '. Disabled. Reneg! You must follow '
+            + ledSuit + ' suit. This card cannot be played.');
         }
       } else {
         /* Is player ke paas led suit nahi — kuch bhi chal sakta hai, trump bhi */
@@ -2031,22 +2037,22 @@
         btn.style.opacity = '';
         btn.style.pointerEvents = '';
         btn.setAttribute('aria-label',
-          card.label + '. Double tap to play. (Aapke paas '
-          + ledSuit + ' nahi — koi bhi card chalain, ya trump se Kaat karein.)');
+          card.label + '. Double tap to play. (You have no '
+          + ledSuit + ' — play any card or trump to cut.)');
         btn.removeAttribute('aria-disabled');
       }
     });
 
     if (hasLedSuit) {
       announce(
-        'ZARURI: Aapko ' + ledSuit + ' suit follow karni hai. '
-        + 'Sirf ' + ledSuit + ' cards playable hain. '
-        + 'Doosre cards Reneg hain aur disabled hain.'
+        'REQUIRED: You must follow ' + ledSuit + ' suit. '
+        + 'Only ' + ledSuit + ' cards are playable. '
+        + 'Other cards are Reneg and disabled.'
       );
     } else {
       announce(
-        'Aapke paas ' + ledSuit + ' nahi. '
-        + 'Koi bhi card chalain — ya Trump lagake Kaat karein.'
+        'You have no ' + ledSuit + '. '
+        + 'Play any card — or cut with trump.'
       );
     }
   }
@@ -2066,7 +2072,7 @@
 
     state.phase = 'ai-turn';
     btn.disabled = true;
-    btn.setAttribute('aria-label', card.label + '. Yeh card chal chuka hai.');
+    btn.setAttribute('aria-label', card.label + '. This card has been played.');
     playSound('cardFlip');
     setTimeout(() => { btn.remove(); }, 100);
 
@@ -2076,33 +2082,33 @@
     if (state.leader === 'human') {
       /* Human trick lead kar raha hai */
       showCardInTrick(card, 0);
-      updateTrickZoneLabel('Aapne ' + card.label + ' chalaya. Opponents ka intezaar...');
-      announce('Aapne ' + card.label + ' chalaya. Aap is trick ke lead mein hain.');
-      state.history.push('Aapne ' + card.label + ' chalaya (lead)');
+      updateTrickZoneLabel('You played ' + card.label + '. Waiting for opponents...');
+      announce('You played ' + card.label + '. You are leading this trick.');
+      state.history.push('You played ' + card.label + ' (lead)');
       updateHistoryBtn();
       state.currentTrick = [{ card: card, player: 'human', team: 'A' }];
 
       fireRobotsInOrder([
-        { key: 'r1', label: 'Aapka partner Robot 1', team: 'A', mode: 'partner'    },
-        { key: 'r2', label: 'Opponent Robot 2',       team: 'B', mode: 'aggressive' },
-        { key: 'r3', label: 'Opponent Robot 3',       team: 'B', mode: 'defensive'  }
+        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
       ], card.suit);
 
     } else {
       /* Human ek robot ke peeche follow kar raha hai */
       const ledSuit = state.currentTrick[0].card.suit;
       showCardInTrick(card, state.currentTrick.length);
-      updateTrickZoneLabel('Aapne ' + card.label + ' chalaya. Baaki robots khel rahe hain...');
-      announce('Aapne ' + card.label + ' chalaya.');
-      state.history.push('Aapne ' + card.label + ' chalaya');
+      updateTrickZoneLabel('You played ' + card.label + '. Remaining robots playing...');
+      announce('You played ' + card.label + '.');
+      state.history.push('You played ' + card.label);
       updateHistoryBtn();
       state.currentTrick.push({ card: card, player: 'human', team: 'A' });
 
       const alreadyPlayed = state.currentTrick.map(e => e.player);
       const remaining = [
-        { key: 'r1', label: 'Aapka partner Robot 1', team: 'A', mode: 'partner'    },
-        { key: 'r2', label: 'Opponent Robot 2',       team: 'B', mode: 'aggressive' },
-        { key: 'r3', label: 'Opponent Robot 3',       team: 'B', mode: 'defensive'  }
+        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
       ].filter(r => !alreadyPlayed.includes(r.key));
 
       fireRobotsInOrder(remaining, ledSuit);
@@ -2131,10 +2137,10 @@
 
           /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare */
           setTimeout(() => {
-            announce(robot.label + ' ne ' + chosen.label + ' chalaya.');
+            announce(robot.label + ' played ' + chosen.label + '.');
           }, 800);
 
-          state.history.push(robot.label + ' ne ' + chosen.label + ' chalaya');
+          state.history.push(robot.label + ' played ' + chosen.label);
           updateHistoryBtn();
         }
 
@@ -2245,8 +2251,8 @@
 
     const isHumanTeam = winner.team === 'A';
 
-    const winnerLabel = winner.player === 'human' ? 'Aap'
-                      : winner.player === 'r1'    ? 'Aapka partner Robot 1'
+    const winnerLabel = winner.player === 'human' ? 'You'
+                      : winner.player === 'r1'    ? 'Your partner Robot 1'
                       : winner.player === 'r2'    ? 'Opponent Robot 2'
                       :                             'Opponent Robot 3';
 
@@ -2254,16 +2260,16 @@
       state.scoreHuman++;
       playSound('trickWin');
       announce(
-        'Aapki team ne yeh trick jeeti! '
-        + winnerLabel + ' ne ' + winner.card.label + ' se li. '
+        'Your team won this trick! '
+        + winnerLabel + ' took it with ' + winner.card.label + '. '
         + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
       );
     } else {
       state.scoreAI++;
       playSound('trickLose');
       announce(
-        'Opponents ne trick jeeti. '
-        + winnerLabel + ' ne ' + winner.card.label + ' se li. '
+        'Opponents won the trick. '
+        + winnerLabel + ' took it with ' + winner.card.label + '. '
         + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
       );
     }
@@ -2271,13 +2277,13 @@
     state.tricksPlayed++;
     updateScoreDisplay();
     updateTrickZoneLabel(
-      (isHumanTeam ? 'Aapki team ne trick ' : 'Opponents ne trick ')
-      + state.tricksPlayed + ' jeeti. Winner: ' + winnerLabel + '.'
+      (isHumanTeam ? 'Your team won trick ' : 'Opponents won trick ')
+      + state.tricksPlayed + '. Winner: ' + winnerLabel + '.'
     );
 
     state.history.push(
-      '--- Trick ' + state.tricksPlayed + ' jeeti: '
-      + (isHumanTeam ? 'Aapki Team (' + winner.player + ')' : 'Opponents (' + winner.player + ')') + ' ---'
+      '--- Trick ' + state.tricksPlayed + ' won by: '
+      + (isHumanTeam ? 'Your Team (' + winner.player + ')' : 'Opponents (' + winner.player + ')') + ' ---'
     );
     updateHistoryBtn();
 
@@ -2323,7 +2329,7 @@
       /* Human lead karega agli trick mein */
       setTimeout(() => {
         state.phase = 'playing';
-        const nextMsg = 'Trick ' + (state.tricksPlayed + 1) + ' — Aap lead karein. Koi bhi card chalain.';
+        const nextMsg = 'Trick ' + (state.tricksPlayed + 1) + ' — You lead. Play any card.';
         updateTrickZoneLabel(nextMsg);
         setTimeout(() => announce(nextMsg), 600);
         /* Saare cards enable karo — human lead pe koi restriction nahi */
@@ -2341,7 +2347,7 @@
       /* Ek robot lead karega — pehle robot ka card dikhao, phir human se poochho */
       setTimeout(() => {
         const key         = state.leader;
-        const leaderLabel = key === 'r1' ? 'Aapka partner Robot 1'
+        const leaderLabel = key === 'r1' ? 'Your partner Robot 1'
                           : key === 'r2' ? 'Opponent Robot 2'
                           :                'Opponent Robot 3';
         const leaderTeam  = (key === 'r1') ? 'A' : 'B';
@@ -2362,13 +2368,13 @@
         playSound('cardFlip');
         updateAICardCount();
 
-        const leadMsg = leaderLabel + ' ne trick ' + (state.tricksPlayed + 1)
-          + ' mein ' + leaderCard.label + ' se lead kiya. '
-          + 'Agar aapke paas ' + leaderCard.suit + ' hai toh wahi chalain.';
+        const leadMsg = leaderLabel + ' led trick ' + (state.tricksPlayed + 1)
+          + ' with ' + leaderCard.label + '. '
+          + 'If you have ' + leaderCard.suit + ', you must follow suit.';
         updateTrickZoneLabel(leadMsg);
         setTimeout(() => announce(leadMsg), 800);
 
-        state.history.push(leaderLabel + ' ne ' + leaderCard.label + ' khela (lead)');
+        state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
         updateHistoryBtn();
 
         /* Human ko filter lagao aur turn do */
@@ -2399,37 +2405,33 @@
 
     switch (result) {
       case 'kot_human':
-        /* KOT — Trump caller team (Team A) ne pehli 7 tricks li, AI ka zero */
         humanPoints = 3;
         state.roundsWonHuman++;
         state.roundsWonAI = 0;
-        roundMsg = 'KOT! Aapki team ne pehli 7 tricks sari li! +3 points!';
+        roundMsg = 'KOT! Your team took all first 7 tricks! +3 points!';
         break;
 
       case 'kot_ai':
-        /* KOT — Opponent team (Team B) ne pehli 7 tricks li, aapka zero */
         aiPoints = 4;
         state.roundsWonAI++;
         state.roundsWonHuman = 0;
-        roundMsg = 'KOT! Opponents ne pehli 7 tricks sari li! Unhe +4 points!';
+        roundMsg = 'KOT! Opponents took all first 7 tricks! They get +4 points!';
         break;
 
       case 'normal_human':
-        /* Normal win — Aapki team ne 7+ tricks li */
         humanPoints = 1;
         state.roundsWonHuman++;
         state.roundsWonAI = 0;
-        roundMsg = 'Round ' + state.roundNumber + ' aapki team ne jeeta! +1 point. '
+        roundMsg = 'Round ' + state.roundNumber + ' won by your team! +1 point. '
           + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
         break;
 
       case 'normal_ai':
       default:
-        /* Normal loss — Opponents ne 7+ tricks li */
         aiPoints = 2;
         state.roundsWonAI++;
         state.roundsWonHuman = 0;
-        roundMsg = 'Round ' + state.roundNumber + ' opponents ne jeeta! Unhe +2 points. '
+        roundMsg = 'Round ' + state.roundNumber + ' won by opponents! They get +2 points. '
           + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
         break;
     }
@@ -2439,12 +2441,12 @@
     ── */
     if (state.roundsWonHuman === 7) {
       humanPoints += 3;
-      roundMsg += ' | 7 rounds lagatar jeete — MEGA KOT! Bonus +3 points!';
-      state.roundsWonHuman = 0; /* Streak reset */
+      roundMsg += ' | 7 rounds in a row — MEGA KOT! Bonus +3 points!';
+      state.roundsWonHuman = 0;
     }
     if (state.roundsWonAI === 7) {
       aiPoints += 3;
-      roundMsg += ' | Opponents ne 7 rounds lagatar jeete — MEGA KOT! Unhe +3 bonus!';
+      roundMsg += ' | Opponents won 7 rounds in a row — MEGA KOT! They get +3 bonus!';
       state.roundsWonAI = 0;
     }
 
@@ -2473,7 +2475,7 @@
 
     /* History mein round result likho */
     state.history.push(
-      '=== Round ' + (state.roundNumber - 1) + ' khatam: '
+      '=== Round ' + (state.roundNumber - 1) + ' ended: '
       + roundMsg + ' | Match: ' + state.pointsHuman + ' — ' + state.pointsAI + ' ==='
     );
     updateHistoryBtn();
@@ -2495,20 +2497,19 @@
     document.getElementById('gameover-icon').textContent =
       callerWon ? '🎯' : '😤';
     document.getElementById('gameover-title-text').textContent =
-      callerWon ? 'Round Jeet Gaye!' : 'Round Haar Gaye';
+      callerWon ? 'Round Won!' : 'Round Lost';
     document.getElementById('gameover-score-text').textContent =
-      'Match Points — Aap: ' + state.pointsHuman + ' | Opponents: ' + state.pointsAI;
+      'Match Points — You: ' + state.pointsHuman + ' | Opponents: ' + state.pointsAI;
     document.getElementById('gameover-detail-text').textContent =
-      roundMsg + ' | Target: 10 points. Agla round shuru karein.';
+      roundMsg + ' | Target: 10 points. Start next round.';
 
     overlay.removeAttribute('inert');
     overlay.removeAttribute('aria-hidden');
     overlay.classList.add('active');
 
     const playAgainBtn = document.getElementById('btn-play-again-overlay');
-    playAgainBtn.textContent = 'Agla Round';
-    playAgainBtn.setAttribute('aria-label',
-      'Agla Round shuru karo. Double tap karein.');
+    playAgainBtn.textContent = 'Next Round';
+    playAgainBtn.setAttribute('aria-label', 'Next Round. Double tap to start.');
     playAgainBtn.onclick = (e) => {
       e.stopPropagation();
       overlay.classList.remove('active');
@@ -2520,9 +2521,9 @@
     setTimeout(() => {
       announce(
         roundMsg
-        + ' Match points: Aap ' + state.pointsHuman
+        + ' Match points: You ' + state.pointsHuman
         + ', Opponents ' + state.pointsAI
-        + '. 10 points target. Agla Round button double tap karein.'
+        + '. Target 10 points. Double tap Next Round button.'
       );
       setTimeout(() => playAgainBtn.focus(), 600);
     }, 500);
@@ -2571,7 +2572,7 @@
     /* Trick zone saaf karo */
     const trickCards = document.getElementById('trick-cards');
     if (trickCards) trickCards.innerHTML = '';
-    updateTrickZoneLabel('Naya round — Trump suit select karein...');
+    updateTrickZoneLabel('New round — Select trump suit...');
     updateScoreDisplay();
 
     /* Naya round shuffle aur deal */
@@ -2591,12 +2592,12 @@
     const cardNames = state.hands.human.map(c => c.label).join(', ');
     setTimeout(() => {
       announce(
-        'Round ' + state.roundNumber + ' shuru! '
-        + 'Match points — Aap: ' + state.pointsHuman
+        'Round ' + state.roundNumber + ' started! '
+        + 'Match points — You: ' + state.pointsHuman
         + ', Opponents: ' + state.pointsAI
         + '. Target: 10 points. '
-        + 'Aapke 5 cards: ' + cardNames
-        + '. Trump suit select karein.'
+        + 'Your 5 cards: ' + cardNames
+        + '. Select trump suit.'
       );
       const sel = document.getElementById('trump-selector');
       if (sel) {
@@ -2617,11 +2618,11 @@
     document.getElementById('gameover-icon').textContent =
       humanWon ? '🏆' : '💀';
     document.getElementById('gameover-title-text').textContent =
-      humanWon ? 'MATCH JEET GAYE!' : 'MATCH HAAR GAYE';
+      humanWon ? 'MATCH WON!' : 'MATCH LOST';
     document.getElementById('gameover-score-text').textContent =
-      'Final: Aap ' + state.pointsHuman + ' — Opponents ' + state.pointsAI;
+      'Final: You ' + state.pointsHuman + ' — Opponents ' + state.pointsAI;
     document.getElementById('gameover-detail-text').textContent =
-      lastRoundMsg + ' | ' + state.roundNumber + ' rounds khele.';
+      lastRoundMsg + ' | ' + state.roundNumber + ' rounds played.';
 
     overlay.removeAttribute('inert');
     overlay.removeAttribute('aria-hidden');
@@ -2639,9 +2640,9 @@
     };
 
     const msg = humanWon
-      ? 'Mubarak! Aapki team ne match jeeta! Final score: Aap '
+      ? 'Congratulations! Your team won the match! Final score: You '
         + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.'
-      : 'Opponents ne match jeeta. Final score: Aap '
+      : 'Opponents won the match. Final score: You '
         + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.';
 
     setTimeout(() => {
@@ -2703,9 +2704,9 @@
     document.getElementById('score-display').textContent =
       state.scoreHuman + ' — ' + state.scoreAI;
     document.getElementById('btn-score').setAttribute('aria-label',
-      'View score. Round tricks: Aap ' + state.scoreHuman
+      'View score. Round tricks: You ' + state.scoreHuman
       + ', Opponents ' + state.scoreAI
-      + '. Match points: Aap ' + state.pointsHuman
+      + '. Match points: You ' + state.pointsHuman
       + ', Opponents ' + state.pointsAI
       + '. Round ' + state.roundNumber + '.');
   }
@@ -2728,39 +2729,39 @@
       const tp = document.getElementById('score-tricks-played');
       if (tp) tp.textContent = state.tricksPlayed + ' of 13';
       announce(
-        'Score drawer khula. '
-        + 'Is round mein — Aapki team: ' + state.scoreHuman + ' tricks, '
+        'Score drawer opened. '
+        + 'This round — Your team: ' + state.scoreHuman + ' tricks, '
         + 'Opponents: ' + state.scoreAI + ' tricks. '
-        + 'Tricks kheli gayi: ' + state.tricksPlayed + ' of 13. '
-        + 'Match points — Aap: ' + state.pointsHuman
+        + 'Tricks played: ' + state.tricksPlayed + ' of 13. '
+        + 'Match points — You: ' + state.pointsHuman
         + ', Opponents: ' + state.pointsAI
-        + '. Round number: ' + state.roundNumber + '.'
+        + '. Round: ' + state.roundNumber + '.'
       );
     } else if (type === 'history') {
       const list = document.getElementById('history-list');
       if (state.history.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Abhi koi move nahi.</p>';
-        announce('History drawer khula. Abhi koi move record nahi hua.');
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
+        announce('History drawer opened. No moves recorded yet.');
       } else {
         list.innerHTML = state.history.map((move, i) =>
           '<div class="panel-row"><span style="color:var(--text-muted);min-width:56px;">Move ' + (i+1) + '</span><span>' + move + '</span></div>'
         ).join('');
-        announce('History drawer khula. ' + state.history.length + ' moves record hain.');
+        announce('History drawer opened. ' + state.history.length + ' moves recorded.');
       }
     } else if (type === 'notifications') {
       updateNotifButtonState();
       const status = (!('Notification' in window) || Notification.permission === 'denied')
-        ? 'Notifications blocked hain.'
+        ? 'Notifications are blocked.'
         : Notification.permission === 'granted'
-          ? 'Notifications enabled hain.'
-          : 'Notifications abhi enable nahi hain.';
-      announce('Notifications panel khula. ' + status);
+          ? 'Notifications are enabled.'
+          : 'Notifications are not yet enabled.';
+      announce('Notifications panel opened. ' + status);
     } else if (type === 'profile') {
       announce(profile.signedIn
-        ? 'Profile drawer khula. ' + profile.name + ' ke naam se sign in hain.'
-        : 'Profile drawer khula. Sign in nahi hain. Google se sign in karke progress save karein.');
+        ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
+        : 'Profile drawer opened. Not signed in. Sign in with Google to save your progress.');
     } else {
-      announce('Settings drawer khula. Sound aur TalkBack toggles available hain.');
+      announce('Settings drawer opened. Sound and TalkBack toggles available.');
     }
 
     const drawer = document.getElementById('drawer-' + type);
@@ -2788,12 +2789,12 @@
       drawer.setAttribute('aria-hidden', 'true');
     }, 350);
 
-    const labels = { settings:      'Settings drawer band hua.',
-                     score:         'Score drawer band hua.',
-                     history:       'History drawer band hua.',
-                     profile:       'Profile drawer band hua.',
-                     notifications: 'Notifications panel band hua.' };
-    announce(labels[type] || 'Panel band hua.');
+    const labels = { settings:      'Settings drawer closed.',
+                     score:         'Score drawer closed.',
+                     history:       'History drawer closed.',
+                     profile:       'Profile drawer closed.',
+                     notifications: 'Notifications panel closed.' };
+    announce(labels[type] || 'Panel closed.');
 
     const triggers = {
       settings:      document.getElementById('btn-settings-game') || document.getElementById('btn-more-options'),
