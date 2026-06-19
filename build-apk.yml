@@ -15,7 +15,6 @@ jobs:
       with:
         ref: setup-signed-apk
 
-    # main branch se latest index.html fetch karo
     - name: Fetch latest index.html from main branch
       run: |
         git fetch origin main
@@ -33,8 +32,28 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    # server.url GitHub Pages ka hai — live update milega
-    # index.html push karo main pe, APK automatically naya content dikhayega
+    - name: Write package.json
+      run: |
+        cat > package.json << 'EOF'
+        {
+          "name": "ali-access-lab",
+          "version": "1.0.0",
+          "description": "Ali Access Lab - Game Depot APK",
+          "main": "index.html",
+          "scripts": {
+            "build": "echo 'Web build complete'"
+          },
+          "dependencies": {
+            "@capacitor/core": "latest",
+            "@capacitor/android": "latest",
+            "@codetrix-studio/capacitor-google-auth": "latest"
+          },
+          "devDependencies": {
+            "@capacitor/cli": "latest"
+          }
+        }
+        EOF
+
     - name: Write capacitor.config.json
       run: |
         cat > capacitor.config.json << 'EOF'
@@ -52,6 +71,13 @@ jobs:
               "*.firebaseapp.com",
               "card-game-a1e68.firebaseapp.com"
             ]
+          },
+          "plugins": {
+            "GoogleAuth": {
+              "scopes": ["profile", "email"],
+              "serverClientId": "495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com",
+              "forceCodeForRefreshToken": true
+            }
           }
         }
         EOF
