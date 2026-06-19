@@ -1,9 +1,15 @@
- {
+{
   "appId": "com.aliaccesslabs.cardgame",
-  "appName": "Card Game", 
-  "webDir": "www",
+  "appName": "Card Game",
+  "webDir": ".",
   "server": {
     "url": "https://aliabbas7362-a11y.github.io/Ali-access-lab-/",
-    "cleartext": false
+    "cleartext": false,
+    "allowNavigation": [
+      "accounts.google.com",
+      "*.google.com",
+      "*.firebaseapp.com",
+      "card-game-a1e68.firebaseapp.com"
+    ]
   }
 }
