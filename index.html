@@ -1298,7 +1298,7 @@
      ════════════════════════════════════════════ */
   const firebaseConfig = {
     apiKey: "AIzaSyAH9_Z2FTBzbvTbWd9iuRtXxumsRn3DaWI",
-    authDomain: "card-game-a1e68.firebaseapp.com",
+    authDomain: "aliabbas7362-a11y.github.io",
     projectId: "card-game-a1e68",
     storageBucket: "card-game-a1e68.firebasestorage.app",
     messagingSenderId: "495670908374",
@@ -1624,11 +1624,12 @@
 
   /* ── Google Sign-In (Firebase) ──
      Browser (GitHub Pages) => signInWithPopup
-     APK (Capacitor WebView)  => signInWithRedirect
+     APK (Capacitor WebView)  => signInWithPopup (redirect is broken in WebView)
+     
+     NOTE: signInWithRedirect causes "Missing initial state" error in Capacitor
+     WebView because sessionStorage is cleared during redirect. signInWithPopup
+     works in both environments when allowNavigation is set in capacitor.config.json.
   ── */
-
-  /* Detect if running inside Capacitor APK */
-  const isCapacitor = (window.Capacitor && window.Capacitor.isNative) ? true : false;
 
   /* Shared function to save user after sign-in */
   function onSignInSuccess(user) {
@@ -1652,31 +1653,14 @@
     announce('Opening Google Sign-In. Please wait.');
     const provider = new firebase.auth.GoogleAuthProvider();
 
-    if (isCapacitor) {
-      /* APK: use redirect — popup blocked in WebView */
-      auth.signInWithRedirect(provider).catch((error) => {
-        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
-      });
-    } else {
-      /* Browser: use popup */
-      auth.signInWithPopup(provider).then((result) => {
-        onSignInSuccess(result.user);
-      }).catch((error) => {
-        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
-      });
-    }
-  }
-
-  /* Handle redirect result when APK returns from Google sign-in */
-  if (isCapacitor) {
-    auth.getRedirectResult().then((result) => {
-      if (result && result.user) {
-        onSignInSuccess(result.user);
-      }
+    /* signInWithPopup works in both browser and Capacitor WebView.
+       signInWithRedirect is intentionally NOT used — it breaks in WebView
+       because sessionStorage is lost during the redirect flow. */
+    auth.signInWithPopup(provider).then((result) => {
+      onSignInSuccess(result.user);
     }).catch((error) => {
-      if (error && error.code) {
-        console.error('Redirect sign-in error:', error.message);
-      }
+      console.error('Sign-in error:', error.code, error.message);
+      announce('Sign-in failed. ' + (error.message || 'Please try again.'));
     });
   }
 
