@@ -1,4 +1,4 @@
-name: Build Signed APK with Capacitor
+name: Build APK with Capacitor
 
 on:
   push:
@@ -10,8 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout setup-signed-apk branch
       uses: actions/checkout@v4
+      with:
+        ref: setup-signed-apk
+
+    # main branch se latest index.html fetch karo
+    - name: Fetch latest index.html from main branch
+      run: |
+        git fetch origin main
+        git checkout origin/main -- index.html
+        echo "index.html fetched from main branch"
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -24,11 +33,8 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    # ── OPTION B (RECOMMENDED) ──────────────────────────────────────────
-    # APK GitHub Pages se load karta hai (server.url).
-    # Matlab: index.html push karo, purana APK bhi naya content dikhayega.
-    # Naya APK sirf tab chahiye jab workflow/native code badle.
-    # ────────────────────────────────────────────────────────────────────
+    # server.url GitHub Pages ka hai — live update milega
+    # index.html push karo main pe, APK automatically naya content dikhayega
     - name: Write capacitor.config.json
       run: |
         cat > capacitor.config.json << 'EOF'
