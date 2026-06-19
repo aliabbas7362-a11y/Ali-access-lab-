@@ -1,0 +1,78 @@
+name: Build Signed APK with Capacitor
+
+on:
+  push:
+    branches: [ setup-signed-apk ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    # ── OPTION B (RECOMMENDED) ──────────────────────────────────────────
+    # APK GitHub Pages se load karta hai (server.url).
+    # Matlab: index.html push karo, purana APK bhi naya content dikhayega.
+    # Naya APK sirf tab chahiye jab workflow/native code badle.
+    # ────────────────────────────────────────────────────────────────────
+    - name: Write capacitor.config.json
+      run: |
+        cat > capacitor.config.json << 'EOF'
+        {
+          "appId": "com.aliabbas.courtpiece",
+          "appName": "Card Game",
+          "webDir": "www",
+          "server": {
+            "androidScheme": "https",
+            "url": "https://aliabbas7362-a11y.github.io/Ali-access-lab-/",
+            "cleartext": false,
+            "allowNavigation": [
+              "accounts.google.com",
+              "*.google.com",
+              "*.firebaseapp.com",
+              "card-game-a1e68.firebaseapp.com"
+            ]
+          }
+        }
+        EOF
+
+    - name: Prepare web assets
+      run: |
+        mkdir -p www
+        cp index.html www/
+        cp -r sounds www/ 2>/dev/null || true
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Add Android platform
+      run: npx cap add android
+
+    - name: Sync web assets to Android
+      run: npx cap sync android
+
+    - name: Build Debug APK
+      working-directory: ./android
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug-apk
+        path: android/app/build/outputs/apk/debug/*.apk
