@@ -8,8 +8,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <!-- Google Identity Services — works in Capacitor WebView unlike signInWithPopup/Redirect -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1625,14 +1623,10 @@
   }
 
   /* ── Google Sign-In ──────────────────────────────────────────────────
-     Uses Google Identity Services (GIS) with Firebase credential.
-     Works in BOTH browser AND Capacitor WebView:
-     - No popup window / no redirect needed
-     - GIS returns ID token directly via callback
-     - Firebase uses signInWithCredential(token)
+     APK (Capacitor): @codetrix-studio/capacitor-google-auth native plugin
+     Browser (GitHub Pages): Firebase signInWithPopup fallback
+     Native plugin bypasses WebView completely — uses Android Google API directly
   ─────────────────────────────────────────────────────────────────── */
-
-  const GOOGLE_CLIENT_ID = '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com';
 
   /* Shared function to save user after sign-in */
   function onSignInSuccess(user) {
@@ -1652,80 +1646,37 @@
     });
   }
 
-  /* Called by GIS when user picks an account */
-  function onGoogleCredentialResponse(response) {
-    const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
-    auth.signInWithCredential(credential).then((result) => {
-      onSignInSuccess(result.user);
-    }).catch((error) => {
-      console.error('Firebase credential error:', error.code, error.message);
-      announce('Sign-in failed. ' + (error.message || 'Please try again.'));
-    });
-  }
-
-  /* Show fallback button if One Tap is suppressed */
-  function showGoogleSignInFallback() {
-    const existing = document.getElementById('gsi-fallback-container');
-    if (existing) existing.remove();
-
-    const container = document.createElement('div');
-    container.id = 'gsi-fallback-container';
-    container.setAttribute('role', 'dialog');
-    container.setAttribute('aria-label', 'Google Sign-In dialog.');
-    container.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);flex-direction:column;gap:16px;';
-
-    const label = document.createElement('p');
-    label.textContent = 'Sign in with Google';
-    label.style.cssText = 'color:#fff;font-size:1rem;font-family:Georgia,serif;';
-
-    const btnWrap = document.createElement('div');
-    btnWrap.id = 'gsi-button-wrap';
-
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Cancel';
-    closeBtn.setAttribute('aria-label', 'Cancel sign-in. Double tap to close.');
-    closeBtn.style.cssText = 'margin-top:12px;padding:12px 32px;background:transparent;border:1px solid #666;color:#ccc;border-radius:8px;font-size:0.9rem;cursor:pointer;min-height:48px;';
-    closeBtn.onclick = () => container.remove();
-
-    container.appendChild(label);
-    container.appendChild(btnWrap);
-    container.appendChild(closeBtn);
-    document.body.appendChild(container);
-
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: (response) => {
-        container.remove();
-        onGoogleCredentialResponse(response);
-      }
-    });
-    google.accounts.id.renderButton(btnWrap, {
-      type: 'standard', shape: 'rectangular',
-      theme: 'outline', text: 'sign_in_with',
-      size: 'large', width: 280
-    });
-
-    setTimeout(() => closeBtn.focus(), 200);
-    announce('Google Sign-In dialog opened. Find Sign in with Google button and double tap. Or double tap Cancel.');
-  }
-
-  function handleGoogleSignIn() {
+  async function handleGoogleSignIn() {
     announce('Opening Google Sign-In. Please wait.');
-    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: onGoogleCredentialResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true
-      });
-      google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          showGoogleSignInFallback();
-        }
-      });
+
+    /* APK mein native plugin use karo */
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      try {
+        /* Dynamically import native plugin */
+        const { GoogleAuth } = await import('https://cdn.jsdelivr.net/npm/@codetrix-studio/capacitor-google-auth/dist/esm/index.js');
+        await GoogleAuth.initialize({
+          clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true
+        });
+        const googleUser = await GoogleAuth.signIn();
+        const idToken = googleUser.authentication.idToken;
+        const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+        const result = await auth.signInWithCredential(credential);
+        onSignInSuccess(result.user);
+      } catch (error) {
+        console.error('Native sign-in error:', error);
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      }
     } else {
-      /* GIS not loaded yet — retry */
-      setTimeout(handleGoogleSignIn, 800);
+      /* Browser mein popup use karo */
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).then((result) => {
+        onSignInSuccess(result.user);
+      }).catch((error) => {
+        console.error('Popup sign-in error:', error.code, error.message);
+        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+      });
     }
   }
 
