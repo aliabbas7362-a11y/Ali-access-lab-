@@ -1260,6 +1260,45 @@
             </svg>
             Continue with Google
           </button>
+
+          <!-- Separator -->
+          <div style="display:flex;align-items:center;gap:12px;margin:20px 0;" aria-hidden="true">
+            <div style="flex:1;height:1px;background:#444;"></div>
+            <span style="color:#888;font-size:0.85rem;">or</span>
+            <div style="flex:1;height:1px;background:#444;"></div>
+          </div>
+
+          <!-- Email/Password form -->
+          <form id="email-auth-form" onsubmit="return false;" style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <label for="email-auth-email" style="display:block;color:#ccc;font-size:0.85rem;margin-bottom:4px;">Email address</label>
+              <input type="email" id="email-auth-email" name="email"
+                autocomplete="email" inputmode="email"
+                aria-label="Email address"
+                style="width:100%;padding:12px;border-radius:8px;border:1px solid #555;background:#1a1f26;color:#fff;font-size:1rem;min-height:44px;" />
+            </div>
+            <div>
+              <label for="email-auth-password" style="display:block;color:#ccc;font-size:0.85rem;margin-bottom:4px;">Password</label>
+              <input type="password" id="email-auth-password" name="password"
+                autocomplete="current-password"
+                aria-label="Password"
+                style="width:100%;padding:12px;border-radius:8px;border:1px solid #555;background:#1a1f26;color:#fff;font-size:1rem;min-height:44px;" />
+            </div>
+            <div id="email-auth-error" role="alert" style="color:#ff6b6b;font-size:0.85rem;min-height:18px;"></div>
+
+            <button type="button" class="btn-google-signin"
+              aria-label="Sign in with email and password."
+              onclick="handleEmailSignIn()"
+              style="background:#2a3441;">
+              Sign In
+            </button>
+            <button type="button" class="btn-google-signin"
+              aria-label="Create a new account with this email and password."
+              onclick="handleEmailSignUp()"
+              style="background:transparent;border:1px solid #555;">
+              Create Account
+            </button>
+          </form>
         </div>
 
       </div>
@@ -1678,6 +1717,89 @@
         announce('Sign-in failed. ' + (error.message || 'Please try again.'));
       });
     }
+  }
+
+  /* ── Email/Password Sign-In ──
+     Works reliably in both browser AND Capacitor WebView —
+     no popup, no redirect, no native plugin needed.
+  ── */
+
+  function getEmailAuthError() {
+    return document.getElementById('email-auth-error');
+  }
+
+  function readEmailAuthFields() {
+    const email = document.getElementById('email-auth-email').value.trim();
+    const password = document.getElementById('email-auth-password').value;
+    return { email, password };
+  }
+
+  function showEmailAuthError(message) {
+    const el = getEmailAuthError();
+    el.textContent = message;
+    announce(message);
+  }
+
+  function friendlyAuthError(error) {
+    switch (error.code) {
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/user-not-found':
+        return 'No account found with this email. Try Create Account instead.';
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'Incorrect email or password.';
+      case 'auth/email-already-in-use':
+        return 'An account already exists with this email. Try Sign In instead.';
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters.';
+      case 'auth/missing-password':
+        return 'Please enter a password.';
+      default:
+        return error.message || 'Something went wrong. Please try again.';
+    }
+  }
+
+  function handleEmailSignIn() {
+    const { email, password } = readEmailAuthFields();
+    const errorEl = getEmailAuthError();
+    errorEl.textContent = '';
+
+    if (!email || !password) {
+      showEmailAuthError('Please enter both email and password.');
+      return;
+    }
+
+    announce('Signing in. Please wait.');
+    auth.signInWithEmailAndPassword(email, password).then((result) => {
+      onSignInSuccess(result.user);
+    }).catch((error) => {
+      console.error('Email sign-in error:', error.code, error.message);
+      showEmailAuthError(friendlyAuthError(error));
+    });
+  }
+
+  function handleEmailSignUp() {
+    const { email, password } = readEmailAuthFields();
+    const errorEl = getEmailAuthError();
+    errorEl.textContent = '';
+
+    if (!email || !password) {
+      showEmailAuthError('Please enter both email and password.');
+      return;
+    }
+    if (password.length < 6) {
+      showEmailAuthError('Password should be at least 6 characters.');
+      return;
+    }
+
+    announce('Creating account. Please wait.');
+    auth.createUserWithEmailAndPassword(email, password).then((result) => {
+      onSignInSuccess(result.user);
+    }).catch((error) => {
+      console.error('Email sign-up error:', error.code, error.message);
+      showEmailAuthError(friendlyAuthError(error));
+    });
   }
 
   function handleSignOut() {
