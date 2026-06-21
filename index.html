@@ -1603,10 +1603,60 @@
 
   /* ════════════════════════════════════════════
      NOTIFICATION PERMISSION
+     APK (Capacitor): checks REAL Android system permission via
+     @capacitor/local-notifications — this matches what shows in
+     Settings > App Info > Permissions.
+     Browser: falls back to the Web Notification API (Notification.permission),
+     which is the correct check outside of WebView.
      ════════════════════════════════════════════ */
-  function requestNotificationPermission() {
+
+  const isNativeApp = () =>
+    !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+  /* Returns a Promise resolving to 'granted' | 'denied' | 'default' */
+  async function getNotificationPermissionState() {
+    if (isNativeApp()) {
+      try {
+        const { LocalNotifications } = await import(
+          'https://cdn.jsdelivr.net/npm/@capacitor/local-notifications/dist/esm/index.js'
+        );
+        const result = await LocalNotifications.checkPermissions();
+        /* result.display is 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale' */
+        if (result.display === 'granted') return 'granted';
+        if (result.display === 'denied') return 'denied';
+        return 'default';
+      } catch (err) {
+        console.log('Native permission check failed, falling back:', err.message);
+        return 'default';
+      }
+    }
+    /* Browser fallback */
+    if (!('Notification' in window)) return 'denied';
+    return Notification.permission;
+  }
+
+  async function requestNotificationPermission() {
+    if (isNativeApp()) {
+      try {
+        const { LocalNotifications } = await import(
+          'https://cdn.jsdelivr.net/npm/@capacitor/local-notifications/dist/esm/index.js'
+        );
+        const result = await LocalNotifications.requestPermissions();
+        if (result.display === 'granted') {
+          announce('Notifications enabled. You will receive updates about new games and features.');
+        } else {
+          announce('Notification permission denied. You can enable it later from your device settings.');
+        }
+        updateNotifButtonState();
+      } catch (err) {
+        announce('Could not request notification permission. Please enable it from your device settings.');
+      }
+      return;
+    }
+
+    /* Browser fallback */
     if (!('Notification' in window)) {
-      announce('Notifications are not supported in this browser. Install the app as a PWA for full notification support.');
+      announce('Notifications are not supported in this browser.');
       return;
     }
     if (Notification.permission === 'granted') {
@@ -1615,27 +1665,28 @@
       return;
     }
     if (Notification.permission === 'denied') {
-      announce('Notifications are blocked. Please go to your browser or device settings and allow notifications for this app.');
+      announce('Notifications are blocked. Please go to your browser settings and allow notifications for this app.');
       return;
     }
     Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
         announce('Notifications enabled. You will receive updates about new games and features.');
-        updateNotifButtonState();
       } else {
         announce('Notification permission denied. You can enable it later from your device settings.');
       }
+      updateNotifButtonState();
     });
   }
 
-  function updateNotifButtonState() {
+  async function updateNotifButtonState() {
     const btn = document.getElementById('btn-enable-notif');
     if (!btn) return;
-    if (!('Notification' in window) || Notification.permission === 'denied') {
+    const state = await getNotificationPermissionState();
+    if (state === 'denied') {
       btn.textContent = '🔕 Notifications Blocked';
       btn.setAttribute('aria-label', 'Notifications are blocked. Go to device settings to enable them.');
       btn.disabled = true;
-    } else if (Notification.permission === 'granted') {
+    } else if (state === 'granted') {
       btn.textContent = '✅ Notifications Enabled';
       btn.setAttribute('aria-label', 'Notifications are already enabled.');
       btn.disabled = true;
@@ -1647,17 +1698,15 @@
   }
 
   /* Ask on first load (only if not yet decided) */
-  function maybeAskNotificationPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'default') {
+  async function maybeAskNotificationPermission() {
+    const state = await getNotificationPermissionState();
+    if (state === 'default') {
       /* Small delay so the dashboard loads first */
-      setTimeout(() => {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            announce('Notifications enabled.');
-            updateNotifButtonState();
-          }
-        });
+      setTimeout(async () => {
+        const result = await getNotificationPermissionState();
+        if (result === 'default') {
+          requestNotificationPermission();
+        }
       }, 2000);
     }
   }
@@ -1724,7 +1773,7 @@
   /* Bump this string in index.html every time you cut a new APK release.
      It must match the "version" field in version.json once that
      version's APK has been built and uploaded to GitHub Releases. */
-  const CURRENT_APP_VERSION = '0.9.0';
+  const CURRENT_APP_VERSION = '1.0.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
@@ -3024,12 +3073,14 @@
       }
     } else if (type === 'notifications') {
       updateNotifButtonState();
-      const status = (!('Notification' in window) || Notification.permission === 'denied')
-        ? 'Notifications are blocked.'
-        : Notification.permission === 'granted'
-          ? 'Notifications are enabled.'
-          : 'Notifications are not yet enabled.';
-      announce('Notifications panel opened. ' + status);
+      getNotificationPermissionState().then((state) => {
+        const status = state === 'denied'
+          ? 'Notifications are blocked.'
+          : state === 'granted'
+            ? 'Notifications are enabled.'
+            : 'Notifications are not yet enabled.';
+        announce('Notifications panel opened. ' + status);
+      });
     } else if (type === 'profile') {
       announce(profile.signedIn
         ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
