@@ -1,4 +1,4 @@
-name: Build Signed APK with Capacitor
+name: Build APK with Capacitor
 
 on:
   push:
@@ -10,8 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout setup-signed-apk branch
       uses: actions/checkout@v4
+      with:
+        ref: setup-signed-apk
+
+    - name: Fetch latest index.html from main branch
+      run: |
+        git fetch origin main
+        git checkout origin/main -- index.html
+        echo "index.html fetched from main branch"
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -32,7 +40,15 @@ jobs:
           "appName": "Card Game",
           "webDir": "www",
           "server": {
-            "androidScheme": "https"
+            "androidScheme": "https",
+            "url": "https://aliabbas7362-a11y.github.io/Ali-access-lab-/",
+            "cleartext": false,
+            "allowNavigation": [
+              "accounts.google.com",
+              "*.google.com",
+              "*.firebaseapp.com",
+              "card-game-a1e68.firebaseapp.com"
+            ]
           }
         }
         EOF
@@ -41,7 +57,7 @@ jobs:
       run: |
         mkdir -p www
         cp index.html www/
-        cp -r sounds www/
+        cp -r sounds www/ 2>/dev/null || true
 
     - name: Install dependencies
       run: npm install
@@ -51,6 +67,20 @@ jobs:
 
     - name: Sync web assets to Android
       run: npx cap sync android
+
+    # ── Notification Permission ──
+    # POST_NOTIFICATIONS Android 13+ ke liye zaroori hai taaki
+    # Settings > App Info > Permissions mein toggle dikhe.
+    - name: Add notification permission to AndroidManifest.xml
+      run: |
+        MANIFEST="android/app/src/main/AndroidManifest.xml"
+        if ! grep -q "POST_NOTIFICATIONS" "$MANIFEST"; then
+          sed -i '/<manifest /a\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
+          echo "Manifest updated with POST_NOTIFICATIONS"
+        else
+          echo "POST_NOTIFICATIONS already present"
+        fi
+        cat "$MANIFEST"
 
     - name: Build Debug APK
       working-directory: ./android
