@@ -60,7 +60,9 @@ jobs:
         cp -r sounds www/ 2>/dev/null || true
 
     - name: Install dependencies
-      run: npm install
+      run: |
+        npm install
+        npm install @capacitor/local-notifications
 
     - name: Add Android platform
       run: npx cap add android
