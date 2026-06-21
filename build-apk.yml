@@ -32,28 +32,6 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    - name: Write package.json
-      run: |
-        cat > package.json << 'EOF'
-        {
-          "name": "ali-access-lab",
-          "version": "1.0.0",
-          "description": "Ali Access Lab - Game Depot APK",
-          "main": "index.html",
-          "scripts": {
-            "build": "echo 'Web build complete'"
-          },
-          "dependencies": {
-            "@capacitor/core": "latest",
-            "@capacitor/android": "latest",
-            "@codetrix-studio/capacitor-google-auth": "latest"
-          },
-          "devDependencies": {
-            "@capacitor/cli": "latest"
-          }
-        }
-        EOF
-
     - name: Write capacitor.config.json
       run: |
         cat > capacitor.config.json << 'EOF'
@@ -71,13 +49,6 @@ jobs:
               "*.firebaseapp.com",
               "card-game-a1e68.firebaseapp.com"
             ]
-          },
-          "plugins": {
-            "GoogleAuth": {
-              "scopes": ["profile", "email"],
-              "serverClientId": "495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com",
-              "forceCodeForRefreshToken": true
-            }
           }
         }
         EOF
@@ -96,6 +67,20 @@ jobs:
 
     - name: Sync web assets to Android
       run: npx cap sync android
+
+    # ── Notification Permission ──
+    # POST_NOTIFICATIONS Android 13+ ke liye zaroori hai taaki
+    # Settings > App Info > Permissions mein toggle dikhe.
+    - name: Add notification permission to AndroidManifest.xml
+      run: |
+        MANIFEST="android/app/src/main/AndroidManifest.xml"
+        if ! grep -q "POST_NOTIFICATIONS" "$MANIFEST"; then
+          sed -i '/<manifest /a\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
+          echo "Manifest updated with POST_NOTIFICATIONS"
+        else
+          echo "POST_NOTIFICATIONS already present"
+        fi
+        cat "$MANIFEST"
 
     - name: Build Debug APK
       working-directory: ./android
