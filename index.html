@@ -86,6 +86,45 @@
       flex-shrink: 0;
     }
 
+    /* Update banner */
+    .update-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: linear-gradient(90deg, #1e3a2f, #16291f);
+      border-bottom: 1px solid var(--gold);
+      flex-shrink: 0;
+    }
+    .update-banner-text {
+      display: flex; flex-direction: column; gap: 2px;
+      color: #d4f5e0; font-size: 0.88rem; min-width: 0;
+    }
+    .update-banner-text strong {
+      color: var(--gold); font-size: 0.92rem;
+    }
+    .update-banner-text span {
+      color: #aac9b8; font-size: 0.8rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .update-banner-actions {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .update-banner-btn {
+      background: var(--gold); color: #1a1f14;
+      border: none; border-radius: 8px;
+      padding: 10px 16px; font-weight: 700;
+      font-size: 0.85rem; cursor: pointer;
+      min-height: 44px;
+    }
+    .update-banner-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .update-banner-dismiss {
+      background: transparent; border: none;
+      color: #aac9b8; font-size: 1.1rem;
+      width: 36px; height: 36px; cursor: pointer;
+      border-radius: 50%;
+    }
+    .update-banner-dismiss:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
     /* 3-dot button */
     .dash-more-btn {
       display: flex; align-items: center; justify-content: center;
@@ -818,6 +857,18 @@
         <span class="profile-avatar-placeholder" id="profile-topbar-avatar" aria-hidden="true">👤</span>
       </button>
 
+    </div>
+
+    <!-- UPDATE BANNER (hidden by default, shown when a newer version is found) -->
+    <div id="update-banner" class="update-banner" style="display:none;" role="alert" aria-live="polite">
+      <div class="update-banner-text">
+        <strong id="update-banner-title">New update available</strong>
+        <span id="update-banner-notes"></span>
+      </div>
+      <div class="update-banner-actions">
+        <button id="update-banner-btn" class="update-banner-btn" onclick="downloadAppUpdate()">Update Now</button>
+        <button class="update-banner-dismiss" aria-label="Dismiss update notice" onclick="dismissUpdateBanner()">✕</button>
+      </div>
     </div>
 
     <!-- SCROLLABLE BODY -->
@@ -1661,6 +1712,99 @@
     }
   }
 
+  /* ════════════════════════════════════════════
+     LIVE UPDATE CHECKER
+     Checks version.json on GitHub Pages. If the version there is
+     newer than the version baked into this APK, shows a banner
+     with a one-tap download link. This does NOT auto-install —
+     Android does not allow silent install outside the Play Store —
+     but it removes the need to repeatedly hunt for new APKs.
+     ════════════════════════════════════════════ */
+
+  /* Bump this string in index.html every time you cut a new APK release.
+     It must match the "version" field in version.json once that
+     version's APK has been built and uploaded to GitHub Releases. */
+  const CURRENT_APP_VERSION = '1.0.0';
+  const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
+  const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
+
+  /* Simple semantic version comparison: returns true if remote > local */
+  function isNewerVersion(remote, local) {
+    const r = remote.split('.').map(Number);
+    const l = local.split('.').map(Number);
+    for (let i = 0; i < Math.max(r.length, l.length); i++) {
+      const rv = r[i] || 0;
+      const lv = l[i] || 0;
+      if (rv > lv) return true;
+      if (rv < lv) return false;
+    }
+    return false;
+  }
+
+  let latestApkUrl = null;
+
+  function checkForUpdate() {
+    fetch(VERSION_CHECK_URL + '?t=' + Date.now())  /* cache-bust */
+      .then((res) => {
+        if (!res.ok) throw new Error('version.json fetch failed: ' + res.status);
+        return res.json();
+      })
+      .then((data) => {
+        if (!data || !data.version || !data.apk_url) return;
+
+        /* Don't keep nagging if user already dismissed this exact version */
+        const dismissed = localStorage.getItem(UPDATE_DISMISSED_KEY);
+        if (dismissed === data.version) return;
+
+        if (isNewerVersion(data.version, CURRENT_APP_VERSION)) {
+          latestApkUrl = data.apk_url;
+          showUpdateBanner(data.version, data.notes || '');
+        }
+      })
+      .catch((err) => {
+        /* Silent fail — no internet, or file missing. Don't bother the user. */
+        console.log('Update check skipped:', err.message);
+      });
+  }
+
+  function showUpdateBanner(version, notes) {
+    const banner = document.getElementById('update-banner');
+    document.getElementById('update-banner-title').textContent =
+      'New update available — v' + version;
+    document.getElementById('update-banner-notes').textContent = notes;
+    banner.style.display = 'flex';
+    announce('A new update, version ' + version + ', is available. ' + notes);
+  }
+
+  function dismissUpdateBanner() {
+    const banner = document.getElementById('update-banner');
+    banner.style.display = 'none';
+    /* Remember so we don't show this same version again this device */
+    fetch(VERSION_CHECK_URL + '?t=' + Date.now())
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.version) {
+          localStorage.setItem(UPDATE_DISMISSED_KEY, data.version);
+        }
+      })
+      .catch(() => {});
+    announce('Update notice dismissed.');
+  }
+
+  function downloadAppUpdate() {
+    if (!latestApkUrl) return;
+    announce('Opening download link in browser.');
+    /* Opens system browser — works identically in Capacitor WebView and
+       regular browser. User taps the downloaded APK to install; Android
+       overwrites the existing app automatically since appId matches. */
+    window.open(latestApkUrl, '_system');
+  }
+
+  /* Run the check shortly after load so it doesn't block first paint */
+  window.addEventListener('load', () => {
+    setTimeout(checkForUpdate, 1500);
+  });
+
   /* ── Google Sign-In ──────────────────────────────────────────────────
      APK (Capacitor): @codetrix-studio/capacitor-google-auth native plugin
      Browser (GitHub Pages): Firebase signInWithPopup fallback
@@ -1795,7 +1939,15 @@
 
     announce('Creating account. Please wait.');
     auth.createUserWithEmailAndPassword(email, password).then((result) => {
-      onSignInSuccess(result.user);
+      const user = result.user;
+      /* Email/password sign-up has no displayName by default —
+         derive a friendly name from the email's local part */
+      const fallbackName = email.split('@')[0];
+      return user.updateProfile({ displayName: fallbackName }).then(() => {
+        return user.reload();
+      }).then(() => {
+        onSignInSuccess(auth.currentUser);
+      });
     }).catch((error) => {
       console.error('Email sign-up error:', error.code, error.message);
       showEmailAuthError(friendlyAuthError(error));
