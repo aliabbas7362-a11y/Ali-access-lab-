@@ -954,6 +954,7 @@
       <p>June 2026</p>
     </div>
 
+  </div><!-- /screen-privacy -->
 
   <!-- ══════════════════════════════════════
        ABOUT SCREEN
@@ -1193,6 +1194,16 @@
           </label>
         </div>
 
+        <hr class="divider" style="margin:24px 0 16px;">
+        <p class="drawer-section-heading">App Info</p>
+        <div class="panel-row">
+          <span>Version</span>
+          <span id="settings-version-display" style="color:var(--gold);">1.0.1</span>
+        </div>
+        <div class="panel-row">
+          <span>Developer</span>
+          <span style="color:var(--text-muted);">Abbas Ali</span>
+        </div>
 
       </div>
     </div>
@@ -3141,7 +3152,10 @@
         ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
         : 'Profile drawer opened. Not signed in. Sign in with Google to save your progress.');
     } else {
-      announce('Settings drawer opened. Sound and TalkBack toggles available.');
+      /* Settings drawer — version update karo */
+      const svd = document.getElementById('settings-version-display');
+      if (svd) svd.textContent = CURRENT_APP_VERSION;
+      announce('Settings drawer opened. Sound and TalkBack toggles available. App version ' + CURRENT_APP_VERSION + '.');
     }
 
     const drawer = document.getElementById('drawer-' + type);
