@@ -8,6 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -989,6 +990,45 @@
       <h2>About the Game</h2>
       <p>Court Piece (also known as Rung or Coat Piece) is a traditional South Asian trick-taking card game. This app implements the authentic 13-trick rules with 3 AI opponents, full TalkBack screen reader support, and sound effects.</p>
 
+      <h2>How to Play — Game Rules</h2>
+
+      <h2>Players and Teams</h2>
+      <p>There are 4 players total. You and Robot 1 are one team (Team A). Robot 2 and Robot 3 are the opposing team (Team B). It is always 2 versus 2.</p>
+
+      <h2>The Deck</h2>
+      <p>A standard 52-card deck is used — 4 suits: Spades, Hearts, Clubs, and Diamonds. Each suit has 13 cards ranked from highest to lowest: Ace, King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2.</p>
+
+      <h2>Dealing</h2>
+      <p>First, 5 cards are dealt to each of the 4 players. You look at your 5 cards and choose the trump suit. After trump is selected, the remaining 8 cards are dealt to each player. Everyone ends up with 13 cards total.</p>
+
+      <h2>Choosing Trump (Rung)</h2>
+      <p>After receiving your first 5 cards, you pick one of the four suits as the trump suit for the round. The trump suit is more powerful than all other suits. Choose based on what suit you have the most or strongest cards in.</p>
+
+      <h2>Playing a Round — Tricks</h2>
+      <p>A round consists of 13 tricks. You lead the first trick by playing any card. Every other player must then play one card. The most important rule: if you have a card of the same suit that was led, you must play that suit — this is called following suit. If you have no card of the led suit, you may play any card, including trump.</p>
+
+      <h2>Who Wins a Trick</h2>
+      <p>Trump beats everything that is not trump. If multiple trump cards are played, the highest trump wins. If no trump is played, the highest card of the suit that was led wins. Cards of any other suit that was neither led nor trump can never win a trick, no matter how high their value. The player who wins a trick leads the next one.</p>
+
+      <h2>Reneg — Illegal Move</h2>
+      <p>If you have a card of the led suit but play a different suit instead, that is called Reneg and is illegal. In this app, cards you cannot legally play are disabled automatically — you cannot accidentally Reneg.</p>
+
+      <h2>Round Result and Points</h2>
+      <p>The team that wins 7 or more tricks out of 13 wins the round. Points are awarded as follows:</p>
+      <p>Your team wins a round normally — your team gets 1 point.</p>
+      <p>Your team loses a round normally — opponents get 2 points.</p>
+      <p>Your team gets a Kot (see below) — your team gets 3 points.</p>
+      <p>Opponents get a Kot — opponents get 4 points.</p>
+
+      <h2>Kot — Winning All First 7 Tricks</h2>
+      <p>Kot is a special win. After exactly trick 7 is played, if one team has won all 7 tricks and the other team has zero tricks, the round ends immediately as a Kot — no more tricks are played. Your team getting a Kot earns 3 points. Opponents getting a Kot earns them 4 points.</p>
+
+      <h2>Mega Kot — 7 Rounds in a Row</h2>
+      <p>If either team wins 7 rounds in a row without the other team winning any round in between, that team earns a bonus of 3 extra points on top of whatever points they earned for that round.</p>
+
+      <h2>Winning the Match</h2>
+      <p>The first team to reach 10 points wins the match. A match can span multiple rounds depending on how quickly points accumulate.</p>
+
       <h2>Accessibility</h2>
       <p>This app is designed from the ground up for blind and visually impaired users using TalkBack. All game actions are fully accessible via screen reader.</p>
     </div>
@@ -1488,8 +1528,9 @@
   };
 
   firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db   = firebase.firestore();
+  const auth      = firebase.auth();
+  const db        = firebase.firestore();
+  const analytics = firebase.analytics();
 
   /* ════════════════════════════════════════════
      SOUND
@@ -3002,6 +3043,22 @@
   function endMatch(winner, lastRoundMsg) {
     const humanWon = winner === 'human';
     playSound(humanWon ? 'win' : 'lose');
+
+    /* ── Firestore mein match result save karo (sirf signed-in users ke liye) ── */
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      db.collection('users').doc(currentUser.uid)
+        .collection('matchResults').add({
+          result:        humanWon ? 'win' : 'loss',
+          yourPoints:    state.pointsHuman,
+          oppPoints:     state.pointsAI,
+          roundsPlayed:  state.roundNumber - 1,
+          timestamp:     firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .catch(function(err) {
+          console.error('Firestore matchResult save error:', err);
+        });
+    }
 
     const overlay = document.getElementById('gameover-overlay');
     document.getElementById('gameover-icon').textContent =
