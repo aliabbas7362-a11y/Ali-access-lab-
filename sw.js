@@ -24,7 +24,17 @@ const PRECACHE_URLS = [
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js'
+  'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js',
+
+  /* Sound files — pre-cached explicitly so ALL sounds work offline
+     from the first install, even ones the user hasn't triggered yet
+     (e.g. trick-loss only plays after losing a trick). */
+  './sounds/card-flip.mp3',
+  './sounds/shuffle.mp3',
+  './sounds/win.mp3',
+  './sounds/lose.mp3',
+  './sounds/trick-win.mp3',
+  './sounds/trick-lose.mp3'
 ];
 
 /* ---------- INSTALL: cache the app shell ---------- */
