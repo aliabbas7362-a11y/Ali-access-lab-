@@ -3259,5 +3259,29 @@
   }
   </script>
 
+  <!-- ============================================================
+       SERVICE WORKER REGISTRATION
+       Registers sw.js (must be uploaded alongside this index.html,
+       in the same folder, on GitHub Pages) so the app:
+       - Works offline using the last cached version
+       - Still gets live updates automatically when online, since
+         sw.js uses a network-first strategy for this page
+       This does not change CURRENT_APP_VERSION or the existing
+       update-banner logic in any way — both systems work together.
+       ============================================================ -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => {
+            console.log('Service worker registered:', reg.scope);
+          })
+          .catch(err => {
+            console.warn('Service worker registration failed:', err);
+          });
+      });
+    }
+  </script>
+
 </body>
 </html>
