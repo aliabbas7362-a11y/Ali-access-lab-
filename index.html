@@ -293,7 +293,7 @@
     #more-options-dialog.open { display: flex; }
     #more-options-dialog .dialog-scrim {
       position: absolute; inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: var(--bg);
     }
     .more-options-menu {
       position: relative; z-index: 1;
@@ -456,18 +456,18 @@
       pointer-events: none;   /* invisible by default — scrim + panel both off */
     }
 
-    /* dark scrim behind the panel */
+    /* dark scrim behind the panel — fully opaque so nothing shows through */
     .slide-drawer__scrim {
       position: absolute; inset: 0;
-      background: rgba(0,0,0,0.72);
+      background: var(--bg);
       opacity: 0;
       transition: opacity 0.3s ease;
     }
 
-    /* the actual sliding panel */
+    /* the actual sliding panel — full screen, solid */
     .slide-drawer__panel {
       position: absolute; top: 0; right: 0; bottom: 0;
-      width: min(88vw, 360px);
+      width: 100%;
       background: var(--surface);
       border-left: 1px solid var(--border);
       display: flex; flex-direction: column;
@@ -565,8 +565,9 @@
 
     .shuffle-body {
       flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
+      align-items: center; justify-content: flex-start;
       padding: 32px 24px; gap: 28px; text-align: center;
+      overflow-y: auto;
     }
 
     .shuffle-icon { font-size: 4rem; line-height: 1; }
@@ -768,7 +769,7 @@
     #gameover-overlay {
       display: none;
       position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.88);
+      background: var(--bg);
       flex-direction: column;
       align-items: center; justify-content: center;
       padding: 32px 24px; gap: 18px;
@@ -1063,6 +1064,51 @@
         onclick="doShuffle()">
         🔀 Shuffle &amp; Deal
       </button>
+
+      <!-- GAME RULES — copied verbatim from the About screen, unedited -->
+      <div id="shuffle-rules-block" role="document"
+        style="font-weight:bold; text-align:left; max-width:340px;
+               max-height:50vh; overflow-y:auto; padding:12px 6px;
+               color:var(--text);">
+        <h2>How to Play — Game Rules</h2>
+
+        <h2>Players and Teams</h2>
+        <p>There are 4 players total. You and Robot 1 are one team (Team A). Robot 2 and Robot 3 are the opposing team (Team B). It is always 2 versus 2.</p>
+
+        <h2>The Deck</h2>
+        <p>A standard 52-card deck is used — 4 suits: Spades, Hearts, Clubs, and Diamonds. Each suit has 13 cards ranked from highest to lowest: Ace, King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2.</p>
+
+        <h2>Dealing</h2>
+        <p>First, 5 cards are dealt to each of the 4 players. You look at your 5 cards and choose the trump suit. After trump is selected, the remaining 8 cards are dealt to each player. Everyone ends up with 13 cards total.</p>
+
+        <h2>Choosing Trump (Rung)</h2>
+        <p>After receiving your first 5 cards, you pick one of the four suits as the trump suit for the round. The trump suit is more powerful than all other suits. Choose based on what suit you have the most or strongest cards in.</p>
+
+        <h2>Playing a Round — Tricks</h2>
+        <p>A round consists of 13 tricks. You lead the first trick by playing any card. Every other player must then play one card. The most important rule: if you have a card of the same suit that was led, you must play that suit — this is called following suit. If you have no card of the led suit, you may play any card, including trump.</p>
+
+        <h2>Who Wins a Trick</h2>
+        <p>Trump beats everything that is not trump. If multiple trump cards are played, the highest trump wins. If no trump is played, the highest card of the suit that was led wins. Cards of any other suit that was neither led nor trump can never win a trick, no matter how high their value. The player who wins a trick leads the next one.</p>
+
+        <h2>Reneg — Illegal Move</h2>
+        <p>If you have a card of the led suit but play a different suit instead, that is called Reneg and is illegal. In this app, cards you cannot legally play are disabled automatically — you cannot accidentally Reneg.</p>
+
+        <h2>Round Result and Points</h2>
+        <p>The team that wins 7 or more tricks out of 13 wins the round. Points are awarded as follows:</p>
+        <p>Your team wins a round normally — your team gets 1 point.</p>
+        <p>Your team loses a round normally — opponents get 2 points.</p>
+        <p>Your team gets a Kot (see below) — your team gets 3 points.</p>
+        <p>Opponents get a Kot — opponents get 4 points.</p>
+
+        <h2>Kot — Winning All First 7 Tricks</h2>
+        <p>Kot is a special win. After exactly trick 7 is played, if one team has won all 7 tricks and the other team has zero tricks, the round ends immediately as a Kot — no more tricks are played. Your team getting a Kot earns 3 points. Opponents getting a Kot earns them 4 points.</p>
+
+        <h2>Mega Kot — 7 Rounds in a Row</h2>
+        <p>If either team wins 7 rounds in a row without the other team winning any round in between, that team earns a bonus of 3 extra points on top of whatever points they earned for that round.</p>
+
+        <h2>Winning the Match</h2>
+        <p>The first team to reach 10 points wins the match. A match can span multiple rounds depending on how quickly points accumulate.</p>
+      </div>
     </div>
 
   </div>
@@ -1076,13 +1122,6 @@
     <div class="game-topbar" role="banner">
       <span class="game-topbar-title" aria-hidden="true">♣ Court Piece</span>
       <div style="display:flex;gap:8px;">
-        <button class="btn-small"
-          id="btn-settings-game"
-          aria-label="Open Settings"
-          aria-haspopup="dialog"
-          onclick="openDrawer('settings')">
-          ⚙️
-        </button>
         <button class="btn-small"
           aria-label="Quit game and return to home screen"
           onclick="quitGame()">
@@ -1118,10 +1157,10 @@
       <!-- TRICK ZONE -->
       <div class="trick-zone" role="region"
         id="trick-zone"
-        aria-label="Current trick area. No cards played yet.">
+        aria-label="Current trick area">
         <p class="trick-zone-label">Current Trick</p>
         <div class="trick-played-cards" id="trick-cards" aria-hidden="true"></div>
-        <p id="trick-status" aria-hidden="true">Waiting for first card…</p>
+        <p id="trick-status">Waiting for first card…</p>
       </div>
 
       <!-- SCORE + HISTORY -->
@@ -1659,6 +1698,26 @@
   }
 
   /* ════════════════════════════════════════════
+     BACKGROUND INERT HELPER — used by all modal
+     panels (More Options, Settings/Score/History/
+     Notifications/Profile drawers, Game Over overlay)
+     so TalkBack can never swipe into the main
+     screen behind an open panel.
+     ════════════════════════════════════════════ */
+  function setMainScreenInert(makeInert) {
+    const bg = document.getElementById('screen-game').classList.contains('active')
+      ? document.getElementById('screen-game')
+      : document.getElementById('screen-home');
+    if (makeInert) {
+      bg.setAttribute('inert', '');
+      bg.setAttribute('aria-hidden', 'true');
+    } else {
+      bg.removeAttribute('inert');
+      bg.removeAttribute('aria-hidden');
+    }
+  }
+
+  /* ════════════════════════════════════════════
      CARD VISUAL BUILDER
      ════════════════════════════════════════════ */
   function buildCardSpans(suitSymbol, rankShort, isRed) {
@@ -2153,6 +2212,7 @@
     dialog.removeAttribute('inert');
     dialog.removeAttribute('aria-hidden');
     dialog.classList.add('open');
+    setMainScreenInert(true);
     announce('More options. Settings and Privacy Policy.');
     setTimeout(() => {
       dialog.querySelector('.more-options-item').focus();
@@ -2162,6 +2222,7 @@
   function closeMoreOptions() {
     const dialog = document.getElementById('more-options-dialog');
     dialog.classList.remove('open');
+    setMainScreenInert(false);
     setTimeout(() => {
       dialog.setAttribute('inert', '');
       dialog.setAttribute('aria-hidden', 'true');
@@ -2249,8 +2310,6 @@
       'View score. Your team: 0 tricks. Opponents: 0 tricks.');
     document.getElementById('trick-cards').innerHTML = '';
     document.getElementById('trick-status').textContent = 'Waiting for first card…';
-    document.getElementById('trick-zone').setAttribute('aria-label',
-      'Current trick area. No cards played yet.');
     document.getElementById('trump-indicator').innerHTML =
       'Trump: <span id="trump-display">Not selected yet</span>';
     document.getElementById('trump-indicator').setAttribute('aria-label',
@@ -2686,30 +2745,32 @@
                       : winner.player === 'r2'    ? 'Opponent Robot 2'
                       :                             'Opponent Robot 3';
 
+    let trickResultMsg;
+
     if (isHumanTeam) {
       state.scoreHuman++;
       playSound('trickWin');
-      announce(
+      trickResultMsg =
         'Your team won this trick! '
         + winnerLabel + ' took it with ' + winner.card.label + '. '
-        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
-      );
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.';
+      announce(trickResultMsg);
     } else {
       state.scoreAI++;
       playSound('trickLose');
-      announce(
+      trickResultMsg =
         'Opponents won the trick. '
         + winnerLabel + ' took it with ' + winner.card.label + '. '
-        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
-      );
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.';
+      announce(trickResultMsg);
     }
 
     state.tricksPlayed++;
     updateScoreDisplay();
-    updateTrickZoneLabel(
-      (isHumanTeam ? 'Your team won trick ' : 'Opponents won trick ')
-      + state.tricksPlayed + '. Winner: ' + winnerLabel + '.'
-    );
+    /* Current Trick section ab announcement wala hi text dikhata hai,
+       word-for-word same — jab tak agli trick shuru na ho, tab tak
+       yeh yahi save rahega. */
+    updateTrickZoneLabel(trickResultMsg);
 
     state.history.push(
       '--- Trick ' + state.tricksPlayed + ' won by: '
@@ -2936,6 +2997,7 @@
     overlay.removeAttribute('inert');
     overlay.removeAttribute('aria-hidden');
     overlay.classList.add('active');
+    setMainScreenInert(true);
 
     const playAgainBtn = document.getElementById('btn-play-again-overlay');
     playAgainBtn.textContent = 'Next Round';
@@ -2945,6 +3007,7 @@
       overlay.classList.remove('active');
       overlay.setAttribute('inert', '');
       overlay.setAttribute('aria-hidden', 'true');
+      setMainScreenInert(false);
       startNewRound();
     };
 
@@ -3073,6 +3136,7 @@
     overlay.removeAttribute('inert');
     overlay.removeAttribute('aria-hidden');
     overlay.classList.add('active');
+    setMainScreenInert(true);
 
     const playAgainBtn = document.getElementById('btn-play-again-overlay');
     playAgainBtn.textContent = 'New Match';
@@ -3082,6 +3146,7 @@
       overlay.classList.remove('active');
       overlay.setAttribute('inert', '');
       overlay.setAttribute('aria-hidden', 'true');
+      setMainScreenInert(false);
       quitGame();
     };
 
@@ -3137,7 +3202,6 @@
      ════════════════════════════════════════════ */
   function updateTrickZoneLabel(msg) {
     document.getElementById('trick-status').textContent = msg;
-    document.getElementById('trick-zone').setAttribute('aria-label', msg);
   }
 
   function updateHistoryBtn() {
@@ -3222,6 +3286,7 @@
     drawer.removeAttribute('aria-hidden');
 
     drawer.classList.add('open');
+    setMainScreenInert(true);
 
     /* Focus the back button after transition */
     setTimeout(() => {
@@ -3233,6 +3298,7 @@
   function closeDrawer(type) {
     const drawer = document.getElementById('drawer-' + type);
     drawer.classList.remove('open');
+    setMainScreenInert(false);
 
     /* Re-apply inert after transition so TalkBack cannot reach closed drawer */
     setTimeout(() => {
