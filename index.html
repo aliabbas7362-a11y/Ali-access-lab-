@@ -440,6 +440,31 @@
     .toggle-switch input:checked + .slider::before { transform: translateX(24px); }
     .toggle-switch input:focus-visible + .slider { outline: 3px solid var(--gold); outline-offset: 2px; }
 
+    /* ── VOLUME SLIDERS (Sound & Music settings) ── */
+    .volume-row { margin-bottom: 20px; }
+    .volume-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
+    .volume-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 6px; border-radius: 4px;
+      background: var(--border); outline: none; cursor: pointer;
+    }
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--gold); cursor: pointer; border: none;
+    }
+    .volume-slider::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--gold); cursor: pointer; border: none;
+    }
+    .volume-slider:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+    .volume-value { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; text-align: right; }
+
+    /* ── BACKGROUND MUSIC TRACK NAV ── */
+    .track-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+    .track-nav-btn { width: auto; min-height: 44px; padding: 10px 16px; font-size: 0.85rem; flex-shrink: 0; }
+    .track-display { font-size: 0.9rem; color: var(--text); flex: 1; text-align: center; }
+
     footer {
       margin-top: 24px; font-size: 0.72rem; color: var(--text-muted);
       text-align: center; pointer-events: none; max-width: 400px; width: 100%;
@@ -1243,7 +1268,7 @@
 
       <!-- body -->
       <div class="drawer-body">
-        <p class="drawer-section-heading">Audio &amp; Accessibility</p>
+        <p class="drawer-section-heading">Sound &amp; Music</p>
 
         <div class="toggle-row">
           <div>
@@ -1258,6 +1283,80 @@
             <span class="slider"></span>
           </label>
         </div>
+
+        <div class="volume-row">
+          <label class="volume-label" for="range-sound-volume">Sound Effects Volume</label>
+          <input type="range" id="range-sound-volume" class="volume-slider"
+            min="0" max="100" step="5" value="100"
+            aria-label="Sound Effects Volume. Currently 100 percent."
+            oninput="handleVolumeChange('sound', this.value)" />
+          <span class="volume-value" id="sound-volume-display" aria-hidden="true">100%</span>
+        </div>
+
+        <hr class="divider" style="margin:20px 0 16px;">
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Background Music</div>
+            <div class="toggle-desc">Looping music during gameplay</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-music"
+              role="switch" aria-checked="false"
+              aria-label="Background Music. Currently off. Double tap to toggle."
+              onchange="toggleMusic(this)" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="track-nav">
+          <button class="btn btn-outline track-nav-btn" id="btn-track-prev"
+            aria-label="Previous track" onclick="changeTrack(-1)">&#8592; Prev</button>
+          <span class="track-display" id="music-track-display" aria-live="polite">Track 1</span>
+          <button class="btn btn-outline track-nav-btn" id="btn-track-next"
+            aria-label="Next track" onclick="changeTrack(1)">Next &#8594;</button>
+        </div>
+
+        <div class="volume-row">
+          <label class="volume-label" for="range-music-volume">Background Music Volume</label>
+          <input type="range" id="range-music-volume" class="volume-slider"
+            min="0" max="100" step="5" value="70"
+            aria-label="Background Music Volume. Currently 70 percent."
+            oninput="handleVolumeChange('music', this.value)" />
+          <span class="volume-value" id="music-volume-display" aria-hidden="true">70%</span>
+        </div>
+
+        <hr class="divider" style="margin:20px 0 16px;">
+
+        <div>
+          <div class="toggle-label">Custom Music / Sound</div>
+          <div class="toggle-desc" id="custom-audio-status">No custom audio uploaded yet.</div>
+        </div>
+        <input type="file" id="custom-audio-input" accept="audio/*" class="sr-only"
+          aria-label="Upload custom audio file" onchange="handleCustomAudioUpload(this)" />
+        <button class="btn btn-outline" style="margin-top:10px;"
+          onclick="document.getElementById('custom-audio-input').click()">📁 Upload Custom Audio</button>
+
+        <div class="toggle-row" style="margin-top:16px;">
+          <div>
+            <div class="toggle-label">Use Custom Audio as Music</div>
+            <div class="toggle-desc">Play uploaded file instead of built-in tracks</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-custom-music"
+              role="switch" aria-checked="false"
+              aria-label="Use Custom Audio as Music. Currently off. Double tap to toggle."
+              onchange="toggleCustomMusic(this)" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button class="btn btn-outline" id="btn-remove-custom-audio"
+          style="margin-top:10px;display:none;"
+          onclick="removeCustomAudio()">🗑️ Remove Custom Audio</button>
+
+        <hr class="divider" style="margin:24px 0 16px;">
+        <p class="drawer-section-heading">Accessibility</p>
 
         <div class="toggle-row">
           <div>
@@ -1542,6 +1641,11 @@
   const state = {
     sound:        true,
     talkback:     true,
+    soundVolume:  100,   /* Sound effects volume, 0-100 */
+    musicOn:      false, /* Background music on/off */
+    musicVolume:  70,    /* Background music volume, 0-100 */
+    currentTrack: 1,     /* 1 ya 2 — konsa built-in track active hai */
+    customAudioActive: false, /* User ka uploaded audio bg music ki jagah use ho raha hai */
 
     /* ── Current round trick counts ── */
     scoreHuman:   0,   /* Team A (human+r1) ke tricks is round mein */
@@ -1586,9 +1690,192 @@
 
   function playSound(key) {
     if (!state.sound) return;
-    try { const s = SFX[key]; if (!s) return; s.currentTime = 0; s.play().catch(()=>{}); }
+    try { const s = SFX[key]; if (!s) return; s.currentTime = 0; s.volume = state.soundVolume / 100; s.play().catch(()=>{}); }
     catch(e) {}
   }
+
+  /* ════════════════════════════════════════════
+     BACKGROUND MUSIC
+     2 built-in tracks (Prev/Next se cycle) + 1
+     user-uploaded custom track (IndexedDB se).
+     Files abhi exist nahi karte — jab Abbas
+     sounds/bg-music-1.mp3 aur bg-music-2.mp3
+     daalega, khud kaam karna shuru ho jayega.
+     ════════════════════════════════════════════ */
+  const bgMusic1 = new Audio('sounds/bg-music-1.mp3');
+  const bgMusic2 = new Audio('sounds/bg-music-2.mp3');
+  const bgMusicCustom = new Audio();
+  [bgMusic1, bgMusic2, bgMusicCustom].forEach(a => {
+    a.loop = true;
+    a.volume = state.musicVolume / 100;
+  });
+
+  function getActiveTrackAudio() {
+    if (state.customAudioActive) return bgMusicCustom;
+    return state.currentTrack === 1 ? bgMusic1 : bgMusic2;
+  }
+
+  function playBgMusic() {
+    [bgMusic1, bgMusic2, bgMusicCustom].forEach(a => a.pause());
+    const track = getActiveTrackAudio();
+    try { track.currentTime = 0; track.play().catch(()=>{}); }
+    catch(e) {}
+  }
+
+  function stopBgMusic() {
+    [bgMusic1, bgMusic2, bgMusicCustom].forEach(a => a.pause());
+  }
+
+  function toggleMusic(input) {
+    const isOn = input.checked;
+    input.setAttribute('aria-checked', String(isOn));
+    state.musicOn = isOn;
+    input.setAttribute('aria-label', 'Background Music. Currently ' + (isOn ? 'on' : 'off') + '. Double tap to toggle.');
+    announce('Background music ' + (isOn ? 'turned on.' : 'turned off.'));
+    if (isOn) playBgMusic(); else stopBgMusic();
+  }
+
+  function changeTrack(direction) {
+    if (state.customAudioActive) {
+      announce('Turn off custom audio first to switch built-in tracks.');
+      return;
+    }
+    state.currentTrack = state.currentTrack === 1 ? 2 : 1;
+    const display = document.getElementById('music-track-display');
+    if (display) display.textContent = 'Track ' + state.currentTrack;
+    announce('Track ' + state.currentTrack + ' selected.');
+    if (state.musicOn) playBgMusic();
+  }
+
+  function handleVolumeChange(type, value) {
+    const vol = Math.max(0, Math.min(100, Number(value)));
+    if (type === 'sound') {
+      state.soundVolume = vol;
+      const display = document.getElementById('sound-volume-display');
+      if (display) display.textContent = vol + '%';
+      const slider = document.getElementById('range-sound-volume');
+      if (slider) slider.setAttribute('aria-label', 'Sound Effects Volume. Currently ' + vol + ' percent.');
+    } else {
+      state.musicVolume = vol;
+      const volFraction = vol / 100;
+      bgMusic1.volume = volFraction;
+      bgMusic2.volume = volFraction;
+      bgMusicCustom.volume = volFraction;
+      const display = document.getElementById('music-volume-display');
+      if (display) display.textContent = vol + '%';
+      const slider = document.getElementById('range-music-volume');
+      if (slider) slider.setAttribute('aria-label', 'Background Music Volume. Currently ' + vol + ' percent.');
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     CUSTOM AUDIO UPLOAD (IndexedDB — sirf is
+     device/user ke liye, kisi aur ko access nahi)
+     ════════════════════════════════════════════ */
+  const CUSTOM_AUDIO_DB_NAME = 'CardGameAudioDB';
+  const CUSTOM_AUDIO_STORE   = 'customAudio';
+
+  function openCustomAudioDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(CUSTOM_AUDIO_DB_NAME, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(CUSTOM_AUDIO_STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  async function saveCustomAudioToDB(blob, name) {
+    const db = await openCustomAudioDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(CUSTOM_AUDIO_STORE, 'readwrite');
+      tx.objectStore(CUSTOM_AUDIO_STORE).put({ blob: blob, name: name }, 'userAudio');
+      tx.oncomplete = () => resolve();
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
+
+  async function loadCustomAudioFromDB() {
+    const db = await openCustomAudioDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(CUSTOM_AUDIO_STORE, 'readonly');
+      const req = tx.objectStore(CUSTOM_AUDIO_STORE).get('userAudio');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+
+  async function deleteCustomAudioFromDB() {
+    const db = await openCustomAudioDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(CUSTOM_AUDIO_STORE, 'readwrite');
+      tx.objectStore(CUSTOM_AUDIO_STORE).delete('userAudio');
+      tx.oncomplete = () => resolve();
+      tx.onerror    = () => reject(tx.error);
+    });
+  }
+
+  function updateCustomAudioStatusUI(name) {
+    const status = document.getElementById('custom-audio-status');
+    const removeBtn = document.getElementById('btn-remove-custom-audio');
+    if (status) status.textContent = name ? ('Uploaded: ' + name) : 'No custom audio uploaded yet.';
+    if (removeBtn) removeBtn.style.display = name ? 'flex' : 'none';
+  }
+
+  async function handleCustomAudioUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      await saveCustomAudioToDB(file, file.name);
+      bgMusicCustom.src = URL.createObjectURL(file);
+      updateCustomAudioStatusUI(file.name);
+      announce('Custom audio "' + file.name + '" uploaded successfully.');
+    } catch (e) {
+      announce('Custom audio upload failed. Please try again.');
+    }
+    input.value = '';
+  }
+
+  async function removeCustomAudio() {
+    try {
+      await deleteCustomAudioFromDB();
+      bgMusicCustom.pause();
+      bgMusicCustom.removeAttribute('src');
+      state.customAudioActive = false;
+      const toggle = document.getElementById('toggle-custom-music');
+      if (toggle) { toggle.checked = false; toggle.setAttribute('aria-checked', 'false'); }
+      updateCustomAudioStatusUI(null);
+      announce('Custom audio removed.');
+      if (state.musicOn) playBgMusic();
+    } catch (e) {
+      announce('Could not remove custom audio.');
+    }
+  }
+
+  function toggleCustomMusic(input) {
+    const isOn = input.checked;
+    if (isOn && !bgMusicCustom.src) {
+      announce('Please upload a custom audio file first.');
+      input.checked = false;
+      input.setAttribute('aria-checked', 'false');
+      return;
+    }
+    input.setAttribute('aria-checked', String(isOn));
+    state.customAudioActive = isOn;
+    input.setAttribute('aria-label', 'Use Custom Audio as Music. Currently ' + (isOn ? 'on' : 'off') + '. Double tap to toggle.');
+    announce('Custom audio ' + (isOn ? 'enabled' : 'disabled') + ' as background music.');
+    if (state.musicOn) playBgMusic();
+  }
+
+  /* Page load par pehle se saved custom audio (agar hai) restore karo */
+  (async function restoreCustomAudio() {
+    try {
+      const record = await loadCustomAudioFromDB();
+      if (record && record.blob) {
+        bgMusicCustom.src = URL.createObjectURL(record.blob);
+        updateCustomAudioStatusUI(record.name);
+      }
+    } catch (e) { /* IndexedDB available nahi ya khali hai — chup chap ignore karo */ }
+  })();
 
   /* ════════════════════════════════════════════
      DECK DATA — Standard 52 cards
