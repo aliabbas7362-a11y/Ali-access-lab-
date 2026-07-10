@@ -345,12 +345,6 @@
       color: var(--text-muted); font-size: 0.88rem; line-height: 1.7;
     }
     .notif-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
-    #screen-privacy {
-      position: fixed; inset: 0;
-      z-index: 200;
-      flex-direction: column;
-      background: var(--bg);
-    }
     .privacy-topbar {
       display: flex; align-items: center; gap: 12px;
       padding: 14px 16px;
@@ -652,6 +646,14 @@
     .btn-small:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
     .btn-small:hover { color: var(--text); border-color: var(--text-muted); }
 
+    .voice-select-dropdown {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: var(--r-sm);
+      padding: 8px 10px; font-family: var(--font); font-size: 0.85rem;
+      min-height: 42px; width: 100%;
+    }
+    .voice-select-dropdown:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
     /* ── TRUMP BAR ── */
     .trump-bar {
       background: rgba(10,15,20,0.7); border-bottom: 1px solid var(--border);
@@ -845,6 +847,8 @@
   <!-- LIVE REGIONS: TalkBack only -->
   <div id="live-region-a" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
   <div id="live-region-b" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
+  <div id="live-region-c" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+  <div id="live-region-d" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- ══════════════════════════════════════
        DASHBOARD SCREEN
@@ -858,7 +862,7 @@
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="dash-more-btn"
           id="btn-more-options"
-          aria-label="More options. Settings and Privacy Policy."
+          aria-label="More options. Settings and About."
           aria-haspopup="dialog"
           onclick="openMoreOptions()">
           ⋮
@@ -938,51 +942,6 @@
   </div><!-- /screen-home -->
 
   <!-- ══════════════════════════════════════
-       PRIVACY POLICY SCREEN
-       ══════════════════════════════════════ -->
-  <div id="screen-privacy" class="screen" role="main" aria-label="Privacy Policy">
-
-    <div class="privacy-topbar">
-      <button class="drawer-back-btn"
-        aria-label="Back. Return to dashboard."
-        onclick="closePrivacy()">&#8592;</button>
-      <span class="privacy-title">Privacy Policy</span>
-    </div>
-
-    <div class="privacy-body" role="document">
-      <h2>Introduction</h2>
-      <p>Card Game is developed by Abbas Ali, a blind developer from Quetta, Pakistan. This app is designed with accessibility-first principles for blind and visually impaired users. Currently the app runs fully offline. Online multiplayer and additional features are planned for future versions.</p>
-
-      <h2>Data Collection</h2>
-      <p>Currently, this app does not collect, store, or transmit any personal data to external servers. All game data including scores and settings is stored locally on your device only. This will be updated when online features are introduced.</p>
-
-      <h2>Google Sign-In (Optional)</h2>
-      <p>The app offers optional Google Sign-In for profile features. If you choose to sign in, only your Google display name and profile picture are used within the app. We do not access your email, contacts, or any other Google account data without your permission.</p>
-
-      <h2>Notification Permission</h2>
-      <p>This app will request permission to send you notifications. This permission is required to inform you about new game updates, features, and announcements. You can deny this permission and the app will still work normally. You can change this setting at any time in your device settings.</p>
-
-      <h2>Future Permissions</h2>
-      <p>In future versions, the app may request camera permission to allow you to select a custom profile avatar, and microphone permission to support voice chat in online multiplayer mode. These permissions will only be requested when those features are available and will always be optional.</p>
-
-      <h2>Monetization</h2>
-      <p>This app currently has no advertisements or in-app purchases. Future versions may include hybrid monetization such as optional cosmetic items or premium features. Any monetization will be clearly disclosed and will not affect core gameplay.</p>
-
-      <h2>Sound &amp; Storage</h2>
-      <p>The app uses audio sound effects stored locally. All game preferences are saved on your device using browser local storage. No data leaves your device in the current offline version.</p>
-
-      <h2>Children</h2>
-      <p>This app does not knowingly collect data from children under 13. The games are suitable for all ages.</p>
-
-      <h2>Contact</h2>
-      <p>Developed by Abbas Ali — Blind Developer, Quetta, Balochistan, Pakistan. Developer contact details and social media links will be added in a future update.</p>
-
-      <h2>Last Updated</h2>
-      <p>June 2026</p>
-    </div>
-
-  </div><!-- /screen-privacy -->
-
   <!-- ══════════════════════════════════════
        ABOUT SCREEN
        ══════════════════════════════════════ -->
@@ -1372,6 +1331,42 @@
           </label>
         </div>
 
+        <div style="margin-top:16px;">
+          <div class="toggle-label">Announcement Level</div>
+          <div class="toggle-desc">
+            Short gives quick, minimal callouts — anyone can pick it, it's
+            especially handy once you know the game well. Medium gives
+            fuller, more guided announcements.
+          </div>
+          <div role="radiogroup" aria-label="Announcement Level. Short or Medium."
+            style="display:flex;gap:10px;margin-top:10px;">
+            <button type="button" id="btn-level-short" class="btn-small"
+              role="radio" aria-checked="true"
+              aria-label="Short announcement level. Currently selected."
+              style="flex:1;border-color:var(--gold);color:var(--gold);"
+              onclick="setAnnouncementLevel('short')">Short</button>
+            <button type="button" id="btn-level-medium" class="btn-small"
+              role="radio" aria-checked="false"
+              aria-label="Medium announcement level. Double tap to select."
+              style="flex:1;"
+              onclick="setAnnouncementLevel('medium')">Medium</button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <label for="voice-select" class="toggle-label" style="display:block;margin-bottom:4px;">Commentary Voice</label>
+          <div class="toggle-desc" id="voice-select-desc">
+            Choose the Google voice used for spoken game commentary. Saved automatically.
+          </div>
+          <select id="voice-select" class="voice-select-dropdown"
+            aria-label="Commentary Voice. Choose which Google voice speaks game events."
+            aria-describedby="voice-select-desc"
+            onchange="VoiceEngine.setVoice(this.value)"
+            style="margin-top:8px;">
+            <option value="">Loading voices…</option>
+          </select>
+        </div>
+
         <hr class="divider" style="margin:24px 0 16px;">
         <p class="drawer-section-heading">App Info</p>
         <div class="panel-row">
@@ -1596,12 +1591,6 @@
         Settings
       </button>
       <button class="more-options-item" role="menuitem"
-        aria-label="Privacy Policy. View app privacy information."
-        onclick="closeMoreOptions(); openPrivacy();">
-        <span class="moi-icon" aria-hidden="true">🔒</span>
-        Privacy Policy
-      </button>
-      <button class="more-options-item" role="menuitem"
         aria-label="About this app. Developer info and contact."
         onclick="closeMoreOptions(); openAbout();">
         <span class="moi-icon" aria-hidden="true">ℹ️</span>
@@ -1641,6 +1630,7 @@
   const state = {
     sound:        true,
     talkback:     true,
+    announcementLevel: 'short', /* 'short' ya 'medium' — user Settings > Announcement Level se select karta hai */
     soundVolume:  100,   /* Sound effects volume, 0-100 */
     musicOn:      false, /* Background music on/off */
     musicVolume:  70,    /* Background music volume, 0-100 */
@@ -1963,11 +1953,30 @@
   }
 
   /* ════════════════════════════════════════════
+     lvl() — Announcement Level helper
+     Game-flow announcements (deal/trump/card-play/trick-
+     result/round/match) ke do versions hote hain — SHORT
+     aur MEDIUM. state.announcementLevel ke mutabiq sahi
+     wala text return karta hai. Settings/Sound/Sign-in
+     jaise non-gameplay announce() calls is se untouched hain.
+     ════════════════════════════════════════════ */
+  function lvl(shortText, mediumText) {
+    return state.announcementLevel === 'short' ? shortText : mediumText;
+  }
+
+  /* ════════════════════════════════════════════
      ANNOUNCE — dual alternating live regions
      ════════════════════════════════════════════ */
   let _tick = false;
-  function announce(msg) {
-    if (!state.talkback) return;
+  function announce(msg, callback) {
+    if (!state.talkback) { if (callback) setTimeout(callback, 100); return; }
+
+    const inGame = document.getElementById('screen-game').classList.contains('active');
+    if (inGame) {
+      VoiceEngine.speak(msg, callback);   /* game ke andar — sirf commentary, TalkBack live region touch nahi */
+      return;
+    }
+
     _tick = !_tick;
     const activeId = _tick ? 'live-region-a' : 'live-region-b';
     const clearId  = _tick ? 'live-region-b' : 'live-region-a';
@@ -1975,7 +1984,13 @@
     setTimeout(() => {
       const el = document.getElementById(activeId);
       el.textContent = msg;
-      setTimeout(() => { el.textContent = ''; }, 4000);
+      /* callback diya gaya ho tabhi dynamic speakMs use hoti hai
+         (chain-based timing ke liye) — baaki purane 40+ call-sites
+         ka behavior bilkul waisa hi rehta hai jaisa pehle tha
+         (fixed 4000ms clear, koi callback nahi). */
+      const speakMs = callback ? Math.max(1800, msg.length * 90) : 4000;
+      setTimeout(() => { el.textContent = ''; }, speakMs);
+      if (callback) setTimeout(callback, speakMs + 400);
     }, 80);
   }
 
@@ -1983,6 +1998,129 @@
     document.getElementById('live-region-a').textContent = '';
     document.getElementById('live-region-b').textContent = '';
   }
+
+  /* ════════════════════════════════════════════
+     ANNOUNCE ROBOT PLAY
+     Pehle yeh "polite" live-region use karta tha taakah human
+     focus (#trick-status) ko forcefully na cheene — lekin
+     "polite" TalkBack ke liye sirf best-effort hai, guarantee
+     nahi. Bade gaps ke baad bhi kabhi kabhi silently drop ho
+     jata tha (khaaskar beech waale robot ka announcement),
+     jabke isi file ka "assertive" wala announce() system
+     hamesha consistently kaam karta hai. Isliye ab yeh bhi
+     "assertive" hai (live-region-c/d) — reliability ko
+     priority di gayi hai politeness se zyada, kyunke yeh sirf
+     AI ki turn ke dauran fire hota hai jab human khud kuch
+     bol/type nahi kar raha hota.
+
+     CHAIN-BASED TIMING: agla robot tabhi announce hoga jab
+     pichle ki announcement TalkBack poori bol chuki ho.
+     speakMs text ki length ke hisaab se dynamically calculate
+     hota hai (min 1800ms), taakah lambe sentence beech mein
+     cut na hon. callback poore speech + 400ms buffer ke baad
+     fire hota hai.
+
+     2-REGION ALTERNATE: har robot ka announcement guaranteed
+     naye/alag node (c ya d) par jata hai — same node ko
+     laggatar reuse karne se TalkBack kabhi kabhi consecutive
+     mutation ko naya event nahi maanta.
+     ════════════════════════════════════════════ */
+  let _robotTick = false;
+  function announceRobotPlay(msg, callback) {
+    if (!state.talkback) { if (callback) setTimeout(callback, 100); return; }
+    VoiceEngine.speak(msg, callback); /* yeh function sirf gameplay ke dauran fire hota hai — hamesha commentary */
+  }
+
+  /* ════════════════════════════════════════════
+     VOICE ENGINE — Web Speech API commentary
+     Google-voice-only, cancel-then-speak, persisted
+     via localStorage. Jab game screen active ho,
+     announce() ARIA live regions ki jagah is engine
+     ko use karta hai (dekho announce() neeche) — isliye
+     ek hi waqt mein sirf EK cheez bolti hai, TalkBack
+     aur commentary kabhi overlap nahi karte. Dashboard/
+     Settings/Sign-in jaisi non-game screens par TalkBack
+     bilkul normal (apni native voice se) kaam karta hai.
+     state.talkback off hone par dono (TalkBack live
+     regions aur commentary) silent ho jaate hain — same
+     master switch, jaisa Abbas ne kaha.
+     ════════════════════════════════════════════ */
+  const VoiceEngine = {
+    STORAGE_KEY: 'cardgame_voice_pref',
+    voices: [],
+    selectedVoice: null,
+
+    init() {
+      if (!('speechSynthesis' in window)) return;
+      this.loadVoices();
+      window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+    },
+
+    loadVoices() {
+      const all = window.speechSynthesis.getVoices();
+      this.voices = all.filter(v => v.name.includes('Google'));
+      this.populateDropdown();
+      this.restorePreference();
+    },
+
+    populateDropdown() {
+      const select = document.getElementById('voice-select');
+      if (!select) return;
+      select.innerHTML = '';
+      if (this.voices.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No Google voices found — using system default';
+        select.appendChild(opt);
+        return;
+      }
+      this.voices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = v.name + ' (' + v.lang + ')';
+        select.appendChild(opt);
+      });
+    },
+
+    restorePreference() {
+      const select = document.getElementById('voice-select');
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      const match = saved && this.voices.find(v => v.name === saved);
+      if (match) {
+        this.selectedVoice = match;
+      } else if (this.voices.length > 0) {
+        this.selectedVoice = this.voices[0];
+      } else {
+        this.selectedVoice = null; /* system default fallback */
+      }
+      if (select && this.selectedVoice) select.value = this.selectedVoice.name;
+    },
+
+    setVoice(name) {
+      this.selectedVoice = this.voices.find(v => v.name === name) || null;
+      if (this.selectedVoice) {
+        localStorage.setItem(this.STORAGE_KEY, this.selectedVoice.name);
+      } else {
+        localStorage.removeItem(this.STORAGE_KEY);
+      }
+      this.speak('Commentary voice set to ' + (this.selectedVoice ? this.selectedVoice.name.replace('Google', '').trim() : 'system default') + '.');
+    },
+
+    speak(text, callback) {
+      if (!('speechSynthesis' in window) || !text) {
+        if (callback) setTimeout(callback, 100);
+        return;
+      }
+      window.speechSynthesis.cancel(); /* instant interruption — kills anything mid-speech */
+      const utter = new SpeechSynthesisUtterance(text);
+      if (this.selectedVoice) utter.voice = this.selectedVoice;
+      if (callback) {
+        utter.onend = callback;
+        utter.onerror = callback; /* safety net — game na atke agar speech fail ho */
+      }
+      window.speechSynthesis.speak(utter);
+    }
+  };
 
   /* ════════════════════════════════════════════
      BACKGROUND INERT HELPER — used by all modal
@@ -2500,7 +2638,7 @@
     dialog.removeAttribute('aria-hidden');
     dialog.classList.add('open');
     setMainScreenInert(true);
-    announce('More options. Settings and Privacy Policy.');
+    announce('More options. Settings and About.');
     setTimeout(() => {
       dialog.querySelector('.more-options-item').focus();
     }, 100);
@@ -2515,21 +2653,6 @@
       dialog.setAttribute('aria-hidden', 'true');
     }, 200);
     setTimeout(() => document.getElementById('btn-more-options').focus(), 50);
-  }
-
-  function openPrivacy() {
-    document.getElementById('screen-home').classList.remove('active');
-    document.getElementById('screen-privacy').classList.add('active');
-    announce('Privacy Policy page opened.');
-    setTimeout(() => {
-      document.querySelector('.privacy-topbar .drawer-back-btn').focus();
-    }, 200);
-  }
-
-  function closePrivacy() {
-    document.getElementById('screen-privacy').classList.remove('active');
-    document.getElementById('screen-home').classList.add('active');
-    announce('Back to dashboard.');
   }
 
   function openAbout() {
@@ -2551,6 +2674,7 @@
      ════════════════════════════════════════════ */
   window.addEventListener('load', () => {
     clearAllAnnouncements();
+    VoiceEngine.init();
     updateProfileUI();
     /* Notification permission is NOT requested automatically on load.
        User can enable it manually via the bell icon > notification panel. */
@@ -2573,6 +2697,31 @@
       input.setAttribute('aria-label', 'TalkBack Announcements. Currently ' + (isOn?'on':'off') + '. Double tap to toggle.');
       announce('TalkBack announcements ' + (isOn ? 'turned on.' : 'turned off.'));
     }
+  }
+
+  /* ════════════════════════════════════════════
+     ANNOUNCEMENT LEVEL — Short vs Medium
+     Settings > Accessibility se select hota hai. Sirf
+     game-flow announcements (deal/trump/card-play/trick/
+     round/match) is se affect hote hain — dekho lvl().
+     ════════════════════════════════════════════ */
+  function setAnnouncementLevel(level) {
+    state.announcementLevel = level;
+    const shortBtn  = document.getElementById('btn-level-short');
+    const mediumBtn = document.getElementById('btn-level-medium');
+    const isShort   = level === 'short';
+
+    shortBtn.setAttribute('aria-checked', String(isShort));
+    mediumBtn.setAttribute('aria-checked', String(!isShort));
+    shortBtn.setAttribute('aria-label',  'Short announcement level. ' + (isShort ? 'Currently selected.' : 'Double tap to select.'));
+    mediumBtn.setAttribute('aria-label', 'Medium announcement level. ' + (!isShort ? 'Currently selected.' : 'Double tap to select.'));
+
+    shortBtn.style.borderColor  = isShort ? 'var(--gold)' : '';
+    shortBtn.style.color        = isShort ? 'var(--gold)' : '';
+    mediumBtn.style.borderColor = !isShort ? 'var(--gold)' : '';
+    mediumBtn.style.color       = !isShort ? 'var(--gold)' : '';
+
+    announce('Announcement level set to ' + (isShort ? 'Short' : 'Medium') + '.');
   }
 
   /* ════════════════════════════════════════════
@@ -2644,6 +2793,19 @@
     document.getElementById('shuffle-screen').classList.remove('active');
     document.getElementById('screen-game').classList.add('active');
 
+    /* Jam/glitch fix: shuffle-screen hide hote hi uska focused
+       Shuffle button bhi hide ho jata hai — focus achanak kho
+       jata hai aur TalkBack ka "focus lost" cue + shuffle.mp3
+       sound effect + niche wala assertive announce() teeno
+       takra kar "jam/robotic" awaaz jaisa lagte the. Fix: focus
+       ko turant #trick-status (controlled anchor) par bhejo,
+       taakah dead-focus gap na bane. */
+    const trickStatus = document.getElementById('trick-status');
+    if (trickStatus) {
+      trickStatus.setAttribute('tabindex', '-1');
+      trickStatus.focus();
+    }
+
     state.deck = shuffleDeck(buildDeck());
     playSound('shuffle');
     const dealt       = dealFirst5(state.deck);
@@ -2661,9 +2823,15 @@
 
     const cardNames = state.hands.human.map(c => c.label).join(', ');
     setTimeout(() => {
-      announce('Cards dealt. Your first 5 cards: ' + cardNames + '. Select trump suit.');
-      const sel = document.getElementById('trump-selector');
-      if (sel) sel.querySelector('button').focus();
+      /* Pehle yahan announce() ke saath-saath trump-selector
+         button par .focus() bhi lagti thi — dono ek saath
+         chalne se overlap/garbled speech bun rahi thi. Ab
+         sirf ek hi source (announce) chalta hai; trump
+         buttons already normal swipe se milte hain. */
+      announce(lvl(
+        '5 cards: ' + cardNames + '. Select trump.',
+        'Cards dealt. Your first 5 cards: ' + cardNames + '. Select trump suit.'
+      ));
     }, 400);
   }
 
@@ -2707,7 +2875,10 @@
       + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
     zone.setAttribute('aria-label', 'Trump suit: ' + suitName);
 
-    announce(suitName + ' selected as trump. Dealing remaining 8 cards. Please wait.');
+    announce(lvl(
+      suitName + ' trump. Dealing rest.',
+      suitName + ' selected as trump. Dealing remaining 8 cards. Please wait.'
+    ));
 
     setTimeout(() => {
       state.hands  = dealRemaining(state.hands, state.deckRest);
@@ -2715,10 +2886,11 @@
       renderHand(state.hands.human, false);
       updateAICardCount();
 
-      announce(
+      announce(lvl(
+        '13 dealt. Trump ' + suitName + '. Your turn.',
         'All 13 cards dealt. Trump: ' + suitName
         + '. Your turn. Go to your cards and double tap to play.'
-      );
+      ));
     }, 600);
   }
 
@@ -2783,6 +2955,44 @@
     const unplayed   = state.hands.human;
     const hasLedSuit = unplayed.some(c => c.suit === ledSuit);
 
+    const filterMsg = hasLedSuit
+      ? lvl(
+          'Follow ' + ledSuit + '. Others disabled.',
+          'REQUIRED: You must follow ' + ledSuit + ' suit. '
+          + 'Only ' + ledSuit + ' cards are playable. '
+          + 'Other cards are Reneg and disabled.'
+        )
+      : lvl(
+          'No ' + ledSuit + '. Play anything.',
+          'You have no ' + ledSuit + '. '
+          + 'Play any card — or cut with trump.'
+        );
+
+    /* Focus-jump fix: agar TalkBack focus kisi aise card par hai
+       jo abhi disable hone wala hai, to disable karne se PEHLE
+       focus ko explicitly #trick-status par bhejo — playCard()
+       wala hi pattern. Is case mein hum status text ko usi
+       message se update karte hain jo announce() bolta — taakah
+       focus-read aur assertive announce() TAKRAYEN NAHI (yehi
+       wajah thi ke pehle "focus jump + status sahi announce
+       nahi hota" — dono ek saath fire ho rahe the). */
+    const active = document.activeElement;
+    let focusRedirected = false;
+    if (active && active.classList && active.classList.contains('card-human')) {
+      const activeLabel = active.getAttribute('data-label');
+      const activeCard  = unplayed.find(c => c.label === activeLabel);
+      const willBeDisabled = activeCard && hasLedSuit && activeCard.suit !== ledSuit;
+      if (willBeDisabled) {
+        updateTrickZoneLabel(filterMsg);
+        const trickStatus = document.getElementById('trick-status');
+        if (trickStatus) {
+          trickStatus.setAttribute('tabindex', '-1');
+          trickStatus.focus();
+        }
+        focusRedirected = true;
+      }
+    }
+
     document.querySelectorAll('.card-human').forEach(btn => {
       const cardLabel = btn.getAttribute('data-label');
       const card = unplayed.find(c => c.label === cardLabel);
@@ -2819,17 +3029,11 @@
       }
     });
 
-    if (hasLedSuit) {
-      announce(
-        'REQUIRED: You must follow ' + ledSuit + ' suit. '
-        + 'Only ' + ledSuit + ' cards are playable. '
-        + 'Other cards are Reneg and disabled.'
-      );
-    } else {
-      announce(
-        'You have no ' + ledSuit + '. '
-        + 'Play any card — or cut with trump.'
-      );
+    /* Agar upar focus already trick-status par bhej kar filterMsg
+       announce kar diya, to yahan dobara announce() mat karo —
+       warna wahi "do baar bolta hai" wala bug ban jayega. */
+    if (!focusRedirected) {
+      announce(filterMsg);
     }
   }
 
@@ -2847,10 +3051,29 @@
     if (btn.disabled) return;
 
     state.phase = 'ai-turn';
+
+    /* Double-click sound + focus-flicker fix: pehle hi #trick-status
+       par explicit focus le jao — button disable/remove se PEHLE.
+       Pehle order ulta tha (disable → 100ms baad focus), is beech
+       browser khud focus kho deta tha (native "focus lost" event)
+       aur phir hum dobara focus set karte the — do focus-changes
+       ek dusre ke peeche peeche TalkBack ka "cursor moved" click
+       do baar bajata tha (double-click jaisa sunayi deta). Ab
+       focus sirf EK BAAR, explicitly, disable hone se pehle hi
+       move hota hai. aria-label update bhi hata diya — wo bhi
+       button abhi focused hote hue re-announce ho kar collide
+       kar raha tha. */
+    const trickStatus = document.getElementById('trick-status');
+    if (trickStatus) {
+      trickStatus.setAttribute('tabindex', '-1');
+      trickStatus.focus();
+    }
+
     btn.disabled = true;
-    btn.setAttribute('aria-label', card.label + '. This card has been played.');
     playSound('cardFlip');
-    setTimeout(() => { btn.remove(); }, 100);
+    setTimeout(() => {
+      btn.remove();
+    }, 100);
 
     state.hands.human = state.hands.human.filter(c => c.label !== card.label);
     updateAICardCount();
@@ -2858,24 +3081,38 @@
     if (state.leader === 'human') {
       /* Human trick lead kar raha hai */
       showCardInTrick(card, 0);
-      updateTrickZoneLabel('You played ' + card.label + '. Waiting for opponents...');
-      announce('You played ' + card.label + '. You are leading this trick.');
+      const humanLeadMsg = lvl(
+        'You played ' + card.label + '. Leading.',
+        'You played ' + card.label + '. You are leading this trick. Waiting for opponents...'
+      );
+      updateTrickZoneLabel(humanLeadMsg);
+      /* announce() yahan se hata diya — focus (100ms baad) trick-status
+         par jaake yehi text khud padh deta hai. Dono chalne se
+         "do baar bolta hai" wala bug ban raha tha. */
       state.history.push('You played ' + card.label + ' (lead)');
       updateHistoryBtn();
       state.currentTrick = [{ card: card, player: 'human', team: 'A' }];
 
+      /* Dynamic first-delay: index-0 robot (Robot 1) tabhi fire hoga
+         jab humanLeadMsg ka focus-read TalkBack mein poora bol chuka
+         ho — warna Robot 1 ka assertive announcement ise beech mein
+         kaat deta tha (pehle fixed 1500ms tha, jo lambe messages ke
+         liye kaafi nahi tha). */
       fireRobotsInOrder([
         { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
         { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
         { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
-      ], card.suit);
+      ], card.suit, Math.max(1500, humanLeadMsg.length * 90));
 
     } else {
       /* Human ek robot ke peeche follow kar raha hai */
       const ledSuit = state.currentTrick[0].card.suit;
       showCardInTrick(card, state.currentTrick.length);
-      updateTrickZoneLabel('You played ' + card.label + '. Remaining robots playing...');
-      announce('You played ' + card.label + '.');
+      const humanFollowMsg = lvl(
+        'You played ' + card.label + '.',
+        'You played ' + card.label + '. Remaining robots playing...'
+      );
+      updateTrickZoneLabel(humanFollowMsg);
       state.history.push('You played ' + card.label);
       updateHistoryBtn();
       state.currentTrick.push({ card: card, player: 'human', team: 'A' });
@@ -2887,18 +3124,44 @@
         { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
       ].filter(r => !alreadyPlayed.includes(r.key));
 
-      fireRobotsInOrder(remaining, ledSuit);
+      /* Dynamic first-delay: index-0 robot (r1 ya r2, jo bhi bacha ho)
+         tabhi fire hoga jab humanFollowMsg ka focus-read poora bol
+         chuka ho — same fix jaisa human-leads branch mein. */
+      fireRobotsInOrder(remaining, ledSuit, Math.max(1500, humanFollowMsg.length * 90));
     }
   }
 
   /* ════════════════════════════════════════════
      fireRobotsInOrder — ek ek karke robots khelte hain
-     Har robot ke beech 1.5 second ka gap hai taakah
-     TalkBack har announcement theek se padh sake
+     firstDelay: pehle robot se pehle kitna wait karna hai —
+     yeh CALLER decide karta hai based on kitna lamba human
+     ka apna status-message tha (jo focus-read se bola ja raha
+     hai). Pehle yeh hamesha fixed 1500ms tha — agar human ka
+     apna "You played X..." message lamba hota aur TalkBack
+     usse bolne mein 1500ms se zyada leta, to index-0 wala robot
+     (jo bhi ho — r1, r2, ya r3, seating order pe depend karta
+     hai) us abhi-tak-bol-rahe message ko assertive announcement
+     se BEECH MEIN KAAT deta tha. Isi wajah se "kabhi Robot 1
+     miss, kabhi Robot 2 miss, Robot 3 kabhi nahi" wala pattern
+     ban raha tha — Robot 3 seating order mein kabhi index-0
+     nahi banta, isliye hamesha safe raha.
      ════════════════════════════════════════════ */
-  function fireRobotsInOrder(robots, ledSuit) {
-    let done = 0;
-    robots.forEach((robot, i) => {
+  function fireRobotsInOrder(robots, ledSuit, firstDelay) {
+    const startDelay = firstDelay || 1500;
+    function playNext(index) {
+      if (index >= robots.length) {
+        /* Chain-based timing fix: har robot ka announcement poora
+           bolne ke baad hi agla robot fire hota hai (announceRobotPlay
+           ka callback dynamic speakMs + 400ms buffer ke baad chalta hai).
+           Isliye ab last robot ke poora bolne ka guarantee hai — sirf
+           400ms ka chhota gap resolveTrick() ke assertive trick-win/lose
+           announce() se pehle. Pehle wala fixed 1500ms gap + 3000ms wait
+           guesswork tha jo lambi announcements ko beech mein CUT kar
+           deta tha. */
+        setTimeout(() => resolveTrick(ledSuit), 400);
+        return;
+      }
+      const robot = robots[index];
       setTimeout(() => {
         const chosen = getAICard(
           state.hands[robot.key],
@@ -2911,21 +3174,24 @@
           showCardInTrick(chosen, state.currentTrick.length - 1);
           playSound('cardFlip');
 
-          /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare */
+          /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare
+             (isolated polite live-region — human focus ko cheenta nahi).
+             Agla robot (playNext) sirf tabhi fire hoga jab is robot ki
+             announcement TalkBack mein poori bol chuki ho. */
           setTimeout(() => {
-            announce(robot.label + ' played ' + chosen.label + '.');
+            announceRobotPlay(robot.label + ' played ' + chosen.label + '.', () => {
+              playNext(index + 1);
+            });
           }, 800);
 
           state.history.push(robot.label + ' played ' + chosen.label);
           updateHistoryBtn();
+        } else {
+          playNext(index + 1);
         }
-
-        done++;
-        if (done === robots.length) {
-          setTimeout(() => resolveTrick(ledSuit), 1200);
-        }
-      }, (i + 1) * 1500);
-    });
+      }, index === 0 ? startDelay : 0);
+    }
+    playNext(0);
   }
 
   /* ════════════════════════════════════════════
@@ -3037,18 +3303,22 @@
     if (isHumanTeam) {
       state.scoreHuman++;
       playSound('trickWin');
-      trickResultMsg =
+      trickResultMsg = lvl(
+        'You won trick with ' + winner.card.label + '. ' + state.scoreHuman + '-' + state.scoreAI + '.',
         'Your team won this trick! '
         + winnerLabel + ' took it with ' + winner.card.label + '. '
-        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.';
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
+      );
       announce(trickResultMsg);
     } else {
       state.scoreAI++;
       playSound('trickLose');
-      trickResultMsg =
+      trickResultMsg = lvl(
+        'Opponents won with ' + winner.card.label + '. ' + state.scoreHuman + '-' + state.scoreAI + '.',
         'Opponents won the trick. '
         + winnerLabel + ' took it with ' + winner.card.label + '. '
-        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.';
+        + 'Score: ' + state.scoreHuman + ' — ' + state.scoreAI + '.'
+      );
       announce(trickResultMsg);
     }
 
@@ -3107,7 +3377,10 @@
       /* Human lead karega agli trick mein */
       setTimeout(() => {
         state.phase = 'playing';
-        const nextMsg = 'Trick ' + (state.tricksPlayed + 1) + ' — You lead. Play any card.';
+        const nextMsg = lvl(
+          'Trick ' + (state.tricksPlayed + 1) + '. You lead.',
+          'Trick ' + (state.tricksPlayed + 1) + ' — You lead. Play any card.'
+        );
         updateTrickZoneLabel(nextMsg);
         setTimeout(() => announce(nextMsg), 600);
         /* Saare cards enable karo — human lead pe koi restriction nahi */
@@ -3146,20 +3419,34 @@
         playSound('cardFlip');
         updateAICardCount();
 
-        const leadMsg = leaderLabel + ' led trick ' + (state.tricksPlayed + 1)
+        const leadMsg = lvl(
+          leaderLabel + ' led with ' + leaderCard.label + '.',
+          leaderLabel + ' led trick ' + (state.tricksPlayed + 1)
           + ' with ' + leaderCard.label + '. '
-          + 'If you have ' + leaderCard.suit + ', you must follow suit.';
+          + 'If you have ' + leaderCard.suit + ', you must follow suit.'
+        );
         updateTrickZoneLabel(leadMsg);
-        setTimeout(() => announce(leadMsg), 800);
 
         state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
         updateHistoryBtn();
 
-        /* Human ko filter lagao aur turn do */
+        /* CHAIN-BASED FIX: applyCardFilter() khud bhi assertive
+           announce()/focus fire karta hai. Pehle yeh fixed 800ms
+           + 2200ms (yani sirf 1400ms ka gap) pe chalta tha — agar
+           leadMsg lamba hota (robot ka naam + card + suit follow
+           instruction) aur TalkBack usse bolne mein 1400ms se
+           zyada leta, to applyCardFilter ka assertive announce
+           beech mein hi CUT kar deta tha. Isi wajah se robot-lead
+           announcement kabhi sunayi deta, kabhi nahi (message ki
+           length aur TalkBack speed pe depend karta tha). Ab
+           applyCardFilter TABHI chalega jab leadMsg TalkBack mein
+           POORI bol chuki ho (dynamic speakMs + 400ms buffer). */
         setTimeout(() => {
-          state.phase = 'playing';
-          applyCardFilter(leaderCard.suit);
-        }, 2200);
+          announce(leadMsg, () => {
+            state.phase = 'playing';
+            applyCardFilter(leaderCard.suit);
+          });
+        }, 800);
       }, 2800);
     }
   }
@@ -3177,23 +3464,26 @@
      Match khatam: Pehli team jo 10 points poore kare
      ════════════════════════════════════════════ */
   function calculatePoints(result) {
-    let humanPoints = 0;
-    let aiPoints    = 0;
-    let roundMsg    = '';
+    let humanPoints    = 0;
+    let aiPoints       = 0;
+    let roundMsg       = '';   /* medium version */
+    let roundMsgShort  = '';   /* short version */
 
     switch (result) {
       case 'kot_human':
         humanPoints = 3;
         state.roundsWonHuman++;
         state.roundsWonAI = 0;
-        roundMsg = 'KOT! Your team took all first 7 tricks! +3 points!';
+        roundMsg      = 'KOT! Your team took all first 7 tricks! +3 points!';
+        roundMsgShort = 'KOT! Your team +3.';
         break;
 
       case 'kot_ai':
         aiPoints = 4;
         state.roundsWonAI++;
         state.roundsWonHuman = 0;
-        roundMsg = 'KOT! Opponents took all first 7 tricks! They get +4 points!';
+        roundMsg      = 'KOT! Opponents took all first 7 tricks! They get +4 points!';
+        roundMsgShort = 'KOT! Opponents +4.';
         break;
 
       case 'normal_human':
@@ -3202,6 +3492,7 @@
         state.roundsWonAI = 0;
         roundMsg = 'Round ' + state.roundNumber + ' won by your team! +1 point. '
           + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
+        roundMsgShort = 'Round ' + state.roundNumber + ': your team +1.';
         break;
 
       case 'normal_ai':
@@ -3211,6 +3502,7 @@
         state.roundsWonHuman = 0;
         roundMsg = 'Round ' + state.roundNumber + ' won by opponents! They get +2 points. '
           + '(Tricks: ' + state.scoreHuman + ' — ' + state.scoreAI + ')';
+        roundMsgShort = 'Round ' + state.roundNumber + ': opponents +2.';
         break;
     }
 
@@ -3219,16 +3511,18 @@
     ── */
     if (state.roundsWonHuman === 7) {
       humanPoints += 3;
-      roundMsg += ' | 7 rounds in a row — MEGA KOT! Bonus +3 points!';
+      roundMsg      += ' | 7 rounds in a row — MEGA KOT! Bonus +3 points!';
+      roundMsgShort += ' | MEGA KOT +3.';
       state.roundsWonHuman = 0;
     }
     if (state.roundsWonAI === 7) {
       aiPoints += 3;
-      roundMsg += ' | Opponents won 7 rounds in a row — MEGA KOT! They get +3 bonus!';
+      roundMsg      += ' | Opponents won 7 rounds in a row — MEGA KOT! They get +3 bonus!';
+      roundMsgShort += ' | Opponents MEGA KOT +3.';
       state.roundsWonAI = 0;
     }
 
-    return { humanPoints, aiPoints, roundMsg };
+    return { humanPoints, aiPoints, roundMsg, roundMsgShort };
   }
 
   /* ════════════════════════════════════════════
@@ -3245,7 +3539,7 @@
       btn.setAttribute('aria-disabled', 'true');
     });
 
-    const { humanPoints, aiPoints, roundMsg } = calculatePoints(result);
+    const { humanPoints, aiPoints, roundMsg, roundMsgShort } = calculatePoints(result);
 
     state.pointsHuman += humanPoints;
     state.pointsAI    += aiPoints;
@@ -3299,12 +3593,13 @@
     };
 
     setTimeout(() => {
-      announce(
+      announce(lvl(
+        roundMsgShort + ' Points ' + state.pointsHuman + '-' + state.pointsAI + '. Tap Next Round.',
         roundMsg
         + ' Match points: You ' + state.pointsHuman
         + ', Opponents ' + state.pointsAI
         + '. Target 10 points. Double tap Next Round button.'
-      );
+      ));
       setTimeout(() => playAgainBtn.focus(), 600);
     }, 500);
   }
@@ -3371,14 +3666,16 @@
 
     const cardNames = state.hands.human.map(c => c.label).join(', ');
     setTimeout(() => {
-      announce(
+      announce(lvl(
+        'Round ' + state.roundNumber + '. Points ' + state.pointsHuman + '-' + state.pointsAI
+        + '. Cards: ' + cardNames + '. Select trump.',
         'Round ' + state.roundNumber + ' started! '
         + 'Match points — You: ' + state.pointsHuman
         + ', Opponents: ' + state.pointsAI
         + '. Target: 10 points. '
         + 'Your 5 cards: ' + cardNames
         + '. Select trump suit.'
-      );
+      ));
       const sel = document.getElementById('trump-selector');
       if (sel) {
         const firstBtn = sel.querySelector('button');
@@ -3438,10 +3735,16 @@
     };
 
     const msg = humanWon
-      ? 'Congratulations! Your team won the match! Final score: You '
-        + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.'
-      : 'Opponents won the match. Final score: You '
-        + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.';
+      ? lvl(
+          'Match won! ' + state.pointsHuman + '-' + state.pointsAI + '.',
+          'Congratulations! Your team won the match! Final score: You '
+          + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.'
+        )
+      : lvl(
+          'Match lost. ' + state.pointsHuman + '-' + state.pointsAI + '.',
+          'Opponents won the match. Final score: You '
+          + state.pointsHuman + ', Opponents ' + state.pointsAI + '. Double tap New Match.'
+        );
 
     setTimeout(() => {
       announce(msg);
