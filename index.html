@@ -147,17 +147,47 @@
       text-transform: uppercase; pointer-events: none;
     }
 
-    /* Profile button */
+    /* Bottom bar — top-bar jaisi hi ek poori-width strip, taake
+       neeche se ungli guzarne par bhi bar mil jaaye (jaisa top bar
+       ke saath hota hai) — akela floating circle "dhoondhna" padta
+       tha, ab poori strip "takrati" hai. Android 3-button nav ki
+       clearance ke liye upar hi rakha hai (56px+safe-bottom), lekin
+       ab ek poori bar ke andar, akela dot nahi.
+       NOTE: pointer-events:none/auto trick yahan se hata diya —
+       kuch Android WebView versions mein ye TalkBack ke explore-by-
+       touch ko break kar deta hai (button ka apna pointer-events:auto
+       hone ke bawajood). Bar ka khaali hissa ab technically tap-able
+       hai lekin kuch nahi karta — harmless, us jagah pehle bhi kuch
+       nahi tha. */
+    .dash-bottombar {
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 0;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 8px 16px;
+      padding-bottom: calc(8px + 56px + var(--safe-bottom));
+      z-index: 40;
+    }
+
+    /* Profile button — bar ke andar right-aligned. Touch target
+       pehle se bada (56px, notif/3-dot ke 44px se bhi zyada) taake
+       explore-by-touch mein aasaani se mil jaaye. Visibility fix:
+       pehle background(--surface) + border(--border) dono itne dark
+       the ke black background mein ye button ghul (blend) ho ke
+       chhup jaata tha — ab gold border + lighter fill se prominent
+       hai. */
     .dash-profile-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 44px; height: 44px;
-      background: var(--surface);
-      border: 2px solid var(--border);
+      width: 56px; height: 56px;
+      background: #1c2620;
+      border: 2px solid var(--gold-dim);
       border-radius: 50%;
       cursor: pointer; overflow: hidden;
       transition: border-color 0.2s;
       flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,184,75,0.15);
     }
+    .dash-profile-btn .profile-avatar-placeholder { font-size: 1.7rem; }
     .dash-profile-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
     .dash-profile-btn:hover { border-color: var(--gold-dim); }
     .dash-profile-btn.signed-in { border-color: var(--green); }
@@ -173,7 +203,10 @@
     .dash-body {
       flex: 1; overflow-y: auto; overflow-x: hidden;
       padding: 24px 16px;
-      padding-bottom: calc(24px + var(--safe-bottom));
+      /* +60px: profile button ab yahan fixed/floating hai, isliye
+         itni jagah reserve ki taake scroll ke aakhri item ke upar
+         na aa jaaye. */
+      padding-bottom: calc(140px + var(--safe-bottom));
     }
 
     /* Greeting */
@@ -453,6 +486,7 @@
     }
     .volume-slider:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
     .volume-value { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; text-align: right; }
+    .commentary-caption { font-size: 0.8rem; color: var(--text-muted); font-style: italic; min-height: 1.2em; margin: 6px 0 0; text-align: center; }
 
     /* ── BACKGROUND MUSIC TRACK NAV ── */
     .track-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
@@ -849,6 +883,11 @@
   <div id="live-region-b" class="sr-only" aria-live="assertive" aria-atomic="true" role="status"></div>
   <div id="live-region-c" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
   <div id="live-region-d" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+  <!-- Silent focus sink: tabindex only, no text/aria-label/role — TalkBack
+       stays silent when this receives focus. Used in-game instead of
+       #trick-status so focus-management never re-triggers TalkBack's own
+       native focus announcement on top of VoiceEngine's spoken commentary. -->
+  <div id="focus-anchor" tabindex="-1" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;"></div>
 
   <!-- ══════════════════════════════════════
        DASHBOARD SCREEN
@@ -858,29 +897,35 @@
     <!-- TOP BAR -->
     <div class="dash-topbar">
 
-      <!-- Left: 3-dot + Notification bell -->
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="dash-more-btn"
-          id="btn-more-options"
-          aria-label="More options. Settings and About."
-          aria-haspopup="dialog"
-          onclick="openMoreOptions()">
-          ⋮
-        </button>
-        <button class="dash-notif-btn"
-          id="btn-notifications"
-          aria-label="Notifications. No new notifications."
-          aria-haspopup="dialog"
-          onclick="openDrawer('notifications')">
-          🔔
-          <span class="notif-badge" id="notif-badge" aria-hidden="true"></span>
-        </button>
-      </div>
+      <!-- Left: Notification bell (3-dot yahan se hata diya gaya) -->
+      <button class="dash-notif-btn"
+        id="btn-notifications"
+        aria-label="Notifications. No new notifications."
+        aria-haspopup="dialog"
+        onclick="openDrawer('notifications')">
+        🔔
+        <span class="notif-badge" id="notif-badge" aria-hidden="true"></span>
+      </button>
 
       <!-- App Title -->
       <span class="dash-app-title" aria-hidden="true">Card Game</span>
 
-      <!-- Profile -->
+      <!-- Right: 3-dot (pehle top-left mein tha, ab yahan) -->
+      <button class="dash-more-btn"
+        id="btn-more-options"
+        aria-label="More options. Settings and About."
+        aria-haspopup="dialog"
+        onclick="openMoreOptions()">
+        ⋮
+      </button>
+
+    </div>
+
+    <!-- Bottom bar — profile ab top-bar jaisi hi ek poori-width strip
+         mein hai, bottom-right corner par, taake edge-exploration se
+         bhi mil jaaye (jaisa top bar ke notification/3-dot ke saath
+         hota hai). -->
+    <div class="dash-bottombar">
       <button class="dash-profile-btn"
         id="btn-profile"
         aria-label="Profile. Not signed in. Double tap to sign in with Google."
@@ -888,7 +933,6 @@
         onclick="openDrawer('profile')">
         <span class="profile-avatar-placeholder" id="profile-topbar-avatar" aria-hidden="true">👤</span>
       </button>
-
     </div>
 
     <!-- UPDATE BANNER (hidden by default, shown when a newer version is found) -->
@@ -1115,7 +1159,7 @@
     </div>
 
     <!-- TRUMP BAR -->
-    <div class="trump-bar" role="status"
+    <div class="trump-bar"
       id="trump-indicator" tabindex="0"
       aria-label="Trump suit: Not selected yet">
       Trump: <span id="trump-display">Not selected yet</span>
@@ -1145,6 +1189,7 @@
         <p class="trick-zone-label">Current Trick</p>
         <div class="trick-played-cards" id="trick-cards" aria-hidden="true"></div>
         <p id="trick-status">Waiting for first card…</p>
+        <p id="commentary-caption" class="commentary-caption" aria-hidden="true"></p>
       </div>
 
       <!-- SCORE + HISTORY -->
@@ -1365,6 +1410,15 @@
             style="margin-top:8px;">
             <option value="">Loading voices…</option>
           </select>
+        </div>
+
+        <div class="volume-row" style="margin-top:16px;">
+          <label class="volume-label" for="range-commentary-volume">Commentary Volume</label>
+          <input type="range" id="range-commentary-volume" class="volume-slider"
+            min="0.1" max="1.0" step="0.1" value="1.0"
+            aria-label="Commentary Volume. Currently 100 percent."
+            oninput="VoiceEngine.setVolume(this.value)" />
+          <span class="volume-value" id="commentary-volume-display" aria-hidden="true">100%</span>
         </div>
 
         <hr class="divider" style="margin:24px 0 16px;">
@@ -1973,7 +2027,12 @@
 
     const inGame = document.getElementById('screen-game').classList.contains('active');
     if (inGame) {
-      VoiceEngine.speak(msg, callback);   /* game ke andar — sirf commentary, TalkBack live region touch nahi */
+      try {
+        VoiceEngine.speak(msg, callback);   /* game ke andar — sirf commentary, TalkBack live region touch nahi */
+      } catch (e) {
+        /* VoiceEngine mein kuch bhi toote, game flow rukna nahi chahiye */
+        if (callback) setTimeout(callback, 100);
+      }
       return;
     }
 
@@ -2028,55 +2087,124 @@
   let _robotTick = false;
   function announceRobotPlay(msg, callback) {
     if (!state.talkback) { if (callback) setTimeout(callback, 100); return; }
-    VoiceEngine.speak(msg, callback); /* yeh function sirf gameplay ke dauran fire hota hai — hamesha commentary */
+    try {
+      VoiceEngine.speak(msg, callback); /* yeh function sirf gameplay ke dauran fire hota hai — hamesha commentary */
+    } catch (e) {
+      if (callback) setTimeout(callback, 100);
+    }
   }
 
   /* ════════════════════════════════════════════
      VOICE ENGINE — Web Speech API commentary
-     Google-voice-only, cancel-then-speak, persisted
-     via localStorage. Jab game screen active ho,
-     announce() ARIA live regions ki jagah is engine
-     ko use karta hai (dekho announce() neeche) — isliye
-     ek hi waqt mein sirf EK cheez bolti hai, TalkBack
-     aur commentary kabhi overlap nahi karte. Dashboard/
-     Settings/Sign-in jaisi non-game screens par TalkBack
-     bilkul normal (apni native voice se) kaam karta hai.
-     state.talkback off hone par dono (TalkBack live
-     regions aur commentary) silent ho jaate hain — same
-     master switch, jaisa Abbas ne kaha.
+     Strictly Google TTS (com.google.android.tts) only,
+     cancel-then-speak, voiceURI + volume persisted via
+     localStorage. Jab game screen active ho, announce()
+     ARIA live regions ki jagah is engine ko use karta hai
+     (dekho announce() neeche) — isliye ek hi waqt mein
+     sirf EK cheez bolti hai, TalkBack aur commentary kabhi
+     overlap nahi karte. Dashboard/Settings/Sign-in jaisi
+     non-game screens par TalkBack bilkul normal (apni
+     native voice se) kaam karta hai. state.talkback off
+     hone par dono (TalkBack live regions aur commentary)
+     silent ho jaate hain — same master switch, jaisa
+     Abbas ne kaha.
      ════════════════════════════════════════════ */
   const VoiceEngine = {
-    STORAGE_KEY: 'cardgame_voice_pref',
+    VOICE_STORAGE_KEY: 'cardgame_voice_pref_uri',
+    VOLUME_STORAGE_KEY: 'cardgame_voice_volume',
+    GOOGLE_TTS_PACKAGE: 'com.google.android.tts',
     voices: [],
     selectedVoice: null,
+    volume: 1,
 
     init() {
+      /* Volume: restore saved value (0.1–1.0) before anything speaks. */
+      const savedVol = parseFloat(localStorage.getItem(this.VOLUME_STORAGE_KEY));
+      this.volume = (!isNaN(savedVol) && savedVol >= 0.1 && savedVol <= 1) ? savedVol : 1;
+      this.syncVolumeUI();
+
       if (!('speechSynthesis' in window)) return;
       this.loadVoices();
       window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+      /* Android Chrome/WebView: getVoices() aur onvoiceschanged dono
+         first load par unreliable hain — kabhi khaali array aata hai,
+         kabhi event fire hi nahi hota. Isliye kuch seconds tak retry
+         karte hain jab tak voices na mil jaayein. */
+      let attempts = 0;
+      const retryTimer = setInterval(() => {
+        attempts++;
+        if (this.voices.length > 0 || attempts >= 10) { clearInterval(retryTimer); return; }
+        this.loadVoices();
+      }, 400);
     },
 
     loadVoices() {
       const all = window.speechSynthesis.getVoices();
-      this.voices = all.filter(v => v.name.includes('Google'));
+      /* STRICT FILTER (tier 1): agar voiceURI/name mein literal package
+         name 'com.google.android.tts' ho, sirf wahi voices lo — Auto
+         TTS, Eloquence, koi bhi doosra engine ignore. Real Android
+         WebView par yeh package string bahut kam devices par expose
+         hoti hai (confirmed on Abbas's device — zero matches), isliye
+         ismein hamesha bharosa nahi kiya ja sakta. */
+      let filtered = all.filter(v =>
+        (v.voiceURI && v.voiceURI.indexOf(this.GOOGLE_TTS_PACKAGE) !== -1) ||
+        (v.name && v.name.indexOf(this.GOOGLE_TTS_PACKAGE) !== -1)
+      );
+      this.filterTier = 'strict';
+
+      /* TIER 2: package string na mile to 'google' keyword (case-
+         insensitive) dhoondo naam/voiceURI mein — kai devices par
+         Google voices ka naam locale/keyword se hota hai package
+         string ke bina. */
+      if (filtered.length === 0) {
+        filtered = all.filter(v =>
+          (v.name && /google/i.test(v.name)) ||
+          (v.voiceURI && /google/i.test(v.voiceURI))
+        );
+        this.filterTier = 'keyword';
+      }
+
+      /* TIER 3: ab bhi kuch na mile — Android System WebView asal mein
+         hamesha sirf EK system-default TTS engine ki voices expose
+         karta hai (chahe wo naam mein 'Google' na likhe), isliye jo
+         bhi list mile wahi de do; UI honestly bata degi ke Google
+         match confirm nahi ho saka. Feature khaali chhodne se behtar
+         hai ke commentary chalti rahe. */
+      if (filtered.length === 0 && all.length > 0) {
+        filtered = all;
+        this.filterTier = 'unverified';
+      }
+
+      this.voices = filtered;
       this.populateDropdown();
       this.restorePreference();
     },
 
     populateDropdown() {
       const select = document.getElementById('voice-select');
+      const desc   = document.getElementById('voice-select-desc');
       if (!select) return;
       select.innerHTML = '';
       if (this.voices.length === 0) {
         const opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = 'No Google voices found — using system default';
+        opt.textContent = 'No voice engine found on this device';
         select.appendChild(opt);
+        if (desc) {
+          desc.textContent = 'No text-to-speech voices were found at all. Commentary will stay silent until a TTS engine is installed on this device.';
+        }
         return;
+      }
+      if (desc) {
+        if (this.filterTier === 'unverified') {
+          desc.textContent = 'Could not confirm which engine these voices belong to (device did not expose it) — showing all available voices. Saved automatically.';
+        } else {
+          desc.textContent = 'Choose the Google voice used for spoken game commentary. Saved automatically.';
+        }
       }
       this.voices.forEach(v => {
         const opt = document.createElement('option');
-        opt.value = v.name;
+        opt.value = v.voiceURI;
         opt.textContent = v.name + ' (' + v.lang + ')';
         select.appendChild(opt);
       });
@@ -2084,41 +2212,94 @@
 
     restorePreference() {
       const select = document.getElementById('voice-select');
-      const saved = localStorage.getItem(this.STORAGE_KEY);
-      const match = saved && this.voices.find(v => v.name === saved);
+      const saved = localStorage.getItem(this.VOICE_STORAGE_KEY);
+      const match = saved && this.voices.find(v => v.voiceURI === saved);
       if (match) {
         this.selectedVoice = match;
       } else if (this.voices.length > 0) {
         this.selectedVoice = this.voices[0];
       } else {
-        this.selectedVoice = null; /* system default fallback */
+        this.selectedVoice = null; /* no Google TTS voice available — system default fallback */
       }
-      if (select && this.selectedVoice) select.value = this.selectedVoice.name;
+      if (select && this.selectedVoice) select.value = this.selectedVoice.voiceURI;
     },
 
-    setVoice(name) {
-      this.selectedVoice = this.voices.find(v => v.name === name) || null;
+    setVoice(voiceURI) {
+      this.selectedVoice = this.voices.find(v => v.voiceURI === voiceURI) || null;
       if (this.selectedVoice) {
-        localStorage.setItem(this.STORAGE_KEY, this.selectedVoice.name);
+        localStorage.setItem(this.VOICE_STORAGE_KEY, this.selectedVoice.voiceURI);
       } else {
-        localStorage.removeItem(this.STORAGE_KEY);
+        localStorage.removeItem(this.VOICE_STORAGE_KEY);
       }
       this.speak('Commentary voice set to ' + (this.selectedVoice ? this.selectedVoice.name.replace('Google', '').trim() : 'system default') + '.');
     },
 
+    setVolume(val) {
+      let v = parseFloat(val);
+      if (isNaN(v)) v = 1;
+      v = Math.min(1, Math.max(0.1, v));
+      this.volume = v;
+      localStorage.setItem(this.VOLUME_STORAGE_KEY, String(v));
+      this.syncVolumeUI();
+      this.speak('Commentary volume set to ' + Math.round(v * 100) + ' percent.');
+    },
+
+    syncVolumeUI() {
+      const slider  = document.getElementById('range-commentary-volume');
+      const display = document.getElementById('commentary-volume-display');
+      const pct = Math.round(this.volume * 100);
+      if (slider)  slider.value = this.volume;
+      if (slider)  slider.setAttribute('aria-label', 'Commentary Volume. Currently ' + pct + ' percent.');
+      if (display) display.textContent = pct + '%';
+    },
+
     speak(text, callback) {
+      const caption = document.getElementById('commentary-caption');
+
       if (!('speechSynthesis' in window) || !text) {
         if (callback) setTimeout(callback, 100);
         return;
       }
-      window.speechSynthesis.cancel(); /* instant interruption — kills anything mid-speech */
-      const utter = new SpeechSynthesisUtterance(text);
-      if (this.selectedVoice) utter.voice = this.selectedVoice;
+
+      let fired = false;
+      const finish = () => {
+        if (fired) return;
+        fired = true;
+        if (caption) caption.textContent = '';
+        if (callback) callback();
+      };
+
+      /* INSTANT INTERRUPTION: koi bhi purani/overlapping speech turant
+         cancel karo isse pehle ke naya event bole. */
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) { /* ignore — some WebViews throw here for no real reason */ }
+
+      setTimeout(() => {
+        try {
+          const utter = new SpeechSynthesisUtterance(text);
+          if (this.selectedVoice) utter.voice = this.selectedVoice;
+          utter.volume = this.volume;
+          utter.onend = finish;
+          utter.onerror = finish;
+          window.speechSynthesis.speak(utter);
+          /* Visual caption — aria-hidden, isliye TalkBack ise double
+             announce nahi karta; sirf sighted/low-vision users ke
+             liye on-screen text hai. */
+          if (caption) caption.textContent = text;
+        } catch (e) {
+          /* Speech engine threw — game must still continue. */
+          finish();
+        }
+      }, 50);
+
       if (callback) {
-        utter.onend = callback;
-        utter.onerror = callback; /* safety net — game na atke agar speech fail ho */
+        /* GUARANTEE: chahe speech event fire ho, fail ho, ya exception aaye,
+           callback is fixed waqt ke baad zaroor chalega. Game kabhi
+           permanently atakta nahi. */
+        const safetyMs = Math.max(1800, text.length * 90) + 900;
+        setTimeout(finish, safetyMs);
       }
-      window.speechSynthesis.speak(utter);
     }
   };
 
@@ -2798,13 +2979,11 @@
        jata hai aur TalkBack ka "focus lost" cue + shuffle.mp3
        sound effect + niche wala assertive announce() teeno
        takra kar "jam/robotic" awaaz jaisa lagte the. Fix: focus
-       ko turant #trick-status (controlled anchor) par bhejo,
-       taakah dead-focus gap na bane. */
-    const trickStatus = document.getElementById('trick-status');
-    if (trickStatus) {
-      trickStatus.setAttribute('tabindex', '-1');
-      trickStatus.focus();
-    }
+       ko turant #focus-anchor (silent, unlabeled) par bhejo,
+       taakah dead-focus gap na bane — aur TalkBack is anchor par
+       kuch bole nahi (VoiceEngine hi commentary bolta hai). */
+    const focusAnchor = document.getElementById('focus-anchor');
+    if (focusAnchor) focusAnchor.focus();
 
     state.deck = shuffleDeck(buildDeck());
     playSound('shuffle');
@@ -2869,11 +3048,33 @@
 
   function selectTrump(suitName, suitSymbol, isRed) {
     state.trump = suitName;
-    const zone  = document.getElementById('trump-indicator');
-    zone.innerHTML = 'Trump (Rung): <span style="color:'
-      + (isRed ? '#c0392b' : 'var(--text)')
-      + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
-    zone.setAttribute('aria-label', 'Trump suit: ' + suitName);
+
+    /* Focus-loss fix (2 parts):
+       1) zone.innerHTML neeche turant is #trump-selector (jisme
+          abhi-abhi tap kiya button hai) ko DOM se hata deta hai. Us
+          tapped button ka achanak gayab hona TalkBack ka accessibility
+          cursor orphan kar deta hai.
+       2) TalkBack apna cursor phir nazdeeki zinda ancestor
+          (#trump-indicator, jiska label abhi hi change hua) par le
+          jata hai aur uska POORA naya label khud padh deta hai —
+          commentary se bilkul alag, doosri baar.
+       JS ka .focus() turant DOM focus badal deta hai, lekin Android
+       ke accessibility layer tak yeh change committed hone mein
+       thoda waqt lagta hai — agar hum turant innerHTML wipe kar dein,
+       tab tak platform purane cursor (tapped button) par hi hota hai,
+       aur wipe hote hi wahi orphan-focus re-announce hota hai. Isliye
+       ek chhota delay: pehle focus-anchor par focus commit hone do,
+       PHIR destructive wipe karo. */
+    const focusAnchor = document.getElementById('focus-anchor');
+    if (focusAnchor) focusAnchor.focus();
+
+    setTimeout(() => {
+      const zone  = document.getElementById('trump-indicator');
+      zone.innerHTML = 'Trump (Rung): <span style="color:'
+        + (isRed ? '#c0392b' : 'var(--text)')
+        + ';font-weight:bold;">' + suitSymbol + ' ' + suitName + '</span>';
+      zone.setAttribute('aria-label', 'Trump suit: ' + suitName);
+    }, 120);
 
     announce(lvl(
       suitName + ' trump. Dealing rest.',
@@ -2886,11 +3087,17 @@
       renderHand(state.hands.human, false);
       updateAICardCount();
 
-      announce(lvl(
-        '13 dealt. Trump ' + suitName + '. Your turn.',
-        'All 13 cards dealt. Trump: ' + suitName
-        + '. Your turn. Go to your cards and double tap to play.'
-      ));
+      /* Turn-cue concept: kisi bhi player/robot ki baari aane se
+         PEHLE — card board par aane se pehle — ek chota, clear
+         "Turn" cue bolta hai, phir uske baad detail. Yahan human
+         ki hi pehli baari hai (13 cards dealt hone ke baad). */
+      announce('Your Turn.', () => {
+        announce(lvl(
+          '13 dealt. Trump ' + suitName + '.',
+          'All 13 cards dealt. Trump: ' + suitName
+          + '. Go to your cards and double tap to play.'
+        ));
+      });
     }, 600);
   }
 
@@ -2915,7 +3122,8 @@
       btn.setAttribute('data-label', card.label);
 
       if (locked) {
-        btn.disabled = true;
+        btn.setAttribute('aria-disabled', 'true');
+        btn.style.pointerEvents = 'none';
         btn.setAttribute('aria-label', card.label + '. Disabled. Waiting for trump selection.');
       } else {
         btn.setAttribute('aria-label', card.label + '. Double tap to play.');
@@ -2970,26 +3178,20 @@
 
     /* Focus-jump fix: agar TalkBack focus kisi aise card par hai
        jo abhi disable hone wala hai, to disable karne se PEHLE
-       focus ko explicitly #trick-status par bhejo — playCard()
-       wala hi pattern. Is case mein hum status text ko usi
-       message se update karte hain jo announce() bolta — taakah
-       focus-read aur assertive announce() TAKRAYEN NAHI (yehi
-       wajah thi ke pehle "focus jump + status sahi announce
-       nahi hota" — dono ek saath fire ho rahe the). */
+       focus ko explicitly #focus-anchor (silent, unlabeled) par
+       bhejo — playCard() wala hi pattern. Ab VoiceEngine hi
+       hamesha bolta hai (announce() neeche unconditionally chalta
+       hai); focus-anchor kuch bolta nahi, isliye double-speak
+       ka sawaal hi nahi. */
     const active = document.activeElement;
-    let focusRedirected = false;
     if (active && active.classList && active.classList.contains('card-human')) {
       const activeLabel = active.getAttribute('data-label');
       const activeCard  = unplayed.find(c => c.label === activeLabel);
       const willBeDisabled = activeCard && hasLedSuit && activeCard.suit !== ledSuit;
       if (willBeDisabled) {
         updateTrickZoneLabel(filterMsg);
-        const trickStatus = document.getElementById('trick-status');
-        if (trickStatus) {
-          trickStatus.setAttribute('tabindex', '-1');
-          trickStatus.focus();
-        }
-        focusRedirected = true;
+        const focusAnchor = document.getElementById('focus-anchor');
+        if (focusAnchor) focusAnchor.focus();
       }
     }
 
@@ -2998,28 +3200,33 @@
       const card = unplayed.find(c => c.label === cardLabel);
       if (!card) return;
 
+      /* NOTE: hum yahan sirf 'aria-disabled' + pointer-events use
+         karte hain, NEVER native '.disabled' — native disabled
+         attribute toggle Android accessibility ka apna bulk
+         "state changed" event fire karta hai jo TalkBack khud
+         vocalize karta hai, bina kisi focus/touch ke, alag se
+         commentary se — yehi asal wajah thi jab har filter (yani
+         har card play — human ya robot) par ek doosri, khud-ba-khud
+         TalkBack announcement sunayi de rahi thi. Screen-reader
+         "double tap" activation pointer-events ko bypass kar sakta
+         hai, isliye playCard() ke andar bhi explicit aria-disabled
+         guard hai (neeche dekho). */
       if (hasLedSuit) {
         if (card.suit === ledSuit) {
           /* Yeh card valid hai — enable karo */
-          btn.disabled = false;
           btn.style.opacity = '';
           btn.style.pointerEvents = '';
           btn.setAttribute('aria-label', card.label + '. Double tap to play.');
           btn.removeAttribute('aria-disabled');
         } else {
           /* RENEG blocked: is suit ka card nahi chal sakta — disable karo */
-          btn.disabled = true;
           btn.style.opacity = '0.28';
           btn.style.pointerEvents = 'none';
           btn.setAttribute('aria-disabled', 'true');
-          btn.setAttribute('aria-label',
-            card.label
-            + '. Disabled. Reneg! You must follow '
-            + ledSuit + ' suit. This card cannot be played.');
+          btn.setAttribute('aria-label', card.label + '. Disabled — cannot follow suit.');
         }
       } else {
         /* Is player ke paas led suit nahi — kuch bhi chal sakta hai, trump bhi */
-        btn.disabled = false;
         btn.style.opacity = '';
         btn.style.pointerEvents = '';
         btn.setAttribute('aria-label',
@@ -3029,12 +3236,10 @@
       }
     });
 
-    /* Agar upar focus already trick-status par bhej kar filterMsg
-       announce kar diya, to yahan dobara announce() mat karo —
-       warna wahi "do baar bolta hai" wala bug ban jayega. */
-    if (!focusRedirected) {
-      announce(filterMsg);
-    }
+    /* Ab focus-anchor kabhi bolta nahi (silent), isliye announce()
+       hamesha unconditionally chalta hai — VoiceEngine hi single
+       source of speech hai, focus-read se koi takraav nahi hota. */
+    announce(filterMsg);
   }
 
   /* ════════════════════════════════════════════
@@ -3048,28 +3253,26 @@
      ════════════════════════════════════════════ */
   function playCard(card, btn) {
     if (state.phase !== 'playing') return;
-    if (btn.disabled) return;
+    if (btn.getAttribute('aria-disabled') === 'true') return;
 
     state.phase = 'ai-turn';
 
-    /* Double-click sound + focus-flicker fix: pehle hi #trick-status
-       par explicit focus le jao — button disable/remove se PEHLE.
-       Pehle order ulta tha (disable → 100ms baad focus), is beech
-       browser khud focus kho deta tha (native "focus lost" event)
-       aur phir hum dobara focus set karte the — do focus-changes
-       ek dusre ke peeche peeche TalkBack ka "cursor moved" click
-       do baar bajata tha (double-click jaisa sunayi deta). Ab
-       focus sirf EK BAAR, explicitly, disable hone se pehle hi
-       move hota hai. aria-label update bhi hata diya — wo bhi
-       button abhi focused hote hue re-announce ho kar collide
-       kar raha tha. */
-    const trickStatus = document.getElementById('trick-status');
-    if (trickStatus) {
-      trickStatus.setAttribute('tabindex', '-1');
-      trickStatus.focus();
-    }
+    /* Double-click sound + focus-flicker fix: pehle hi #focus-anchor
+       (silent, unlabeled) par explicit focus le jao — button
+       disable/remove se PEHLE. Pehle order ulta tha (disable → 100ms
+       baad focus), is beech browser khud focus kho deta tha (native
+       "focus lost" event) aur phir hum dobara focus set karte the —
+       do focus-changes ek dusre ke peeche peeche TalkBack ka "cursor
+       moved" click do baar bajata tha (double-click jaisa sunayi
+       deta). Ab focus sirf EK BAAR, explicitly, disable hone se
+       pehle hi move hota hai — aur kyunke anchor silent hai,
+       TalkBack is par kuch bolta nahi (VoiceEngine hi bolta hai,
+       ek hi baar). */
+    const focusAnchor = document.getElementById('focus-anchor');
+    if (focusAnchor) focusAnchor.focus();
 
-    btn.disabled = true;
+    btn.setAttribute('aria-disabled', 'true');
+    btn.style.pointerEvents = 'none';
     playSound('cardFlip');
     setTimeout(() => {
       btn.remove();
@@ -3099,9 +3302,9 @@
          kaat deta tha (pehle fixed 1500ms tha, jo lambe messages ke
          liye kaafi nahi tha). */
       fireRobotsInOrder([
-        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
-        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
-        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
+        { key: 'r1', label: 'Your partner Robot 1', turnCue: 'Robot 1 Turn.', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',      turnCue: 'Robot 2 Turn.', team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',      turnCue: 'Robot 3 Turn.', team: 'B', mode: 'defensive'  }
       ], card.suit, Math.max(1500, humanLeadMsg.length * 90));
 
     } else {
@@ -3119,9 +3322,9 @@
 
       const alreadyPlayed = state.currentTrick.map(e => e.player);
       const remaining = [
-        { key: 'r1', label: 'Your partner Robot 1', team: 'A', mode: 'partner'    },
-        { key: 'r2', label: 'Opponent Robot 2',      team: 'B', mode: 'aggressive' },
-        { key: 'r3', label: 'Opponent Robot 3',      team: 'B', mode: 'defensive'  }
+        { key: 'r1', label: 'Your partner Robot 1', turnCue: 'Robot 1 Turn.', team: 'A', mode: 'partner'    },
+        { key: 'r2', label: 'Opponent Robot 2',      turnCue: 'Robot 2 Turn.', team: 'B', mode: 'aggressive' },
+        { key: 'r3', label: 'Opponent Robot 3',      turnCue: 'Robot 3 Turn.', team: 'B', mode: 'defensive'  }
       ].filter(r => !alreadyPlayed.includes(r.key));
 
       /* Dynamic first-delay: index-0 robot (r1 ya r2, jo bhi bacha ho)
@@ -3163,32 +3366,38 @@
       }
       const robot = robots[index];
       setTimeout(() => {
-        const chosen = getAICard(
-          state.hands[robot.key],
-          ledSuit, state.trump, robot.mode, state.currentTrick
-        );
+        /* Turn-cue concept: card board par phenkne se PEHLE short
+           "Robot N Turn" bolo, uske baad hi card select/dikhao/play
+           karo — phir arms-length mein detailed "Robot N played X"
+           announcement (jaisa pehle se tha). */
+        announceRobotPlay(robot.turnCue, () => {
+          const chosen = getAICard(
+            state.hands[robot.key],
+            ledSuit, state.trump, robot.mode, state.currentTrick
+          );
 
-        if (chosen) {
-          state.hands[robot.key] = state.hands[robot.key].filter(c => c.label !== chosen.label);
-          state.currentTrick.push({ card: chosen, player: robot.key, team: robot.team });
-          showCardInTrick(chosen, state.currentTrick.length - 1);
-          playSound('cardFlip');
+          if (chosen) {
+            state.hands[robot.key] = state.hands[robot.key].filter(c => c.label !== chosen.label);
+            state.currentTrick.push({ card: chosen, player: robot.key, team: robot.team });
+            showCardInTrick(chosen, state.currentTrick.length - 1);
+            playSound('cardFlip');
 
-          /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare
-             (isolated polite live-region — human focus ko cheenta nahi).
-             Agla robot (playNext) sirf tabhi fire hoga jab is robot ki
-             announcement TalkBack mein poori bol chuki ho. */
-          setTimeout(() => {
-            announceRobotPlay(robot.label + ' played ' + chosen.label + '.', () => {
-              playNext(index + 1);
-            });
-          }, 800);
+            /* Har robot ki announcement 800ms baad taakah TalkBack miss na kare
+               (isolated polite live-region — human focus ko cheenta nahi).
+               Agla robot (playNext) sirf tabhi fire hoga jab is robot ki
+               announcement TalkBack mein poori bol chuki ho. */
+            setTimeout(() => {
+              announceRobotPlay(robot.label + ' played ' + chosen.label + '.', () => {
+                playNext(index + 1);
+              });
+            }, 800);
 
-          state.history.push(robot.label + ' played ' + chosen.label);
-          updateHistoryBtn();
-        } else {
-          playNext(index + 1);
-        }
+            state.history.push(robot.label + ' played ' + chosen.label);
+            updateHistoryBtn();
+          } else {
+            playNext(index + 1);
+          }
+        });
       }, index === 0 ? startDelay : 0);
     }
     playNext(0);
@@ -3382,10 +3591,19 @@
           'Trick ' + (state.tricksPlayed + 1) + ' — You lead. Play any card.'
         );
         updateTrickZoneLabel(nextMsg);
-        setTimeout(() => announce(nextMsg), 600);
-        /* Saare cards enable karo — human lead pe koi restriction nahi */
+        /* Turn-cue: short "Your Turn" pehle, phir detail — cards
+           enable karne se pehle rukne ki zaroorat nahi (human
+           TalkBack se tez tap nahi kar sakta), lekin cue ka order
+           spoken queue mein sahi rehta hai kyunke VoiceEngine
+           cancel-then-speak use karta hai. */
+        setTimeout(() => {
+          announce('Your Turn.', () => announce(nextMsg));
+        }, 600);
+        /* Saare cards enable karo — human lead pe koi restriction nahi.
+           Sirf aria-disabled hataya — native '.disabled' kabhi nahi
+           chhuya, warna wahi bulk state-change TalkBack announcement
+           phir se trigger ho jaati. */
         document.querySelectorAll('.card-human').forEach(btn => {
-          btn.disabled = false;
           btn.style.opacity = '';
           btn.style.pointerEvents = '';
           btn.removeAttribute('aria-disabled');
@@ -3401,52 +3619,64 @@
         const leaderLabel = key === 'r1' ? 'Your partner Robot 1'
                           : key === 'r2' ? 'Opponent Robot 2'
                           :                'Opponent Robot 3';
+        const turnCue     = key === 'r1' ? 'Robot 1 Turn.'
+                          : key === 'r2' ? 'Robot 2 Turn.'
+                          :                'Robot 3 Turn.';
         const leaderTeam  = (key === 'r1') ? 'A' : 'B';
         const leaderMode  = (key === 'r1') ? 'partner' : (key === 'r2') ? 'aggressive' : 'defensive';
 
         /* Safety check: agar robot ka haath khali hai toh skip */
         if (!state.hands[key] || state.hands[key].length === 0) return;
 
-        const leaderCard = getAICard(
-          state.hands[key], null, state.trump, leaderMode, []
-        );
-        if (!leaderCard) return;
+        /* Turn-cue concept: card board par phenkne se PEHLE short
+           "Robot N Turn" bolo, uske baad hi card dikhao/play karo. */
+        announce(turnCue, () => {
+          const leaderCard = getAICard(
+            state.hands[key], null, state.trump, leaderMode, []
+          );
+          if (!leaderCard) return;
 
-        state.hands[key]   = state.hands[key].filter(c => c.label !== leaderCard.label);
-        state.currentTrick = [{ card: leaderCard, player: key, team: leaderTeam }];
+          state.hands[key]   = state.hands[key].filter(c => c.label !== leaderCard.label);
+          state.currentTrick = [{ card: leaderCard, player: key, team: leaderTeam }];
 
-        showCardInTrick(leaderCard, 0);
-        playSound('cardFlip');
-        updateAICardCount();
+          showCardInTrick(leaderCard, 0);
+          playSound('cardFlip');
+          updateAICardCount();
 
-        const leadMsg = lvl(
-          leaderLabel + ' led with ' + leaderCard.label + '.',
-          leaderLabel + ' led trick ' + (state.tricksPlayed + 1)
-          + ' with ' + leaderCard.label + '. '
-          + 'If you have ' + leaderCard.suit + ', you must follow suit.'
-        );
-        updateTrickZoneLabel(leadMsg);
+          const leadMsg = lvl(
+            leaderLabel + ' led with ' + leaderCard.label + '.',
+            leaderLabel + ' led trick ' + (state.tricksPlayed + 1)
+            + ' with ' + leaderCard.label + '. '
+            + 'If you have ' + leaderCard.suit + ', you must follow suit.'
+          );
+          updateTrickZoneLabel(leadMsg);
 
-        state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
-        updateHistoryBtn();
+          state.history.push(leaderLabel + ' played ' + leaderCard.label + ' (lead)');
+          updateHistoryBtn();
 
-        /* CHAIN-BASED FIX: applyCardFilter() khud bhi assertive
-           announce()/focus fire karta hai. Pehle yeh fixed 800ms
-           + 2200ms (yani sirf 1400ms ka gap) pe chalta tha — agar
-           leadMsg lamba hota (robot ka naam + card + suit follow
-           instruction) aur TalkBack usse bolne mein 1400ms se
-           zyada leta, to applyCardFilter ka assertive announce
-           beech mein hi CUT kar deta tha. Isi wajah se robot-lead
-           announcement kabhi sunayi deta, kabhi nahi (message ki
-           length aur TalkBack speed pe depend karta tha). Ab
-           applyCardFilter TABHI chalega jab leadMsg TalkBack mein
-           POORI bol chuki ho (dynamic speakMs + 400ms buffer). */
-        setTimeout(() => {
-          announce(leadMsg, () => {
-            state.phase = 'playing';
-            applyCardFilter(leaderCard.suit);
-          });
-        }, 800);
+          /* CHAIN-BASED FIX: applyCardFilter() khud bhi assertive
+             announce()/focus fire karta hai. Pehle yeh fixed 800ms
+             + 2200ms (yani sirf 1400ms ka gap) pe chalta tha — agar
+             leadMsg lamba hota (robot ka naam + card + suit follow
+             instruction) aur TalkBack usse bolne mein 1400ms se
+             zyada leta, to applyCardFilter ka assertive announce
+             beech mein hi CUT kar deta tha. Isi wajah se robot-lead
+             announcement kabhi sunayi deta, kabhi nahi (message ki
+             length aur TalkBack speed pe depend karta tha). Ab
+             applyCardFilter TABHI chalega jab leadMsg TalkBack mein
+             POORI bol chuki ho (dynamic speakMs + 400ms buffer). */
+          setTimeout(() => {
+            announce(leadMsg, () => {
+              state.phase = 'playing';
+              /* Ab yeh human ki baari hai (follow karna hai) — turn-cue
+                 concept yahan bhi: chota "Your Turn" pehle, phir
+                 detailed follow-suit/filter message. */
+              announce('Your Turn.', () => {
+                applyCardFilter(leaderCard.suit);
+              });
+            });
+          }, 800);
+        });
       }, 2800);
     }
   }
@@ -3532,9 +3762,10 @@
   function endRound(result) {
     state.phase = 'ended';
 
-    /* Saare human cards disable karo — round over */
+    /* Saare human cards disable karo — round over. Sirf aria-disabled,
+       native disabled nahi — bulk state-change announcement se bachne
+       ke liye. */
     document.querySelectorAll('.card-human').forEach(btn => {
-      btn.disabled = true;
       btn.style.pointerEvents = 'none';
       btn.setAttribute('aria-disabled', 'true');
     });
