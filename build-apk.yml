@@ -20,13 +20,26 @@ jobs:
         git fetch origin main
         git checkout origin/main -- index.html
 
+    - name: Prepare web assets
+      run: |
+        mkdir -p www
+        cp -f index.html www/
+        for dir in assets css js images fonts img stylesheets scripts; do
+          if [ -d "$dir" ]; then
+            cp -r "$dir" www/
+            echo "Copied $dir/"
+          fi
+        done
+        echo "==== www/ contents ===="
+        ls -la www/
+
     - name: Clean previous build artifacts
       run: |
         rm -rf android
         rm -rf node_modules
         rm -f package-lock.json
         rm -f capacitor.config.json
-        echo "==== Cleaned up old build state ===="
+        echo "==== Cleaned old state ===="
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -50,7 +63,7 @@ jobs:
         {
           "appId": "com.aliaccesslabs.cardgame",
           "appName": "Card Game",
-          "webDir": ".",
+          "webDir": "www",
           "server": {
             "url": "https://aliabbas7362-a11y.github.io/Ali-access-lab-/",
             "cleartext": false,
@@ -78,16 +91,13 @@ jobs:
         echo "==== Android folder created ===="
         ls -la android/app/src/main/
 
-    - name: Ensure assets directory exists
-      run: |
-        mkdir -p android/app/src/main/assets
-        echo "==== Assets directory ready ===="
-
     - name: Sync web assets to Android
       run: |
         npx cap sync android
         echo "==== capacitor.plugins.json ===="
         cat android/app/src/main/assets/capacitor.plugins.json
+        echo "==== assets/public contents ===="
+        ls -la android/app/src/main/assets/public/
 
     - name: Add notification permission to AndroidManifest.xml
       run: |
