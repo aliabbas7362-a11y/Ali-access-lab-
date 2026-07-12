@@ -11,7 +11,7 @@
   "author": "Ali Abbas",
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@capacitor/core": "8.4.1",
