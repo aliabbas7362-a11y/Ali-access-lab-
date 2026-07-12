@@ -19,7 +19,6 @@ jobs:
       run: |
         git fetch origin main
         git checkout origin/main -- index.html
-        echo "index.html fetched from main branch"
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -34,13 +33,12 @@ jobs:
 
     - name: Write capacitor.config.json
       run: |
-        cat > capacitor.config.json << 'EOF'
+        cat > capacitor.config.json << 'EOF2'
         {
-          "appId": "com.aliabbas.courtpiece",
+          "appId": "com.aliaccesslabs.cardgame",
           "appName": "Card Game",
-          "webDir": "www",
+          "webDir": ".",
           "server": {
-            "androidScheme": "https",
             "url": "https://aliabbas7362-a11y.github.io/Ali-access-lab-/",
             "cleartext": false,
             "allowNavigation": [
@@ -51,13 +49,7 @@ jobs:
             ]
           }
         }
-        EOF
-
-    - name: Prepare web assets
-      run: |
-        mkdir -p www
-        cp index.html www/
-        cp -r sounds www/ 2>/dev/null || true
+        EOF2
 
     - name: Install dependencies
       run: |
@@ -71,25 +63,14 @@ jobs:
     - name: Sync web assets to Android
       run: npx cap sync android
 
-    # ── Notification Permission ──
-    # POST_NOTIFICATIONS Android 13+ ke liye zaroori hai taaki
-    # Settings > App Info > Permissions mein toggle dikhe.
     - name: Add notification permission to AndroidManifest.xml
       run: |
         MANIFEST="android/app/src/main/AndroidManifest.xml"
         if ! grep -q "POST_NOTIFICATIONS" "$MANIFEST"; then
           sed -i '/<manifest /a\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
-          echo "Manifest updated with POST_NOTIFICATIONS"
-        else
-          echo "POST_NOTIFICATIONS already present"
         fi
         cat "$MANIFEST"
 
-    # ── Text-to-Speech visibility (Android 11+) ──
-    # Android 11 se apps ko explicitly declare karna padta hai ke
-    # wo TTS_SERVICE query kar sakte hain, warna
-    # getSupportedVoices()/speak() silently fail ho sakte hain.
-    # (@capacitor-community/text-to-speech ki official requirement)
     - name: Add TTS queries block to AndroidManifest.xml
       run: |
         MANIFEST="android/app/src/main/AndroidManifest.xml"
@@ -100,9 +81,6 @@ jobs:
                     <action android:name="android.intent.action.TTS_SERVICE" />\
                 </intent>\
             </queries>' "$MANIFEST"
-          echo "Manifest updated with TTS_SERVICE queries block"
-        else
-          echo "TTS_SERVICE queries block already present"
         fi
         cat "$MANIFEST"
 
