@@ -20,6 +20,14 @@ jobs:
         git fetch origin main
         git checkout origin/main -- index.html
 
+    - name: Clean previous build artifacts
+      run: |
+        rm -rf android
+        rm -rf node_modules
+        rm -f package-lock.json
+        rm -f capacitor.config.json
+        echo "==== Cleaned up old build state ===="
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -27,10 +35,8 @@ jobs:
 
     - name: Verify Node version
       run: |
-        echo "==== Node version check ===="
-        node --version
-        npm --version
-        echo "==== End check ===="
+        echo "Node: $(node --version)"
+        echo "NPM: $(npm --version)"
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -60,16 +66,28 @@ jobs:
 
     - name: Install dependencies
       run: |
-        rm -rf node_modules package-lock.json
         npm install
         npm install @capacitor/local-notifications
         npm install @capacitor-community/text-to-speech
+        echo "==== Capacitor packages installed ===="
+        ls node_modules/@capacitor/
 
     - name: Add Android platform
-      run: npx cap add android
+      run: |
+        npx cap add android
+        echo "==== Android folder created ===="
+        ls -la android/app/src/main/
+
+    - name: Ensure assets directory exists
+      run: |
+        mkdir -p android/app/src/main/assets
+        echo "==== Assets directory ready ===="
 
     - name: Sync web assets to Android
-      run: npx cap sync android
+      run: |
+        npx cap sync android
+        echo "==== capacitor.plugins.json ===="
+        cat android/app/src/main/assets/capacitor.plugins.json
 
     - name: Add notification permission to AndroidManifest.xml
       run: |
