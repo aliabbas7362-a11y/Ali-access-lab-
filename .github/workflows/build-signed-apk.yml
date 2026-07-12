@@ -24,7 +24,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '24'
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -63,6 +63,7 @@ jobs:
       run: |
         npm install
         npm install @capacitor/local-notifications
+        npm install @capacitor-community/text-to-speech
 
     - name: Add Android platform
       run: npx cap add android
@@ -81,6 +82,27 @@ jobs:
           echo "Manifest updated with POST_NOTIFICATIONS"
         else
           echo "POST_NOTIFICATIONS already present"
+        fi
+        cat "$MANIFEST"
+
+    # ── Text-to-Speech visibility (Android 11+) ──
+    # Android 11 se apps ko explicitly declare karna padta hai ke
+    # wo TTS_SERVICE query kar sakte hain, warna
+    # getSupportedVoices()/speak() silently fail ho sakte hain.
+    # (@capacitor-community/text-to-speech ki official requirement)
+    - name: Add TTS queries block to AndroidManifest.xml
+      run: |
+        MANIFEST="android/app/src/main/AndroidManifest.xml"
+        if ! grep -q "TTS_SERVICE" "$MANIFEST"; then
+          sed -i '/<manifest /a\
+            <queries>\
+                <intent>\
+                    <action android:name="android.intent.action.TTS_SERVICE" />\
+                </intent>\
+            </queries>' "$MANIFEST"
+          echo "Manifest updated with TTS_SERVICE queries block"
+        else
+          echo "TTS_SERVICE queries block already present"
         fi
         cat "$MANIFEST"
 
