@@ -2095,27 +2095,57 @@
   }
 
   /* ════════════════════════════════════════════
-     VOICE ENGINE — Web Speech API commentary
-     Strictly Google TTS (com.google.android.tts) only,
-     cancel-then-speak, voiceURI + volume persisted via
-     localStorage. Jab game screen active ho, announce()
-     ARIA live regions ki jagah is engine ko use karta hai
-     (dekho announce() neeche) — isliye ek hi waqt mein
-     sirf EK cheez bolti hai, TalkBack aur commentary kabhi
-     overlap nahi karte. Dashboard/Settings/Sign-in jaisi
-     non-game screens par TalkBack bilkul normal (apni
-     native voice se) kaam karta hai. state.talkback off
-     hone par dono (TalkBack live regions aur commentary)
-     silent ho jaate hain — same master switch, jaisa
-     Abbas ne kaha.
+     VOICE ENGINE — game commentary, DUAL PATH:
+     1) NATIVE (APK/Capacitor): Android WebView ke andar
+        window.speechSynthesis ka speech-OUTPUT bilkul kaam
+        nahi karta — ye ek 10+ saal purana, aaj tak unresolved
+        Chromium bug hai (Chromium #487255 / #40417848).
+        Isliye APK build mein hum seedha Capacitor ke native
+        '@capacitor-community/text-to-speech' plugin ko call
+        karte hain, jo Android ke apne TextToSpeech engine se
+        seedha baat karta hai — WebView ko bypass karta hai.
+     2) WEB (Chrome se testing): purana window.speechSynthesis
+        path bilkul waisa hi chalta hai jaisa pehle chalta tha,
+        taake Chrome mein testing workflow na tootey.
+     Dono paths runtime par auto-detect hote hain — koi manual
+     switch nahi chahiye.
+     Cancel-then-speak, voice + volume localStorage mein persist.
+     Jab game screen active ho, announce() ARIA live regions ki
+     jagah is engine ko use karta hai (dekho announce() neeche)
+     — isliye ek hi waqt mein sirf EK cheez bolti hai, TalkBack
+     aur commentary kabhi overlap nahi karte. Dashboard/Settings/
+     Sign-in jaisi non-game screens par TalkBack bilkul normal
+     (apni native voice se) kaam karta hai. state.talkback off
+     hone par dono (TalkBack live regions aur commentary) silent
+     ho jaate hain — same master switch, jaisa Abbas ne kaha.
      ════════════════════════════════════════════ */
   const VoiceEngine = {
-    VOICE_STORAGE_KEY: 'cardgame_voice_pref_uri',
+    VOICE_STORAGE_KEY: 'cardgame_voice_pref_name',
     VOLUME_STORAGE_KEY: 'cardgame_voice_volume',
     GOOGLE_TTS_PACKAGE: 'com.google.android.tts',
     voices: [],
     selectedVoice: null,
     volume: 1,
+    nativeTTS: null,   /* Capacitor plugin reference, agar APK mein hain to */
+    mode: 'none',      /* 'native' | 'web' | 'none' */
+
+    /* Capacitor APK ke andar hain ya Chrome browser mein — dono
+       jagah 'Capacitor' global object exist kar sakta hai (jab
+       remote URL Capacitor WebView khud load karta hai), isliye
+       asli check ye hai ke isNativePlatform() true ho AND plugin
+       registered ho. */
+    detectNativeTTS() {
+      try {
+        if (window.Capacitor
+            && typeof window.Capacitor.isNativePlatform === 'function'
+            && window.Capacitor.isNativePlatform()
+            && window.Capacitor.Plugins
+            && window.Capacitor.Plugins.TextToSpeech) {
+          return window.Capacitor.Plugins.TextToSpeech;
+        }
+      } catch (e) { /* Capacitor global hi nahi hai — normal browser */ }
+      return null;
+    },
 
     init() {
       /* Volume: restore saved value (0.1–1.0) before anything speaks. */
@@ -2123,9 +2153,33 @@
       this.volume = (!isNaN(savedVol) && savedVol >= 0.1 && savedVol <= 1) ? savedVol : 1;
       this.syncVolumeUI();
 
-      if (!('speechSynthesis' in window)) return;
-      this.loadVoices();
-      window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+      this.nativeTTS = this.detectNativeTTS();
+
+      if (this.nativeTTS) {
+        this.mode = 'native';
+        this.loadVoicesNative();
+        return;
+      }
+
+      if (!('speechSynthesis' in window)) {
+        /* Na native plugin, na browser speechSynthesis — is device/
+           build par bilkul koi TTS nahi. Dropdown ko honest message
+           dikhao, hamesha "Loading voices…" par atka mat chhodo. */
+        this.mode = 'none';
+        const select = document.getElementById('voice-select');
+        const desc   = document.getElementById('voice-select-desc');
+        if (select) {
+          select.innerHTML = '<option value="">Text-to-speech not available in this app</option>';
+        }
+        if (desc) {
+          desc.textContent = 'This device/app build does not support spoken commentary yet.';
+        }
+        return;
+      }
+
+      this.mode = 'web';
+      this.loadVoicesWeb();
+      window.speechSynthesis.onvoiceschanged = () => this.loadVoicesWeb();
       /* Android Chrome/WebView: getVoices() aur onvoiceschanged dono
          first load par unreliable hain — kabhi khaali array aata hai,
          kabhi event fire hi nahi hota. Isliye kuch seconds tak retry
@@ -2133,13 +2187,43 @@
       let attempts = 0;
       const retryTimer = setInterval(() => {
         attempts++;
-        if (this.voices.length > 0 || attempts >= 10) { clearInterval(retryTimer); return; }
-        this.loadVoices();
+        if (this.voices.length > 0 || attempts >= 10) {
+          clearInterval(retryTimer);
+          if (this.voices.length === 0) this.loadVoicesWeb();
+          return;
+        }
+        this.loadVoicesWeb();
       }, 400);
     },
 
-    loadVoices() {
+    /* ── NATIVE PATH (APK) ── */
+    loadVoicesNative() {
+      this.nativeTTS.getSupportedVoices().then(result => {
+        const all = (result && result.voices) ? result.voices : [];
+        /* Plugin ki voices bhi SpeechSynthesisVoice jaisi hi shape
+           follow karti hain (name/lang/voiceURI/localService), isliye
+           wahi cascading Google-filter logic reuse hota hai. */
+        this.voices = this.filterGoogleVoices(all);
+        this.populateDropdown();
+        this.restorePreference();
+      }).catch(() => {
+        this.voices = [];
+        this.filterTier = 'unverified';
+        this.populateDropdown();
+      });
+    },
+
+    /* ── WEB PATH (Chrome testing) ── */
+    loadVoicesWeb() {
       const all = window.speechSynthesis.getVoices();
+      this.voices = this.filterGoogleVoices(all);
+      this.populateDropdown();
+      this.restorePreference();
+    },
+
+    /* Dono paths ke liye shared cascading filter (native aur web
+       dono se aane wali voice-list par same logic chalti hai). */
+    filterGoogleVoices(all) {
       /* STRICT FILTER (tier 1): agar voiceURI/name mein literal package
          name 'com.google.android.tts' ho, sirf wahi voices lo — Auto
          TTS, Eloquence, koi bhi doosra engine ignore. Real Android
@@ -2153,9 +2237,7 @@
       this.filterTier = 'strict';
 
       /* TIER 2: package string na mile to 'google' keyword (case-
-         insensitive) dhoondo naam/voiceURI mein — kai devices par
-         Google voices ka naam locale/keyword se hota hai package
-         string ke bina. */
+         insensitive) dhoondo naam/voiceURI mein. */
       if (filtered.length === 0) {
         filtered = all.filter(v =>
           (v.name && /google/i.test(v.name)) ||
@@ -2164,20 +2246,14 @@
         this.filterTier = 'keyword';
       }
 
-      /* TIER 3: ab bhi kuch na mile — Android System WebView asal mein
-         hamesha sirf EK system-default TTS engine ki voices expose
-         karta hai (chahe wo naam mein 'Google' na likhe), isliye jo
-         bhi list mile wahi de do; UI honestly bata degi ke Google
-         match confirm nahi ho saka. Feature khaali chhodne se behtar
-         hai ke commentary chalti rahe. */
+      /* TIER 3: ab bhi kuch na mile — jo bhi list mile wahi de do;
+         UI honestly bata degi ke Google match confirm nahi ho saka. */
       if (filtered.length === 0 && all.length > 0) {
         filtered = all;
         this.filterTier = 'unverified';
       }
 
-      this.voices = filtered;
-      this.populateDropdown();
-      this.restorePreference();
+      return filtered;
     },
 
     populateDropdown() {
@@ -2202,9 +2278,12 @@
           desc.textContent = 'Choose the Google voice used for spoken game commentary. Saved automatically.';
         }
       }
-      this.voices.forEach(v => {
+      /* value = index within this.voices — native plugin ka speak()
+         voice ko INDEX se select karta hai, voiceURI se nahi, isliye
+         index hi universal identifier hai dono paths ke liye. */
+      this.voices.forEach((v, i) => {
         const opt = document.createElement('option');
-        opt.value = v.voiceURI;
+        opt.value = String(i);
         opt.textContent = v.name + ' (' + v.lang + ')';
         select.appendChild(opt);
       });
@@ -2212,23 +2291,29 @@
 
     restorePreference() {
       const select = document.getElementById('voice-select');
-      const saved = localStorage.getItem(this.VOICE_STORAGE_KEY);
-      const match = saved && this.voices.find(v => v.voiceURI === saved);
-      if (match) {
-        this.selectedVoice = match;
-      } else if (this.voices.length > 0) {
-        this.selectedVoice = this.voices[0];
+      const savedName = localStorage.getItem(this.VOICE_STORAGE_KEY);
+      let index = savedName ? this.voices.findIndex(v => v.name === savedName) : -1;
+      if (index === -1) index = this.voices.length > 0 ? 0 : -1;
+
+      if (index >= 0) {
+        this.selectedVoice = this.voices[index];
+        this.selectedVoiceIndex = index;
+        if (select) select.value = String(index);
       } else {
-        this.selectedVoice = null; /* no Google TTS voice available — system default fallback */
+        this.selectedVoice = null;
+        this.selectedVoiceIndex = -1;
       }
-      if (select && this.selectedVoice) select.value = this.selectedVoice.voiceURI;
     },
 
-    setVoice(voiceURI) {
-      this.selectedVoice = this.voices.find(v => v.voiceURI === voiceURI) || null;
-      if (this.selectedVoice) {
-        localStorage.setItem(this.VOICE_STORAGE_KEY, this.selectedVoice.voiceURI);
+    setVoice(indexStr) {
+      const index = parseInt(indexStr, 10);
+      if (!isNaN(index) && this.voices[index]) {
+        this.selectedVoice = this.voices[index];
+        this.selectedVoiceIndex = index;
+        localStorage.setItem(this.VOICE_STORAGE_KEY, this.selectedVoice.name);
       } else {
+        this.selectedVoice = null;
+        this.selectedVoiceIndex = -1;
         localStorage.removeItem(this.VOICE_STORAGE_KEY);
       }
       this.speak('Commentary voice set to ' + (this.selectedVoice ? this.selectedVoice.name.replace('Google', '').trim() : 'system default') + '.');
@@ -2256,7 +2341,7 @@
     speak(text, callback) {
       const caption = document.getElementById('commentary-caption');
 
-      if (!('speechSynthesis' in window) || !text) {
+      if (!text || this.mode === 'none') {
         if (callback) setTimeout(callback, 100);
         return;
       }
@@ -2268,6 +2353,41 @@
         if (caption) caption.textContent = '';
         if (callback) callback();
       };
+
+      if (this.mode === 'native') {
+        /* NATIVE PATH: Capacitor plugin seedha Android TextToSpeech
+           engine call karta hai — WebView ke broken speechSynthesis
+           ko bypass karta hai. stop() phir speak() = instant
+           interruption, same as web path ka cancel-then-speak. */
+        this.nativeTTS.stop().catch(() => {}).finally(() => {
+          if (caption) caption.textContent = text;
+          const opts = {
+            text: text,
+            lang: 'en-US',
+            rate: 1.0,
+            pitch: 1.0,
+            volume: this.volume,
+            category: 'ambient'
+          };
+          if (this.selectedVoiceIndex >= 0) opts.voice = this.selectedVoiceIndex;
+          this.nativeTTS.speak(opts).then(finish).catch(finish);
+        });
+
+        if (callback) {
+          /* Safety net yahan bhi — plugin ka promise kabhi atak
+             jaaye (rare native-bridge glitch) to bhi game aage
+             badhta rahe. */
+          const safetyMs = Math.max(1800, text.length * 90) + 1500;
+          setTimeout(finish, safetyMs);
+        }
+        return;
+      }
+
+      /* WEB PATH (Chrome testing) — bilkul pehle jaisa. */
+      if (!('speechSynthesis' in window)) {
+        finish();
+        return;
+      }
 
       /* INSTANT INTERRUPTION: koi bhi purani/overlapping speech turant
          cancel karo isse pehle ke naya event bole. */
