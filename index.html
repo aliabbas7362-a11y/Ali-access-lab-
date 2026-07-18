@@ -1675,6 +1675,12 @@
 
     <div class="more-options-menu" role="menu">
       <button class="more-options-item" role="menuitem"
+        aria-label="Add Test Match. Debug only, writes a fake match result."
+        onclick="closeMoreOptions(); addTestMatchResult();">
+        <span class="moi-icon" aria-hidden="true">🧪</span>
+        Add Test Match (Debug)
+      </button>
+      <button class="more-options-item" role="menuitem"
         aria-label="My Stats. Wins, losses, and match history."
         onclick="closeMoreOptions(); openDrawer('mystats');">
         <span class="moi-icon" aria-hidden="true">📊</span>
@@ -2799,6 +2805,36 @@
 
   /* Profile panel — "My Stats": Firestore se saare matchResults padho aur dikhao.
      Koi aria-live announcement nahi — plain DOM text update, jaise baaki panel ke elements. */
+  /* ════════════════════════════════════════════
+     DEBUG ONLY — fake match result likhta hai Firestore mein,
+     taaki My Stats panel test ho sake bina poora match khele.
+     TESTING KE BAAD YE BUTTON AUR FUNCTION HATA DENA.
+     ════════════════════════════════════════════ */
+  function addTestMatchResult() {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      announce('Sign in first to add a test match.');
+      return;
+    }
+    const isWin = Math.random() < 0.5;
+    db.collection('users').doc(currentUser.uid)
+      .collection('matchResults').add({
+        result:       isWin ? 'win' : 'loss',
+        yourPoints:   isWin ? 10 : Math.floor(Math.random() * 8),
+        oppPoints:    isWin ? Math.floor(Math.random() * 8) : 10,
+        roundsPlayed: Math.floor(Math.random() * 5) + 1,
+        timestamp:    firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(function() {
+        announce('Test match added. Open My Stats to check.');
+        console.log('Test match result written successfully.');
+      })
+      .catch(function(err) {
+        announce('Test match failed to save. Check console.');
+        console.error('Test match write error:', err);
+      });
+  }
+
   function loadProfileStats() {
     const summaryEl  = document.getElementById('profile-stats-summary');
     const listEl     = document.getElementById('profile-stats-list');
