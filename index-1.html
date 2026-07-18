@@ -1557,13 +1557,6 @@
           <div class="profile-panel-name" id="profile-panel-name"></div>
           <div class="profile-panel-email" id="profile-panel-email"></div>
 
-          <!-- My Stats section -->
-          <div class="profile-stats-section" style="margin:20px 0;text-align:left;">
-            <h3 style="font-size:1rem;color:var(--text-muted);margin:0 0 8px;">My Stats</h3>
-            <div id="profile-stats-summary" style="margin-bottom:12px;">Loading stats…</div>
-            <div id="profile-stats-list"></div>
-          </div>
-
           <button class="btn-signout"
             aria-label="Sign out. Double tap to sign out of your Google account."
             onclick="handleSignOut()">
@@ -1639,6 +1632,41 @@
   <!-- ══════════════════════════════════════
        MORE OPTIONS DIALOG
        ══════════════════════════════════════ -->
+  <div id="drawer-mystats" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-mystats-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('mystats')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close My Stats panel."
+          onclick="closeDrawer('mystats')">&#8592;</button>
+        <span class="drawer-title" id="drawer-mystats-title">My Stats</span>
+      </div>
+      <div class="drawer-body">
+
+        <!-- Shown when signed in -->
+        <div id="mystats-signed-in" style="display:none;text-align:left;">
+          <div id="profile-stats-summary" style="margin-bottom:12px;">Loading stats…</div>
+          <div id="profile-stats-list"></div>
+        </div>
+
+        <!-- Shown when not signed in -->
+        <div id="mystats-signed-out" style="display:none;">
+          <div class="notif-empty">
+            <div class="notif-empty-icon" aria-hidden="true">📊</div>
+            Sign in to see your stats.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <div id="more-options-dialog"
     role="dialog" aria-modal="true" aria-label="More options"
     inert aria-hidden="true">
@@ -1646,6 +1674,18 @@
     <div class="dialog-scrim" aria-hidden="true" onclick="closeMoreOptions()"></div>
 
     <div class="more-options-menu" role="menu">
+      <button class="more-options-item" role="menuitem"
+        aria-label="Add Test Match. Debug only, writes a fake match result."
+        onclick="closeMoreOptions(); addTestMatchResult();">
+        <span class="moi-icon" aria-hidden="true">🧪</span>
+        Add Test Match (Debug)
+      </button>
+      <button class="more-options-item" role="menuitem"
+        aria-label="My Stats. Wins, losses, and match history."
+        onclick="closeMoreOptions(); openDrawer('mystats');">
+        <span class="moi-icon" aria-hidden="true">📊</span>
+        My Stats
+      </button>
       <button class="more-options-item" role="menuitem"
         aria-label="Settings. Sound and TalkBack options."
         onclick="closeMoreOptions(); openDrawer('settings');">
@@ -2765,19 +2805,54 @@
 
   /* Profile panel — "My Stats": Firestore se saare matchResults padho aur dikhao.
      Koi aria-live announcement nahi — plain DOM text update, jaise baaki panel ke elements. */
-  function loadProfileStats() {
-    const summaryEl = document.getElementById('profile-stats-summary');
-    const listEl    = document.getElementById('profile-stats-list');
-    if (!summaryEl || !listEl) return;
+  /* ════════════════════════════════════════════
+     DEBUG ONLY — fake match result likhta hai Firestore mein,
+     taaki My Stats panel test ho sake bina poora match khele.
+     TESTING KE BAAD YE BUTTON AUR FUNCTION HATA DENA.
+     ════════════════════════════════════════════ */
+  function addTestMatchResult() {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      announce('Sign in first to add a test match.');
+      return;
+    }
+    const isWin = Math.random() < 0.5;
+    db.collection('users').doc(currentUser.uid)
+      .collection('matchResults').add({
+        result:       isWin ? 'win' : 'loss',
+        yourPoints:   isWin ? 10 : Math.floor(Math.random() * 8),
+        oppPoints:    isWin ? Math.floor(Math.random() * 8) : 10,
+        roundsPlayed: Math.floor(Math.random() * 5) + 1,
+        timestamp:    firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(function() {
+        announce('Test match added. Open My Stats to check.');
+        console.log('Test match result written successfully.');
+      })
+      .catch(function(err) {
+        announce('Test match failed to save. Check console.');
+        console.error('Test match write error:', err);
+      });
+  }
 
-    summaryEl.textContent = 'Loading stats…';
-    listEl.innerHTML = '';
+  function loadProfileStats() {
+    const summaryEl  = document.getElementById('profile-stats-summary');
+    const listEl     = document.getElementById('profile-stats-list');
+    const signedInEl = document.getElementById('mystats-signed-in');
+    const signedOutEl = document.getElementById('mystats-signed-out');
+    if (!summaryEl || !listEl) return;
 
     const uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) {
-      summaryEl.textContent = 'Sign in to see your stats.';
+      if (signedInEl)  signedInEl.style.display  = 'none';
+      if (signedOutEl) signedOutEl.style.display = '';
       return;
     }
+    if (signedInEl)  signedInEl.style.display  = '';
+    if (signedOutEl) signedOutEl.style.display = 'none';
+
+    summaryEl.textContent = 'Loading stats…';
+    listEl.innerHTML = '';
 
     db.collection('users').doc(uid).collection('matchResults')
       .orderBy('timestamp', 'asc')
@@ -4281,9 +4356,11 @@
       announce(profile.signedIn
         ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
         : 'Profile drawer opened. Not signed in. Sign in with Google to save your progress.');
-      if (profile.signedIn) {
-        loadProfileStats();
-      }
+    } else if (type === 'mystats') {
+      announce(profile.signedIn
+        ? 'My Stats panel opened.'
+        : 'My Stats panel opened. Not signed in. Sign in to see your stats.');
+      loadProfileStats();
     } else {
       /* Settings drawer — version update karo */
       const svd = document.getElementById('settings-version-display');
@@ -4322,6 +4399,7 @@
                      score:         'Score drawer closed.',
                      history:       'History drawer closed.',
                      profile:       'Profile drawer closed.',
+                     mystats:       'My Stats panel closed.',
                      notifications: 'Notifications panel closed.' };
     announce(labels[type] || 'Panel closed.');
 
@@ -4330,6 +4408,7 @@
       score:         document.getElementById('btn-score'),
       history:       document.getElementById('btn-history'),
       profile:       document.getElementById('btn-profile'),
+      mystats:       document.getElementById('btn-more-options'),
       notifications: document.getElementById('btn-notifications')
     };
     const t = triggers[type];
