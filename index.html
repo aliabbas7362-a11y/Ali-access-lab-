@@ -813,6 +813,22 @@
 
     /* #human-cards-row defined in human-zone section above */
 
+    /* FIX: Card buttons ab wrapper <div role="listitem"> ke andar
+       hain. Wrapper ko layout mein "invisible" rakhte hain — button
+       ke dimensions, position, animations sab bilkul waisa hi
+       behave karte hain jaise pehle direct flex-item hone par
+       karte the. line-height:0 inline-block ke whitespace gap ko
+       zero karta hai. */
+    .card-human-item {
+      display: inline-block;
+      line-height: 0;
+      flex-shrink: 0;
+    }
+    .game-card-item {
+      display: inline-block;
+      line-height: 0;
+    }
+
     .card-human {
       position: relative; width: 54px; height: 78px;
       background: #fff;
@@ -1004,34 +1020,40 @@
       <div class="dash-section-label" aria-hidden="true">Games</div>
       <div class="dash-game-grid" role="list" aria-label="Available games">
 
-        <!-- Court Piece -->
-        <button class="game-card" role="listitem"
-          id="btn-launch-courtpiece"
-          aria-label="Court Piece. Card game. Human versus 3 robots. Double tap to play."
-          onclick="launchCourtPiece()">
-          <div class="game-card-badge" aria-hidden="true">v1.0</div>
-          <div class="game-card-icon" aria-hidden="true">🃏</div>
-          <div class="game-card-name" aria-hidden="true">Court Piece</div>
-        </button>
+        <!-- Court Piece — FIX: listitem role wrapper div par, button par nahi -->
+        <div role="listitem" class="game-card-item">
+          <button class="game-card"
+            id="btn-launch-courtpiece"
+            aria-label="Court Piece. Card game. Human versus 3 robots. Double tap to play."
+            onclick="launchCourtPiece()">
+            <div class="game-card-badge" aria-hidden="true">v1.0</div>
+            <div class="game-card-icon" aria-hidden="true">🃏</div>
+            <div class="game-card-name" aria-hidden="true">Court Piece</div>
+          </button>
+        </div>
 
-        <!-- 99 -->
-        <button class="game-card" role="listitem"
-          id="btn-launch-99"
-          aria-label="99. Card game. Human versus configurable number of robots. Double tap to play."
-          onclick="launch99Game()">
-          <div class="game-card-badge" aria-hidden="true">v1.0</div>
-          <div class="game-card-icon" aria-hidden="true">🔢</div>
-          <div class="game-card-name" aria-hidden="true">99</div>
-        </button>
+        <!-- 99 — FIX: same wrapper pattern -->
+        <div role="listitem" class="game-card-item">
+          <button class="game-card"
+            id="btn-launch-99"
+            aria-label="99. Card game. Human versus configurable number of robots. Double tap to play."
+            onclick="launch99Game()">
+            <div class="game-card-badge" aria-hidden="true">v1.0</div>
+            <div class="game-card-icon" aria-hidden="true">🔢</div>
+            <div class="game-card-name" aria-hidden="true">99</div>
+          </button>
+        </div>
 
-        <!-- Coming Soon placeholder -->
-        <button class="game-card" role="listitem"
-          aria-label="More games coming soon. Not available yet."
-          aria-disabled="true" disabled>
-          <div class="game-card-badge soon" aria-hidden="true">Soon</div>
-          <div class="game-card-icon" aria-hidden="true">🎮</div>
-          <div class="game-card-name" aria-hidden="true">More Games</div>
-        </button>
+        <!-- Coming Soon placeholder — FIX: same wrapper pattern -->
+        <div role="listitem" class="game-card-item">
+          <button class="game-card"
+            aria-label="More games coming soon. Not available yet."
+            aria-disabled="true" disabled>
+            <div class="game-card-badge soon" aria-hidden="true">Soon</div>
+            <div class="game-card-icon" aria-hidden="true">🎮</div>
+            <div class="game-card-name" aria-hidden="true">More Games</div>
+          </button>
+        </div>
 
       </div>
 
@@ -3731,10 +3753,20 @@
 
     player.hand.forEach(card => {
       const playable = isMyTurn && canPlayCard99(card, state99.total);
+
+      /* FIX: Same root-cause — role="listitem" seedha button par
+         nahi hona chahiye. Wrapper div use karo, button ko
+         default "button" role ke saath rehne do. */
+      const item = document.createElement('div');
+      item.setAttribute('role', 'listitem');
+      item.className = 'card-human-item';
+
       const btn = document.createElement('button');
       btn.className = 'card-human' + (card.red ? ' suit-red' : '');
-      btn.setAttribute('role', 'listitem');
-      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('data-label', card.label);
+      /* Note: button ka default role ("button") intact hai. role="listitem"
+         ab wrapper div par hai (upar). tabindex="0" hataya gaya —
+         <button> natively focusable hai. */
 
       if (playable) {
         btn.setAttribute('aria-label', card.label + '. Double tap to play.');
@@ -3752,7 +3784,8 @@
 
       const [tl, center, br] = buildCardSpans(card.sym, card.rank, card.red);
       btn.appendChild(tl); btn.appendChild(center); btn.appendChild(br);
-      row.appendChild(btn);
+      item.appendChild(btn);
+      row.appendChild(item);
     });
   }
 
@@ -4057,12 +4090,22 @@
       const rankShort  = card.display.replace(/[♠♥♣♦]/g, '');
       const isRed      = card.red;
 
+      /* FIX: Button ko real <button> rehne do (default role="button"
+         already correct hai). Listitem role wrapper div par lagao —
+         pehle seedha button par tha jo kuch Android WebView + TalkBack
+         versions mein accessible-name calculation tod deta tha aur
+         "unlabeled" bolwata tha. */
+      const item = document.createElement('div');
+      item.setAttribute('role', 'listitem');
+      item.className = 'card-human-item';
+
       const btn = document.createElement('button');
       btn.className = 'card-human' + (isRed ? ' suit-red' : '');
-      btn.setAttribute('role', 'listitem');
-      btn.setAttribute('tabindex', '0');
-      btn.setAttribute('aria-hidden', 'false');
       btn.setAttribute('data-label', card.label);
+      /* Note: button ka default role ("button") intact hai. role="listitem"
+         ab wrapper div par hai (upar). tabindex aur aria-hidden="false"
+         dono hataye gaye hain — <button> natively focusable hai aur
+         "false" redundant tha. */
 
       if (locked) {
         btn.setAttribute('aria-disabled', 'true');
@@ -4078,7 +4121,8 @@
 
       const [tl, center, br] = buildCardSpans(suitSymbol, rankShort, isRed);
       btn.appendChild(tl); btn.appendChild(center); btn.appendChild(br);
-      row.appendChild(btn);
+      item.appendChild(btn);
+      row.appendChild(item);
     });
   }
 
@@ -5085,40 +5129,4 @@
 
     const triggers = {
       settings:      document.getElementById('btn-settings-game') || document.getElementById('btn-more-options'),
-      score:         document.getElementById('btn-score'),
-      history:       document.getElementById('btn-history'),
-      profile:       document.getElementById('btn-profile'),
-      mystats:       document.getElementById('btn-more-options'),
-      notifications: document.getElementById('btn-notifications')
-    };
-    const t = triggers[type];
-    if (t) setTimeout(() => t.focus(), 50);
-  }
-  </script>
-
-  <!-- ============================================================
-       SERVICE WORKER REGISTRATION
-       Registers sw.js (must be uploaded alongside this index.html,
-       in the same folder, on GitHub Pages) so the app:
-       - Works offline using the last cached version
-       - Still gets live updates automatically when online, since
-         sw.js uses a network-first strategy for this page
-       This does not change CURRENT_APP_VERSION or the existing
-       update-banner logic in any way — both systems work together.
-       ============================================================ -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => {
-            console.log('Service worker registered:', reg.scope);
-          })
-          .catch(err => {
-            console.warn('Service worker registration failed:', err);
-          });
-      });
-    }
-  </script>
-
-</body>
-</html>
+      
