@@ -1762,6 +1762,18 @@
             🔔 Enable Notifications
           </button>
         </div>
+        <!-- TEMP DIAGNOSTIC — REMOVE ONCE PUSH NOTIFICATION ISSUE
+             CONFIRMED FIXED. Bata deta hai push registration ka
+             asli result kya raha — TalkBack se seedha suna ja
+             sakta hai, koi computer/console ki zaroorat nahi. -->
+        <div style="margin-top:10px;">
+          <button class="btn btn-outline" style="width:100%;font-size:0.8rem;
+            border-style:dashed;border-color:#6699ff;color:#cce0ff;"
+            aria-label="Test only. Double tap to check push notification registration status."
+            onclick="registerForPushNotifications(); setTimeout(announcePushRegistrationStatus, 1500);">
+            🧪 TEST: Check Push Status
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2970,10 +2982,53 @@
       if (permStatus.receive === 'prompt') {
         permStatus = await PushNotifications.requestPermissions();
       }
-      if (permStatus.receive !== 'granted') return;
+      if (permStatus.receive !== 'granted') {
+        localStorage.setItem('push_reg_status', 'permission_denied');
+        return;
+      }
+
+      /* ── BUG FIX ──
+         Pehle sirf register() call hota tha, uska result kabhi
+         suna hi nahi jata tha. register() khud sirf "registration
+         shuru karo" bolta hai — asli success/failure ek ALAG,
+         async event ("registration" / "registrationError") se
+         aata hai. Listeners register() se PEHLE lagana zaroori
+         hai, warna result miss ho jata hai. Ab result localStorage
+         mein save karte hain taaki Settings se check kiya ja sake
+         (koi console/DevTools ki zaroorat nahi). */
+      await PushNotifications.addListener('registration', (token) => {
+        localStorage.setItem('push_reg_status', 'success');
+        localStorage.setItem('push_reg_detail', token.value.substring(0, 24) + '...');
+      });
+      await PushNotifications.addListener('registrationError', (error) => {
+        localStorage.setItem('push_reg_status', 'error');
+        localStorage.setItem('push_reg_detail', JSON.stringify(error));
+      });
+
       await PushNotifications.register();
     } catch (err) {
+      localStorage.setItem('push_reg_status', 'exception');
+      localStorage.setItem('push_reg_detail', err.message);
       console.log('Push registration failed:', err.message);
+    }
+  }
+
+  /* TEMP DIAGNOSTIC — TalkBack se result sunne ke liye, koi
+     computer/DevTools ki zaroorat nahi. Settings ke "Enable
+     Notifications" button ke paas se call hoga. */
+  function announcePushRegistrationStatus() {
+    const status = localStorage.getItem('push_reg_status');
+    const detail = localStorage.getItem('push_reg_detail');
+    if (!status) {
+      announce('Push registration abhi tak try hi nahi hua. Pehle notifications enable karo.');
+      return;
+    }
+    if (status === 'success') {
+      announce('Push registration successful. Token mila: ' + detail);
+    } else if (status === 'permission_denied') {
+      announce('Push registration fail — permission denied tha.');
+    } else {
+      announce('Push registration fail hua. Error: ' + (detail || 'unknown'));
     }
   }
 
