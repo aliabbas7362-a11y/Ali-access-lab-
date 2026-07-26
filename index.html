@@ -1763,16 +1763,20 @@
           </button>
         </div>
         <!-- TEMP DIAGNOSTIC — REMOVE ONCE PUSH NOTIFICATION ISSUE
-             CONFIRMED FIXED. Bata deta hai push registration ka
-             asli result kya raha — TalkBack se seedha suna ja
-             sakta hai, koi computer/console ki zaroorat nahi. -->
+             CONFIRMED FIXED. Result screen par likha jata hai
+             (announce() ki timing pe depend nahi karta) — swipe
+             kar ke apni raftar se padh sakte ho. -->
         <div style="margin-top:10px;">
           <button class="btn btn-outline" style="width:100%;font-size:0.8rem;
             border-style:dashed;border-color:#6699ff;color:#cce0ff;"
             aria-label="Test only. Double tap to check push notification registration status."
-            onclick="registerForPushNotifications(); setTimeout(announcePushRegistrationStatus, 1500);">
+            onclick="runPushDiagnostic()">
             🧪 TEST: Check Push Status
           </button>
+          <div id="push-diag-result" role="text"
+            style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);min-height:1.2em;">
+            (Not checked yet.)
+          </div>
         </div>
       </div>
     </div>
@@ -3013,23 +3017,47 @@
     }
   }
 
-  /* TEMP DIAGNOSTIC — TalkBack se result sunne ke liye, koi
-     computer/DevTools ki zaroorat nahi. Settings ke "Enable
-     Notifications" button ke paas se call hoga. */
-  function announcePushRegistrationStatus() {
-    const status = localStorage.getItem('push_reg_status');
-    const detail = localStorage.getItem('push_reg_detail');
-    if (!status) {
-      announce('Push registration abhi tak try hi nahi hua. Pehle notifications enable karo.');
+  /* TEMP DIAGNOSTIC — result screen par likhta hai (visible text),
+     announce() ki timing pe depend nahi karta. Settings ke
+     notification panel ke naye test button se call hota hai. */
+  async function runPushDiagnostic() {
+    const resultEl = document.getElementById('push-diag-result');
+    if (resultEl) resultEl.textContent = 'Checking... please wait.';
+
+    if (!isNativeApp()) {
+      if (resultEl) resultEl.textContent = 'Push notifications only work inside the installed app (APK), not in browser.';
       return;
     }
-    if (status === 'success') {
-      announce('Push registration successful. Token mila: ' + detail);
-    } else if (status === 'permission_denied') {
-      announce('Push registration fail — permission denied tha.');
-    } else {
-      announce('Push registration fail hua. Error: ' + (detail || 'unknown'));
+
+    if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.PushNotifications) {
+      if (resultEl) resultEl.textContent = 'PROBLEM FOUND: PushNotifications plugin is not available in this build. The APK does not have it bundled correctly.';
+      return;
     }
+
+    try {
+      await registerForPushNotifications();
+    } catch (e) {
+      if (resultEl) resultEl.textContent = 'Error while registering: ' + e.message;
+      return;
+    }
+
+    /* Registration event async hai, thoda wait karo. */
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+
+    const status = localStorage.getItem('push_reg_status');
+    const detail = localStorage.getItem('push_reg_detail');
+    let msg;
+    if (!status) {
+      msg = 'No result yet after 2.5 seconds. This usually means the registration call is stuck or Google Play Services is not responding.';
+    } else if (status === 'success') {
+      msg = 'SUCCESS — device registered. Token: ' + detail;
+    } else if (status === 'permission_denied') {
+      msg = 'FAILED — notification permission was denied.';
+    } else {
+      msg = 'FAILED — Error: ' + (detail || 'unknown error');
+    }
+    if (resultEl) resultEl.textContent = msg;
+    announce(msg);
   }
 
   /* Ask on first load (only if not yet decided) */
