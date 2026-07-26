@@ -658,20 +658,8 @@
       border: 1px solid var(--border); border-radius: var(--radius);
       padding: 14px; width: 100%; max-width: 340px; text-align: left;
     }
-    .robot-count-fieldset legend {
+    .robot-count-legend {
       font-weight: bold; color: var(--text); font-size: 0.9rem;
-      padding: 0 6px;
-    }
-    .robot-count-option {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 4px; min-height: 44px;
-    }
-    .robot-count-option input[type="radio"] {
-      width: 22px; height: 22px; flex-shrink: 0;
-      accent-color: var(--green);
-    }
-    .robot-count-option label {
-      font-size: 0.92rem; color: var(--text); cursor: pointer;
     }
 
     /* ─────────────────────────────────────────
@@ -994,6 +982,12 @@
     <!-- SCROLLABLE BODY -->
     <div class="dash-body">
 
+      <!-- STREAK DISPLAY -->
+      <div id="dash-streak" role="text" aria-label="No streak yet. Play a game today to start one."
+        style="text-align:center;padding:6px 0;font-size:0.85rem;color:var(--gold);">
+        <span aria-hidden="true">🔥 <span id="dash-streak-count">0</span> din streak</span>
+      </div>
+
       <!-- Greeting -->
       <div class="dash-greeting" aria-live="polite" id="dash-greeting">
         <div class="dash-greeting-name" id="dash-greeting-name">Welcome!</div>
@@ -1055,7 +1049,7 @@
 
     <div class="privacy-body" role="document">
       <h2>Card Game — Court Piece</h2>
-      <p>Version <strong id="about-version">1.2.0</strong></p>
+      <p>Version <strong id="about-version">1.3.0</strong></p>
 
       <h2>Developer</h2>
       <p>Developed by <strong>Abbas Ali</strong> — Blind Developer<br>
@@ -1184,22 +1178,28 @@
         Choose how many robot opponents you want, then tap Start Game.
       </p>
 
-      <!-- ROBOT COUNT SELECTOR -->
-      <fieldset class="robot-count-fieldset">
-        <legend>Number of robot opponents</legend>
-        <div class="robot-count-option">
-          <input type="radio" name="robot-count-99" id="robot-count-1" value="1">
-          <label for="robot-count-1">1 Robot</label>
+      <!-- ROBOT COUNT SELECTOR (custom button-radio pattern —
+           same as Announcement Level in Settings — native
+           <input type="radio"> was unreliable across devices) -->
+      <div class="robot-count-fieldset">
+        <div class="robot-count-legend">Number of robot opponents</div>
+        <div role="radiogroup" aria-label="Number of robot opponents. 1, 2, or 3."
+          style="display:flex;gap:10px;margin-top:10px;">
+          <button type="button" id="btn-robotcount-1" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="1 robot opponent. Double tap to select."
+            style="flex:1;" onclick="setRobotCount99(1)">1 Robot</button>
+          <button type="button" id="btn-robotcount-2" class="btn-small"
+            role="radio" aria-checked="true"
+            aria-label="2 robot opponents. Currently selected."
+            style="flex:1;border-color:var(--gold);color:var(--gold);"
+            onclick="setRobotCount99(2)">2 Robots</button>
+          <button type="button" id="btn-robotcount-3" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="3 robot opponents. Double tap to select."
+            style="flex:1;" onclick="setRobotCount99(3)">3 Robots</button>
         </div>
-        <div class="robot-count-option">
-          <input type="radio" name="robot-count-99" id="robot-count-2" value="2" checked>
-          <label for="robot-count-2">2 Robots</label>
-        </div>
-        <div class="robot-count-option">
-          <input type="radio" name="robot-count-99" id="robot-count-3" value="3">
-          <label for="robot-count-3">3 Robots</label>
-        </div>
-      </fieldset>
+      </div>
 
       <button class="btn-shuffle"
         aria-label="Start game with the selected number of robot opponents."
@@ -1318,6 +1318,13 @@
          justify-content:center;gap:20px;padding:24px;text-align:center;">
       <p id="game99-gameover-msg" tabindex="-1"
         style="font-size:1.3rem;font-weight:bold;color:var(--gold);"></p>
+      <p id="game99-matchsummary-text"
+        style="font-size:0.85rem;color:var(--text-muted);margin:0;"></p>
+      <button class="btn" id="btn-share-whatsapp-99"
+        aria-label="Share result on WhatsApp. Opens WhatsApp with your result pre-filled."
+        style="max-width:280px;background:#25D366;color:#fff;">
+        📱 WhatsApp pe Share karo
+      </button>
       <button class="btn-shuffle" onclick="backToDashboardFrom99()">Back to Dashboard</button>
     </div>
 
@@ -1453,11 +1460,25 @@
     <div class="gameover-title" id="gameover-title-text"></div>
     <div class="gameover-score" id="gameover-score-text" aria-hidden="true"></div>
     <div class="gameover-detail" id="gameover-detail-text"></div>
+    <div id="gameover-matchsummary-text"
+      style="display:none;font-size:0.85rem;color:var(--text-muted);margin:6px 0 4px;text-align:center;"></div>
 
     <button class="btn btn-play" id="btn-play-again-overlay"
       aria-label="Play Again. Start a new game of Court Piece."
       style="max-width:280px;margin-top:8px;">
       🔄 Play Again
+    </button>
+
+    <button class="btn btn-secondary" id="btn-dashboard-from-gameover"
+      aria-label="Back to Dashboard. Return to home screen."
+      style="max-width:280px;background:transparent;border:2px solid var(--gold);color:var(--gold);margin-top:8px;display:none;">
+      ← Back to Dashboard
+    </button>
+
+    <button class="btn" id="btn-share-whatsapp"
+      aria-label="Share result on WhatsApp. Opens WhatsApp with your result pre-filled."
+      style="max-width:280px;background:#25D366;color:#fff;margin-top:8px;display:none;">
+      📱 WhatsApp pe Share karo
     </button>
   </div>
 
@@ -1637,7 +1658,7 @@
         <p class="drawer-section-heading">App Info</p>
         <div class="panel-row">
           <span>Version</span>
-          <span id="settings-version-display" style="color:var(--gold);">1.2.0</span>
+          <span id="settings-version-display" style="color:var(--gold);">1.3.0</span>
         </div>
         <div class="panel-row">
           <span>Developer</span>
@@ -1972,6 +1993,66 @@
   const auth      = firebase.auth();
   const db        = firebase.firestore();
   const analytics = firebase.analytics();
+
+  /* ════════════════════════════════════════════
+     STREAK COUNTER (Phase 5 — retention plan)
+     Har match/game khatam hone par update hota hai (Court Piece
+     aur 99 dono — koi bhi khela to streak count hota hai).
+     Purana localStorage-based, phone ki apni memory mein rehta
+     hai, koi server/internet nahi chahiye.
+     ════════════════════════════════════════════ */
+  let appStreak = parseInt(localStorage.getItem('cardgame_streak') || '0', 10) || 0;
+  let appLastPlayedDate = localStorage.getItem('cardgame_last_played') || null;
+
+  function updateAppStreak() {
+    const today = new Date().toDateString();
+    if (appLastPlayedDate === today) return; /* aaj already count ho chuka */
+
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (appLastPlayedDate === yesterday) {
+      appStreak += 1;               /* lagatar agla din — streak badhi */
+    } else {
+      appStreak = 1;                /* streak toot gayi ya pehli baar khela */
+    }
+    appLastPlayedDate = today;
+    localStorage.setItem('cardgame_streak', String(appStreak));
+    localStorage.setItem('cardgame_last_played', appLastPlayedDate);
+    renderStreakDisplay();
+  }
+
+  function renderStreakDisplay() {
+    const el = document.getElementById('dash-streak-count');
+    const wrap = document.getElementById('dash-streak');
+    if (!el || !wrap) return;
+    el.textContent = String(appStreak);
+    wrap.setAttribute('aria-label',
+      appStreak === 0
+        ? 'No streak yet. Play a game today to start one.'
+        : appStreak + ' day' + (appStreak === 1 ? '' : 's') + ' streak. Keep playing daily to keep it going.'
+    );
+  }
+
+  /* ════════════════════════════════════════════
+     GAME EVENTS TRACKING (Phase 4 — retention plan)
+     Firebase Analytics mein events log karta hai taake
+     pata chale users kahan drop off ho rahe hain.
+     ════════════════════════════════════════════ */
+  /* Match Summary ke liye — seconds ko "2 min 15 sec" jaisa banata hai. */
+  function formatDuration(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    if (m === 0) return s + ' sec';
+    return m + ' min ' + s + ' sec';
+  }
+
+  function logGameEvent(eventName, params = {}) {
+    try {
+      analytics.logEvent(eventName, params);
+    } catch (e) {
+      console.log('Analytics log failed:', e);
+    }
+  }
+
 
   /* ════════════════════════════════════════════
      SOUND
@@ -2752,9 +2833,16 @@
   async function getNotificationPermissionState() {
     if (isNativeApp()) {
       try {
-        const { LocalNotifications } = await import(
-          'https://cdn.jsdelivr.net/npm/@capacitor/local-notifications/dist/esm/index.js'
-        );
+        /* PEHLE: CDN se dynamic import() hota tha
+           (cdn.jsdelivr.net/...) — isse Capacitor ka native
+           bridge plugin ko register hi nahi kar pata tha,
+           isliye checkPermissions() hamesha 'default' return
+           karta tha, permission popup kabhi dikhta hi nahi tha.
+           AB: window.Capacitor.Plugins se seedha access — yeh
+           wahi plugin hai jo APK build ke waqt native side pe
+           already register ho chuka hota hai (npm install se,
+           CI/CD workflow mein), CDN ki zaroorat hi nahi. */
+        const { LocalNotifications } = window.Capacitor.Plugins;
         const result = await LocalNotifications.checkPermissions();
         /* result.display is 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale' */
         if (result.display === 'granted') return 'granted';
@@ -2773,12 +2861,11 @@
   async function requestNotificationPermission() {
     if (isNativeApp()) {
       try {
-        const { LocalNotifications } = await import(
-          'https://cdn.jsdelivr.net/npm/@capacitor/local-notifications/dist/esm/index.js'
-        );
+        const { LocalNotifications } = window.Capacitor.Plugins;
         const result = await LocalNotifications.requestPermissions();
         if (result.display === 'granted') {
           announce('Notifications enabled. You will receive updates about new games and features.');
+          scheduleDailyReminder();
         } else {
           announce('Notification permission denied. You can enable it later from your device settings.');
         }
@@ -2829,6 +2916,39 @@
       btn.textContent = '🔔 Enable Notifications';
       btn.setAttribute('aria-label', 'Enable notifications. Double tap to allow notifications from this app.');
       btn.disabled = false;
+    }
+  }
+
+  /* ── Bug B fix: pehle sirf permission maangi jaati thi, lekin
+     schedule() kabhi call hi nahi hota tha — matlab permission
+     milne ke baad bhi koi notification kabhi aata hi nahi tha.
+     Yeh function asal mein ek daily reminder schedule karta hai. ── */
+  async function scheduleDailyReminder() {
+    if (!isNativeApp()) return;
+    try {
+      const { LocalNotifications } = window.Capacitor.Plugins;
+      const perms = await LocalNotifications.checkPermissions();
+      if (perms.display !== 'granted') return;
+
+      /* Purana reminder cancel karo (agar tha), taaki duplicate na bane. */
+      await LocalNotifications.cancel({ notifications: [{ id: 100 }] });
+
+      /* Kal shaam 8 baje ke liye naya schedule karo. */
+      const tomorrow8pm = new Date();
+      tomorrow8pm.setDate(tomorrow8pm.getDate() + 1);
+      tomorrow8pm.setHours(20, 0, 0, 0);
+
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: 100,
+          title: 'Aaj Card Game khelo! 🎴',
+          body: 'Tumhari streak: ' + (appStreak || 1) + ' din. Kal miss mat karo!',
+          schedule: { at: tomorrow8pm },
+          extra: { route: 'dashboard' }
+        }]
+      });
+    } catch (err) {
+      console.log('scheduleDailyReminder failed:', err.message);
     }
   }
 
@@ -2908,7 +3028,7 @@
   /* Bump this string in index.html every time you cut a new APK release.
      It must match the "version" field in version.json once that
      version's APK has been built and uploaded to GitHub Releases. */
-  const CURRENT_APP_VERSION = '1.2.0';
+  const CURRENT_APP_VERSION = '1.3.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
@@ -3281,10 +3401,11 @@
   }
 
   function start99Game() {
-    const selected = document.querySelector('input[name="robot-count-99"]:checked');
-    const robotCount = selected ? parseInt(selected.value, 10) : 2;
+    const robotCount = selectedRobotCount99;
     document.getElementById('shuffle-screen-99').classList.remove('active');
     document.getElementById('screen-game-99').classList.add('active');
+    logGameEvent('game_started', { game_type: '99', robot_count: robotCount });
+    state99MatchStartTime = Date.now();
     initGame99(robotCount);
     setTimeout(() => {
       const msg = document.getElementById('game99-status-msg');
@@ -3388,6 +3509,8 @@
   ];
 
   let state99 = null;
+  let state99MatchStartTime = null;
+  let selectedRobotCount99 = 2;
 
   function buildDeck99() {
     const deck = [];
@@ -3523,6 +3646,26 @@
     state99.gameOver = true;
     renderGame99();
     playSound(winner && winner.isHuman ? 'win' : 'lose');
+    updateAppStreak();
+    scheduleDailyReminder();
+
+    const durationSec99 = Math.round((Date.now() - (state99MatchStartTime || Date.now())) / 1000);
+
+    logGameEvent('match_completed', {
+      game_type: '99',
+      result: (winner && winner.isHuman) ? 'win' : 'loss',
+      duration_sec: durationSec99,
+      moves_played: state99.history.length
+    });
+
+    /* Phase 5.3 — Match Summary display */
+    const summaryEl99 = document.getElementById('game99-matchsummary-text');
+    if (summaryEl99) {
+      const humanPlayerSummary = state99.players[0];
+      summaryEl99.textContent = 'Cards played: ' + state99.history.length
+        + '. Tokens left: ' + Math.max(0, humanPlayerSummary.tokens)
+        + '. Duration: ' + formatDuration(durationSec99) + '.';
+    }
 
     /* Firestore mein match result save karo (sirf signed-in users) —
        Court Piece ke matchResults collection mein hi, game:'99' tag
@@ -3554,6 +3697,20 @@
     overlay.style.display = 'flex';
     setTimeout(() => msgEl.focus(), 100);
     announceRobotPlay(msg);
+
+    const shareBtn99 = document.getElementById('btn-share-whatsapp-99');
+    if (shareBtn99) {
+      shareBtn99.onclick = (e) => {
+        e.stopPropagation();
+        const humanWon99 = !!(winner && winner.isHuman);
+        const resultText = humanWon99 ? 'won! 🏆' : 'lost, better luck next time!';
+        const shareMsg = 'I just played 99 on Card Game and ' + resultText
+          + ' 🎴 My streak: ' + appStreak + ' day' + (appStreak === 1 ? '' : 's') + '! Try it here:';
+        const shareUrl = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/';
+        const text = encodeURIComponent(shareMsg + '\n' + shareUrl);
+        window.open('https://wa.me/?text=' + text, '_blank');
+      };
+    }
   }
 
   /* Turn-by-turn like Court Piece's fireRobotsInOrder: har player ki
@@ -3685,8 +3842,18 @@
   }
 
   function finishHumanPlay99(card, value) {
+    /* Focus-jump fix: renderGame99() neeche row.innerHTML = '' se
+       poori hand wipe kar deta hai. Agar TalkBack ka accessibility
+       cursor abhi tak khele gaye button par tha, to uske achanak
+       gayab hone par Android khud kisi random naye button ko focus
+       de kar uska naam bol deta hai (jo card khela hi nahi gaya).
+       Fix: wipe se PEHLE focus ko silent anchor par bhej do. */
+    const focusAnchor99 = document.getElementById('focus-anchor');
+    if (focusAnchor99) focusAnchor99.focus();
+
     const player = state99.players[0];
     applyCardEffect99(player, card, value);
+    logGameEvent('card_played', { game_type: '99', card: card.label, new_total: state99.total });
     state99.history.push('You played ' + card.label + '. Total: ' + state99.total + '.');
     updateHistoryBtn99();
     renderGame99();
@@ -3723,35 +3890,91 @@
   }
 
   function renderHumanHand99() {
+    /* ════════════════════════════════════════════
+       IN-PLACE PATCH + CONTAINER-LEVEL LOCK.
+       Pehle har button ka apna alag timer tha (purana
+       100ms baad remove, naya 150ms baad reveal) — yeh
+       do ALAG timers thay jo device load/lag ke hisab se
+       kabhi kabhi galat order mein fire ho sakte the
+       (isi wajah se bug kabhi hota tha kabhi nahi — Round 1
+       theek, Round 2 mein hota).
+
+       Ab iski jagah POORI ROW ko ek hi baar mein
+       aria-hidden="true" kar dete hain jab tak update chal
+       raha hai — jab tak yeh lock laga hai, TalkBack row ke
+       ANDAR kisi bhi button ko (purana ho ya naya) focus ya
+       announce nahi kar sakta, chahe DOM mein kya bhi badlav
+       ho raha ho. Lock hatne ke baad hi (single guaranteed
+       timing, race-proof) sab kuch normal accessible hota hai.
+       ════════════════════════════════════════════ */
     const row = document.getElementById('game99-hand-row');
-    row.innerHTML = '';
     const player = state99.players[0];
     const isMyTurn = state99.players[state99.currentIndex] === player && !state99.gameOver;
 
+    row.setAttribute('aria-hidden', 'true');
+
+    const existing = {};
+    Array.from(row.children).forEach(b => {
+      if (b.dataset && b.dataset.cardLabel) existing[b.dataset.cardLabel] = b;
+    });
+
+    const currentLabels = new Set(player.hand.map(c => c.label));
+
+    /* Jo card ab hand mein nahi hai (khela gaya) — usko turant
+       hata do. Row pehle se hi aria-hidden hai, isliye koi race
+       ka dar nahi — TalkBack abhi kuch bhi is row ke andar
+       "dekh" hi nahi sakta. */
+    Object.keys(existing).forEach(label => {
+      if (!currentLabels.has(label)) {
+        existing[label].remove();
+      }
+    });
+
     player.hand.forEach(card => {
       const playable = isMyTurn && canPlayCard99(card, state99.total);
-      const btn = document.createElement('button');
-      btn.className = 'card-human' + (card.red ? ' suit-red' : '');
-      btn.setAttribute('tabindex', '0');
+      let btn = existing[card.label];
 
+      if (!btn) {
+        /* Naya card (pehli render, ya abhi draw hua). */
+        btn = document.createElement('button');
+        btn.className = 'card-human' + (card.red ? ' suit-red' : '');
+        btn.setAttribute('tabindex', '0');
+        btn.dataset.cardLabel = card.label;
+        const [tl, center, br] = buildCardSpans(card.sym, card.rank, card.red);
+        btn.appendChild(tl); btn.appendChild(center); btn.appendChild(br);
+        row.appendChild(btn);
+      }
+
+      /* Baaki sab cards — same DOM node, sirf attributes/label update.
+         onclick PROPERTY assignment use kar rahe hain (addEventListener
+         nahi) — kyunki reused button par addEventListener baar baar
+         call hone se purane listeners stack ho jate (ek tap par
+         card do-teen baar play ho jata). Assignment hamesha purana
+         replace karta hai, safe hai. */
       if (playable) {
         btn.setAttribute('aria-label', card.label + '. Double tap to play.');
-        btn.addEventListener('click', (e) => {
+        btn.removeAttribute('aria-disabled');
+        btn.style.pointerEvents = '';
+        btn.style.opacity = '';
+        btn.onclick = (e) => {
           e.stopPropagation();
           addRipple(btn);
           onHumanCardTap99(card);
-        });
+        };
       } else {
+        btn.onclick = null;
         btn.setAttribute('aria-disabled', 'true');
         btn.style.pointerEvents = 'none';
         btn.style.opacity = '0.5';
         btn.setAttribute('aria-label', card.label + '. ' + (isMyTurn ? 'Would bust. Disabled.' : 'Not your turn.'));
       }
-
-      const [tl, center, br] = buildCardSpans(card.sym, card.rank, card.red);
-      btn.appendChild(tl); btn.appendChild(center); btn.appendChild(br);
-      row.appendChild(btn);
     });
+
+    /* Sab kuch settle hone ke baad hi lock hatao — single guaranteed
+       delay, koi doosra parallel timer nahi jisse race ban sake. */
+    setTimeout(() => {
+      row.removeAttribute('aria-hidden');
+    }, 200);
   }
 
   function openMoreOptions() {
@@ -3798,6 +4021,7 @@
     clearAllAnnouncements();
     VoiceEngine.init();
     updateProfileUI();
+    renderStreakDisplay();
     /* Notification permission is NOT requested automatically on load.
        User can enable it manually via the bell icon > notification panel. */
     announce('Card Game. Dashboard loaded. Choose a game to play.');
@@ -3827,6 +4051,26 @@
      game-flow announcements (deal/trump/card-play/trick/
      round/match) is se affect hote hain — dekho lvl().
      ════════════════════════════════════════════ */
+  function setRobotCount99(count) {
+    selectedRobotCount99 = count;
+    const btn1 = document.getElementById('btn-robotcount-1');
+    const btn2 = document.getElementById('btn-robotcount-2');
+    const btn3 = document.getElementById('btn-robotcount-3');
+    const buttons = [
+      { btn: btn1, n: 1, label: '1 robot opponent' },
+      { btn: btn2, n: 2, label: '2 robot opponents' },
+      { btn: btn3, n: 3, label: '3 robot opponents' }
+    ];
+    buttons.forEach(({ btn, n, label }) => {
+      const isChecked = n === count;
+      btn.setAttribute('aria-checked', String(isChecked));
+      btn.setAttribute('aria-label', label + '. ' + (isChecked ? 'Currently selected.' : 'Double tap to select.'));
+      btn.style.borderColor = isChecked ? 'var(--gold)' : '';
+      btn.style.color       = isChecked ? 'var(--gold)' : '';
+    });
+    announce('Robot opponents set to ' + count + '.');
+  }
+
   function setAnnouncementLevel(level) {
     state.announcementLevel = level;
     const shortBtn  = document.getElementById('btn-level-short');
@@ -3914,6 +4158,9 @@
     clearAllAnnouncements();
     document.getElementById('shuffle-screen').classList.remove('active');
     document.getElementById('screen-game').classList.add('active');
+
+    logGameEvent('game_started', { game_type: 'courtpiece', robot_count: 3 });
+    state.matchStartTime = Date.now();
 
     /* Jam/glitch fix: shuffle-screen hide hote hi uska focused
        Shuffle button bhi hide ho jata hai — focus achanak kho
@@ -4195,6 +4442,8 @@
     if (state.phase !== 'playing') return;
     if (btn.getAttribute('aria-disabled') === 'true') return;
 
+    logGameEvent('card_played', { game_type: 'courtpiece', card: card.label });
+
     state.phase = 'ai-turn';
 
     /* Double-click sound + focus-flicker fix: pehle hi #focus-anchor
@@ -4211,6 +4460,13 @@
     const focusAnchor = document.getElementById('focus-anchor');
     if (focusAnchor) focusAnchor.focus();
 
+    /* aria-hidden turant lagao — sirf aria-disabled kaafi nahi tha.
+       Yeh TalkBack ko explicit signal deta hai ke iska accessibility
+       cursor yahan se hat jaye ABHI, na ke 100ms baad jab button
+       DOM se remove ho (jab tak wo wait nahi karega, Android khud
+       kisi random sibling card ko focus de kar uska naam bol sakta
+       hai — wahi "faltu announcement, khela hi nahi" wala bug). */
+    btn.setAttribute('aria-hidden', 'true');
     btn.setAttribute('aria-disabled', 'true');
     btn.style.pointerEvents = 'none';
     playSound('cardFlip');
@@ -4473,6 +4729,7 @@
 
     state.tricksPlayed++;
     updateScoreDisplay();
+    logGameEvent('trick_completed', { game_type: 'courtpiece', winner_team: isHumanTeam ? 'human' : 'ai' });
     /* Current Trick section ab announcement wala hi text dikhata hai,
        word-for-word same — jab tak agli trick shuru na ho, tab tak
        yeh yahi save rahega. */
@@ -4763,6 +5020,16 @@
       startNewRound();
     };
 
+    /* Round abhi khatam hua hai, poora match nahi — Back to Dashboard
+       yahan nahi dikhana, warna user beech match mein hi dashboard
+       bhaag sakta hai bina match complete kiye. */
+    const dashBtnRound = document.getElementById('btn-dashboard-from-gameover');
+    if (dashBtnRound) dashBtnRound.style.display = 'none';
+    const shareBtnRound = document.getElementById('btn-share-whatsapp');
+    if (shareBtnRound) shareBtnRound.style.display = 'none';
+    const summaryElRound = document.getElementById('gameover-matchsummary-text');
+    if (summaryElRound) summaryElRound.style.display = 'none';
+
     setTimeout(() => {
       announce(lvl(
         roundMsgShort + ' Points ' + state.pointsHuman + '-' + state.pointsAI + '. Tap Next Round.',
@@ -4861,6 +5128,27 @@
   function endMatch(winner, lastRoundMsg) {
     const humanWon = winner === 'human';
     playSound(humanWon ? 'win' : 'lose');
+    updateAppStreak();
+    scheduleDailyReminder();
+
+    const durationSec = Math.round((Date.now() - (state.matchStartTime || Date.now())) / 1000);
+
+    logGameEvent('match_completed', {
+      game_type: 'courtpiece',
+      result: humanWon ? 'win' : 'loss',
+      duration_sec: durationSec,
+      moves_played: state.history.length
+    });
+
+    /* Phase 5.3 — Match Summary display */
+    const summaryEl = document.getElementById('gameover-matchsummary-text');
+    if (summaryEl) {
+      const roundsPlayed = Math.max(1, state.roundNumber - 1);
+      summaryEl.textContent = 'Rounds played: ' + roundsPlayed
+        + '. Final score: ' + state.pointsHuman + '-' + state.pointsAI
+        + '. Duration: ' + formatDuration(durationSec) + '.';
+      summaryEl.style.display = '';
+    }
 
     /* ── Firestore mein match result save karo (sirf signed-in users ke liye) ── */
     const currentUser = auth.currentUser;
@@ -4904,6 +5192,39 @@
       setMainScreenInert(false);
       quitGame();
     };
+
+    /* Match poora khatam ho gaya — ab Back to Dashboard dikhao. */
+    const dashBtn = document.getElementById('btn-dashboard-from-gameover');
+    if (dashBtn) {
+      dashBtn.style.display = '';
+      dashBtn.onclick = (e) => {
+        e.stopPropagation();
+        overlay.classList.remove('active');
+        overlay.setAttribute('inert', '');
+        overlay.setAttribute('aria-hidden', 'true');
+        setMainScreenInert(false);
+        quitGame();
+      };
+    }
+
+    /* WhatsApp share button — result + streak ke saath. */
+    const shareBtn = document.getElementById('btn-share-whatsapp');
+    if (shareBtn) {
+      shareBtn.style.display = '';
+      shareBtn.onclick = (e) => {
+        e.stopPropagation();
+        const resultText = humanWon ? 'won! 🏆' : 'lost, better luck next time!';
+        const msg = 'I just played Court Piece on Card Game and ' + resultText
+          + ' 🎴 Score: ' + state.pointsHuman + '-' + state.pointsAI
+          + '. My streak: ' + appStreak + ' day' + (appStreak === 1 ? '' : 's') + '! Try it here:';
+        /* NOTE: window.location.href tod deta hai jab app APK ke andar
+           chalta hai (local/internal address hota hai, public link nahi).
+           Isliye hamesha yeh fixed GitHub Pages URL use karo. */
+        const shareUrl = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/';
+        const text = encodeURIComponent(msg + '\n' + shareUrl);
+        window.open('https://wa.me/?text=' + text, '_blank');
+      };
+    }
 
     const msg = humanWon
       ? lvl(
