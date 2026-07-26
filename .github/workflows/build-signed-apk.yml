@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout setup-signed-apk branch
@@ -81,6 +83,7 @@ jobs:
       run: |
         npm install
         npm install @capacitor/local-notifications
+        npm install @capacitor/push-notifications
         npm install @capacitor-community/text-to-speech
         echo "==== Capacitor packages installed ===="
         ls node_modules/@capacitor/
@@ -90,6 +93,78 @@ jobs:
         npx cap add android
         echo "==== Android folder created ===="
         ls -la android/app/src/main/
+
+    - name: Write google-services.json (needed for FCM push notifications)
+      run: |
+        cat > android/app/google-services.json << 'EOF3'
+        {
+          "project_info": {
+            "project_number": "495670908374",
+            "project_id": "card-game-a1e68",
+            "storage_bucket": "card-game-a1e68.firebasestorage.app"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:495670908374:android:95f97e5b4171cf8fd38077",
+                "android_client_info": {
+                  "package_name": "com.aliaccesslabs.cardgame"
+                }
+              },
+              "oauth_client": [
+                {
+                  "client_id": "495670908374-aqb5qkirm078d2964pror4v30g42bi3h.apps.googleusercontent.com",
+                  "client_type": 1,
+                  "android_info": {
+                    "package_name": "com.aliaccesslabs.cardgame",
+                    "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+                  }
+                },
+                {
+                  "client_id": "495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com",
+                  "client_type": 3
+                }
+              ],
+              "api_key": [
+                {
+                  "current_key": "AIzaSyDIFirJCVccvb7yhMi1CPvBH--pXIqI4tU"
+                }
+              ],
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": [
+                    {
+                      "client_id": "495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com",
+                      "client_type": 3
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "configuration_version": "1"
+        }
+        EOF3
+        echo "==== google-services.json written ===="
+        cat android/app/google-services.json
+
+    - name: Add Google Services Gradle plugin (needed for FCM push notifications)
+      run: |
+        PROJECT_GRADLE="android/build.gradle"
+        APP_GRADLE="android/app/build.gradle"
+
+        if ! grep -q "com.google.gms:google-services" "$PROJECT_GRADLE"; then
+          sed -i "/classpath 'com.android.tools.build:gradle/a\\        classpath 'com.google.gms:google-services:4.4.2'" "$PROJECT_GRADLE"
+        fi
+        echo "==== android/build.gradle ===="
+        cat "$PROJECT_GRADLE"
+
+        if ! grep -q "com.google.gms.google-services" "$APP_GRADLE"; then
+          echo "" >> "$APP_GRADLE"
+          echo "apply plugin: 'com.google.gms.google-services'" >> "$APP_GRADLE"
+        fi
+        echo "==== android/app/build.gradle ===="
+        cat "$APP_GRADLE"
 
     - name: Sync web assets to Android
       run: |
@@ -133,3 +208,23 @@ jobs:
       with:
         name: app-debug-apk
         path: android/app/build/outputs/apk/debug/*.apk
+
+    - name: Get app version from index.html
+      id: appver
+      run: |
+        VERSION=$(grep -oP "CURRENT_APP_VERSION = '\K[^']+" index.html)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Detected app version: $VERSION"
+
+    - name: Rename APK with version
+      run: |
+        cp android/app/build/outputs/apk/debug/app-debug.apk \
+           android/app/build/outputs/apk/debug/card-game-v${{ steps.appver.outputs.version }}.apk
+
+    - name: Create GitHub Release (public download link — sabko share karne ke liye)
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.appver.outputs.version }}-build${{ github.run_number }}
+        name: Card Game v${{ steps.appver.outputs.version }}
+        files: android/app/build/outputs/apk/debug/card-game-v${{ steps.appver.outputs.version }}.apk
+        body: Automated build. Install this APK to update.
