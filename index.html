@@ -1049,7 +1049,7 @@
 
     <div class="privacy-body" role="document">
       <h2>Card Game — Court Piece</h2>
-      <p>Version <strong id="about-version">1.3.0</strong></p>
+      <p>Version <strong id="about-version">1.4.0</strong></p>
 
       <h2>Developer</h2>
       <p>Developed by <strong>Abbas Ali</strong> — Blind Developer<br>
@@ -1658,7 +1658,7 @@
         <p class="drawer-section-heading">App Info</p>
         <div class="panel-row">
           <span>Version</span>
-          <span id="settings-version-display" style="color:var(--gold);">1.3.0</span>
+          <span id="settings-version-display" style="color:var(--gold);">1.4.0</span>
         </div>
         <div class="panel-row">
           <span>Developer</span>
@@ -2866,6 +2866,7 @@
         if (result.display === 'granted') {
           announce('Notifications enabled. You will receive updates about new games and features.');
           scheduleDailyReminder();
+          registerForPushNotifications();
         } else {
           announce('Notification permission denied. You can enable it later from your device settings.');
         }
@@ -2952,6 +2953,30 @@
     }
   }
 
+  /* ════════════════════════════════════════════
+     FCM PUSH NOTIFICATIONS — sirf registration.
+     Manual-send ke liye (Firebase Console se "send to app"),
+     token ko Firestore mein save karne ki zaroorat nahi —
+     Console poore app (saare installs) ko broadcast kar sakta
+     hai bina kisi per-user token tracking ke. Yeh sirf device
+     ko FCM ke saath register karta hai taaki wo broadcast
+     receive kar sake.
+     ════════════════════════════════════════════ */
+  async function registerForPushNotifications() {
+    if (!isNativeApp()) return;
+    try {
+      const { PushNotifications } = window.Capacitor.Plugins;
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+      if (permStatus.receive !== 'granted') return;
+      await PushNotifications.register();
+    } catch (err) {
+      console.log('Push registration failed:', err.message);
+    }
+  }
+
   /* Ask on first load (only if not yet decided) */
   async function maybeAskNotificationPermission() {
     const state = await getNotificationPermissionState();
@@ -3028,7 +3053,7 @@
   /* Bump this string in index.html every time you cut a new APK release.
      It must match the "version" field in version.json once that
      version's APK has been built and uploaded to GitHub Releases. */
-  const CURRENT_APP_VERSION = '1.3.0';
+  const CURRENT_APP_VERSION = '1.4.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
@@ -4023,7 +4048,12 @@
     updateProfileUI();
     renderStreakDisplay();
     /* Notification permission is NOT requested automatically on load.
-       User can enable it manually via the bell icon > notification panel. */
+       User can enable it manually via the bell icon > notification panel.
+       Lekin agar pehle se granted hai, to FCM registration refresh kar
+       do (silently) — token expire/rotate ho sakta hai. */
+    getNotificationPermissionState().then((s) => {
+      if (s === 'granted') registerForPushNotifications();
+    });
     announce('Card Game. Dashboard loaded. Choose a game to play.');
   });
 
