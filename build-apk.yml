@@ -84,6 +84,7 @@ jobs:
         npm install
         npm install @capacitor/local-notifications
         npm install @capacitor/push-notifications
+        npm install @capacitor-community/fcm
         npm install @capacitor-community/text-to-speech
         echo "==== Capacitor packages installed ===="
         ls node_modules/@capacitor/
