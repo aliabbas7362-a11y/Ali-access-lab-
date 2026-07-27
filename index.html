@@ -988,6 +988,15 @@
         <span aria-hidden="true">🔥 <span id="dash-streak-count">0</span> din streak</span>
       </div>
 
+      <!-- SHARE APP -->
+      <div style="padding:0 16px;margin-bottom:8px;">
+        <button class="btn btn-outline" style="width:100%;font-size:0.9rem;"
+          aria-label="Share this app with friends. Opens your device's share menu — WhatsApp, Telegram, SMS, or any app you choose."
+          onclick="shareApp()">
+          📤 Share App with Friends
+        </button>
+      </div>
+
       <!-- Greeting -->
       <div class="dash-greeting" aria-live="polite" id="dash-greeting">
         <div class="dash-greeting-name" id="dash-greeting-name">Welcome!</div>
@@ -1762,23 +1771,6 @@
             🔔 Enable Notifications
           </button>
         </div>
-        <!-- TEMP DIAGNOSTIC — REMOVE ONCE PUSH NOTIFICATION ISSUE
-             CONFIRMED FIXED. Result screen par likha jata hai
-             (announce() ki timing pe depend nahi karta) — swipe
-             kar ke apni raftar se padh sakte ho. -->
-        <div style="margin-top:10px;">
-          <button class="btn btn-outline" style="width:100%;font-size:0.8rem;
-            border-style:dashed;border-color:#6699ff;color:#cce0ff;"
-            aria-label="Test only. Double tap to check push notification registration status."
-            onclick="runPushDiagnostic()">
-            🧪 TEST: Check Push Status
-          </button>
-          <textarea id="push-diag-result" readonly rows="5"
-            aria-label="Push diagnostic result. Long press to select and copy the full text, including the token if successful."
-            style="margin-top:8px;width:100%;font-size:0.8rem;color:var(--text-muted);
-                   background:transparent;border:1px solid var(--border);border-radius:6px;
-                   padding:6px;resize:none;">(Not checked yet.)</textarea>
-        </div>
       </div>
     </div>
   </div>
@@ -2035,6 +2027,34 @@
     localStorage.setItem('cardgame_streak', String(appStreak));
     localStorage.setItem('cardgame_last_played', appLastPlayedDate);
     renderStreakDisplay();
+  }
+
+  /* ════════════════════════════════════════════
+     SHARE APP (dashboard button) — navigator.share() Android ka
+     NATIVE share menu kholta hai: WhatsApp, Telegram, SMS, Email,
+     jo bhi app installed ho, sab options milte hain, sirf WhatsApp
+     tak limited nahi. Purane/unsupported browsers ke liye WhatsApp
+     wala fallback rakha hai taaki button kabhi bhi kaam kare bina
+     kuch rukawat ke. */
+  const APK_DOWNLOAD_URL = 'https://github.com/aliabbas7362-a11y/Ali-access-lab-/releases/download/v1.5.0-build73/card-game-v1.5.0.apk';
+
+  async function shareApp() {
+    const shareText = 'Try this accessible Card Game app — Court Piece and 99, built for TalkBack users!';
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Card Game',
+          text: shareText,
+          url: APK_DOWNLOAD_URL
+        });
+      } catch (e) {
+        /* User cancelled the share sheet — not an error, ignore silently. */
+      }
+    } else {
+      /* Fallback for browsers/WebViews that don't support Web Share API. */
+      const text = encodeURIComponent(shareText + '\n' + APK_DOWNLOAD_URL);
+      window.open('https://wa.me/?text=' + text, '_blank');
+    }
   }
 
   function renderStreakDisplay() {
@@ -2979,6 +2999,69 @@
      ko FCM ke saath register karta hai taaki wo broadcast
      receive kar sake.
      ════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════
+     NOTIFICATION HISTORY — localStorage mein persist rehta hai,
+     jab tak user khud "Clear" na kare tab tak gayab nahi hota,
+     app band-khulne se bhi delete nahi hota.
+     ════════════════════════════════════════════ */
+  function saveNotificationToHistory(title, body) {
+    try {
+      const list = JSON.parse(localStorage.getItem('push_notif_history') || '[]');
+      list.unshift({
+        title: title || 'Card Game',
+        body: body || '',
+        time: new Date().toLocaleString()
+      });
+      if (list.length > 20) list.length = 20; /* sirf recent 20 rakho */
+      localStorage.setItem('push_notif_history', JSON.stringify(list));
+    } catch (e) {
+      console.log('Could not save notification history:', e.message);
+    }
+  }
+
+  function renderNotificationHistory() {
+    const container = document.getElementById('notifications-list');
+    if (!container) return;
+    let list = [];
+    try {
+      list = JSON.parse(localStorage.getItem('push_notif_history') || '[]');
+    } catch (e) { list = []; }
+
+    if (list.length === 0) {
+      container.innerHTML =
+        '<div class="notif-empty">'
+        + '<div class="notif-empty-icon" aria-hidden="true">🔔</div>'
+        + 'No notifications yet.<br>'
+        + 'Enable notifications to get updates about new games and features.'
+        + '</div>';
+      return;
+    }
+
+    container.innerHTML = list.map((n) =>
+      '<div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:2px;">'
+      + '<strong>' + escapeHtml(n.title) + '</strong>'
+      + '<span>' + escapeHtml(n.body) + '</span>'
+      + '<span style="color:var(--text-muted);font-size:0.75rem;">' + escapeHtml(n.time) + '</span>'
+      + '</div>'
+    ).join('')
+    + '<button class="btn btn-outline" style="width:100%;font-size:0.85rem;margin-top:12px;" '
+    + 'aria-label="Clear notification history" onclick="clearNotificationHistory()">🗑️ Clear History</button>';
+  }
+
+  function clearNotificationHistory() {
+    localStorage.removeItem('push_notif_history');
+    renderNotificationHistory();
+    announce('Notification history cleared.');
+  }
+
+  /* Chhota helper — HTML-unsafe characters ko escape karta hai
+     taaki notification text kabhi bhi layout na todein. */
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
   async function registerForPushNotifications() {
     if (!isNativeApp()) return;
     try {
@@ -3023,57 +3106,28 @@
         localStorage.setItem('push_reg_detail', JSON.stringify(error));
       });
 
+      /* ── NOTIFICATION HISTORY ──
+         Jab notification aaye (app khula ho) ya jab usko tap kiya
+         jaye (app band/background se khule) — dono cases mein
+         record save karte hain. Honest limitation: agar app poori
+         tarah band hai aur notification kabhi tap hi nahi kiya
+         gaya, to hume us waqt code chalane ka mauka hi nahi milta
+         — Android khud usse dikhata hai, humein pata tab chalta
+         hai jab app khulta hai ya notification tap hoti hai. */
+      await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        saveNotificationToHistory(notification.title, notification.body);
+      });
+      await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        const n = action.notification;
+        saveNotificationToHistory(n.title, n.body);
+      });
+
       await PushNotifications.register();
     } catch (err) {
       localStorage.setItem('push_reg_status', 'exception');
       localStorage.setItem('push_reg_detail', err.message);
       console.log('Push registration failed:', err.message);
     }
-  }
-
-  /* TEMP DIAGNOSTIC — result screen par likhta hai (visible text),
-     announce() ki timing pe depend nahi karta. Settings ke
-     notification panel ke naye test button se call hota hai. */
-  async function runPushDiagnostic() {
-    const resultEl = document.getElementById('push-diag-result');
-    if (resultEl) resultEl.value = 'Checking... please wait.';
-
-    if (!isNativeApp()) {
-      if (resultEl) resultEl.value = 'Push notifications only work inside the installed app (APK), not in browser.';
-      return;
-    }
-
-    if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.PushNotifications) {
-      if (resultEl) resultEl.value = 'PROBLEM FOUND: PushNotifications plugin is not available in this build. The APK does not have it bundled correctly.';
-      return;
-    }
-
-    try {
-      await registerForPushNotifications();
-    } catch (e) {
-      if (resultEl) resultEl.value = 'Error while registering: ' + e.message;
-      return;
-    }
-
-    /* Registration event async hai, thoda wait karo. */
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-
-    const status = localStorage.getItem('push_reg_status');
-    const detail = localStorage.getItem('push_reg_detail');
-    const topicStatus = localStorage.getItem('fcm_topic_status');
-    let msg;
-    if (!status) {
-      msg = 'No result yet after 2.5 seconds. This usually means the registration call is stuck or Google Play Services is not responding.';
-    } else if (status === 'success') {
-      msg = 'SUCCESS — device registered. Token: ' + detail
-        + '\n\nTopic subscription: ' + (topicStatus || 'not attempted yet');
-    } else if (status === 'permission_denied') {
-      msg = 'FAILED — notification permission was denied.';
-    } else {
-      msg = 'FAILED — Error: ' + (detail || 'unknown error');
-    }
-    if (resultEl) resultEl.value = msg;
-    announce(msg);
   }
 
   /* Ask on first load (only if not yet decided) */
@@ -3830,7 +3884,7 @@
         const resultText = humanWon99 ? 'won! 🏆' : 'lost, better luck next time!';
         const shareMsg = 'I just played 99 on Card Game and ' + resultText
           + ' 🎴 My streak: ' + appStreak + ' day' + (appStreak === 1 ? '' : 's') + '! Try it here:';
-        const shareUrl = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/';
+        const shareUrl = APK_DOWNLOAD_URL;
         const text = encodeURIComponent(shareMsg + '\n' + shareUrl);
         window.open('https://wa.me/?text=' + text, '_blank');
       };
@@ -5349,7 +5403,7 @@
         /* NOTE: window.location.href tod deta hai jab app APK ke andar
            chalta hai (local/internal address hota hai, public link nahi).
            Isliye hamesha yeh fixed GitHub Pages URL use karo. */
-        const shareUrl = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/';
+        const shareUrl = APK_DOWNLOAD_URL;
         const text = encodeURIComponent(msg + '\n' + shareUrl);
         window.open('https://wa.me/?text=' + text, '_blank');
       };
@@ -5471,6 +5525,7 @@
       }
     } else if (type === 'notifications') {
       updateNotifButtonState();
+      renderNotificationHistory();
       getNotificationPermissionState().then((state) => {
         const status = state === 'denied'
           ? 'Notifications are blocked.'
