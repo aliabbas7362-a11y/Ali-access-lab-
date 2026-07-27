@@ -1773,10 +1773,11 @@
             onclick="runPushDiagnostic()">
             🧪 TEST: Check Push Status
           </button>
-          <div id="push-diag-result" role="text"
-            style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);min-height:1.2em;">
-            (Not checked yet.)
-          </div>
+          <textarea id="push-diag-result" readonly rows="3"
+            aria-label="Push diagnostic result. Long press to select and copy the full text, including the token if successful."
+            style="margin-top:8px;width:100%;font-size:0.8rem;color:var(--text-muted);
+                   background:transparent;border:1px solid var(--border);border-radius:6px;
+                   padding:6px;resize:none;">(Not checked yet.)</textarea>
         </div>
       </div>
     </div>
@@ -3002,7 +3003,7 @@
          (koi console/DevTools ki zaroorat nahi). */
       await PushNotifications.addListener('registration', (token) => {
         localStorage.setItem('push_reg_status', 'success');
-        localStorage.setItem('push_reg_detail', token.value.substring(0, 24) + '...');
+        localStorage.setItem('push_reg_detail', token.value);
       });
       await PushNotifications.addListener('registrationError', (error) => {
         localStorage.setItem('push_reg_status', 'error');
@@ -3022,22 +3023,22 @@
      notification panel ke naye test button se call hota hai. */
   async function runPushDiagnostic() {
     const resultEl = document.getElementById('push-diag-result');
-    if (resultEl) resultEl.textContent = 'Checking... please wait.';
+    if (resultEl) resultEl.value = 'Checking... please wait.';
 
     if (!isNativeApp()) {
-      if (resultEl) resultEl.textContent = 'Push notifications only work inside the installed app (APK), not in browser.';
+      if (resultEl) resultEl.value = 'Push notifications only work inside the installed app (APK), not in browser.';
       return;
     }
 
     if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.PushNotifications) {
-      if (resultEl) resultEl.textContent = 'PROBLEM FOUND: PushNotifications plugin is not available in this build. The APK does not have it bundled correctly.';
+      if (resultEl) resultEl.value = 'PROBLEM FOUND: PushNotifications plugin is not available in this build. The APK does not have it bundled correctly.';
       return;
     }
 
     try {
       await registerForPushNotifications();
     } catch (e) {
-      if (resultEl) resultEl.textContent = 'Error while registering: ' + e.message;
+      if (resultEl) resultEl.value = 'Error while registering: ' + e.message;
       return;
     }
 
@@ -3056,7 +3057,7 @@
     } else {
       msg = 'FAILED — Error: ' + (detail || 'unknown error');
     }
-    if (resultEl) resultEl.textContent = msg;
+    if (resultEl) resultEl.value = msg;
     announce(msg);
   }
 
