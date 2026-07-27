@@ -1049,7 +1049,7 @@
 
     <div class="privacy-body" role="document">
       <h2>Card Game — Court Piece</h2>
-      <p>Version <strong id="about-version">1.4.0</strong></p>
+      <p>Version <strong id="about-version">1.5.0</strong></p>
 
       <h2>Developer</h2>
       <p>Developed by <strong>Abbas Ali</strong> — Blind Developer<br>
@@ -1658,7 +1658,7 @@
         <p class="drawer-section-heading">App Info</p>
         <div class="panel-row">
           <span>Version</span>
-          <span id="settings-version-display" style="color:var(--gold);">1.4.0</span>
+          <span id="settings-version-display" style="color:var(--gold);">1.5.0</span>
         </div>
         <div class="panel-row">
           <span>Developer</span>
@@ -1773,7 +1773,7 @@
             onclick="runPushDiagnostic()">
             🧪 TEST: Check Push Status
           </button>
-          <textarea id="push-diag-result" readonly rows="3"
+          <textarea id="push-diag-result" readonly rows="5"
             aria-label="Push diagnostic result. Long press to select and copy the full text, including the token if successful."
             style="margin-top:8px;width:100%;font-size:0.8rem;color:var(--text-muted);
                    background:transparent;border:1px solid var(--border);border-radius:6px;
@@ -3004,6 +3004,19 @@
       await PushNotifications.addListener('registration', (token) => {
         localStorage.setItem('push_reg_status', 'success');
         localStorage.setItem('push_reg_detail', token.value);
+
+        /* Topic subscribe — isse Firebase Console mein "sabko bhejo"
+           bahut simple ho jata hai (sirf ek text field: "all_users"),
+           koi "select app" wala broken dropdown wizard nahi chahiye.
+           Har device khud is topic se juda hota hai, koi server/
+           Cloud Function/Blaze plan ki zaroorat nahi. */
+        if (window.Capacitor.Plugins.FCM) {
+          window.Capacitor.Plugins.FCM.subscribeTo({ topic: 'all_users' })
+            .then(() => localStorage.setItem('fcm_topic_status', 'subscribed'))
+            .catch((e) => localStorage.setItem('fcm_topic_status', 'error: ' + e.message));
+        } else {
+          localStorage.setItem('fcm_topic_status', 'FCM plugin not found in this build');
+        }
       });
       await PushNotifications.addListener('registrationError', (error) => {
         localStorage.setItem('push_reg_status', 'error');
@@ -3047,11 +3060,13 @@
 
     const status = localStorage.getItem('push_reg_status');
     const detail = localStorage.getItem('push_reg_detail');
+    const topicStatus = localStorage.getItem('fcm_topic_status');
     let msg;
     if (!status) {
       msg = 'No result yet after 2.5 seconds. This usually means the registration call is stuck or Google Play Services is not responding.';
     } else if (status === 'success') {
-      msg = 'SUCCESS — device registered. Token: ' + detail;
+      msg = 'SUCCESS — device registered. Token: ' + detail
+        + '\n\nTopic subscription: ' + (topicStatus || 'not attempted yet');
     } else if (status === 'permission_denied') {
       msg = 'FAILED — notification permission was denied.';
     } else {
@@ -3137,7 +3152,7 @@
   /* Bump this string in index.html every time you cut a new APK release.
      It must match the "version" field in version.json once that
      version's APK has been built and uploaded to GitHub Releases. */
-  const CURRENT_APP_VERSION = '1.4.0';
+  const CURRENT_APP_VERSION = '1.5.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
