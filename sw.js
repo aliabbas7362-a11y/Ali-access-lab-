@@ -13,7 +13,13 @@
      only things this app loads, so that's all we cache.
    ========================================================== */
 
-const CACHE_NAME = 'court-piece-offline-v1';
+const CACHE_NAME = 'court-piece-offline-v2';
+/* v1 → v2: precache list mein 11 missing sound files add kiye
+   (5 purane — bg-music-1/2, bust, eliminate, king-hit — jo shuru
+   se hi list mein nahi the; aur 6 naye Reward System sounds —
+   coin, purchase, equip, challenge, fanfare, drawer-open). Version
+   bump isliye taake purana cache clear ho kar poori list se fresh
+   precache ho, "activate" step ke cleanup ke saath. */
 
 /* Files to pre-cache on install. Relative paths resolve against
    this file's own location (the GitHub Pages folder), so this
@@ -28,13 +34,28 @@ const PRECACHE_URLS = [
 
   /* Sound files — pre-cached explicitly so ALL sounds work offline
      from the first install, even ones the user hasn't triggered yet
-     (e.g. trick-loss only plays after losing a trick). */
+     (e.g. trick-loss only plays after losing a trick). Yeh poori
+     list ab index.html mein maujood HAR Audio() ke saath match
+     karti hai — koi bhi sound miss nahi hai. */
   './sounds/card-flip.mp3',
   './sounds/shuffle.mp3',
   './sounds/win.mp3',
   './sounds/lose.mp3',
   './sounds/trick-win.mp3',
-  './sounds/trick-lose.mp3'
+  './sounds/trick-lose.mp3',
+  './sounds/king-hit.mp3',
+  './sounds/bust.mp3',
+  './sounds/eliminate.mp3',
+  './sounds/bg-music-1.mp3',
+  './sounds/bg-music-2.mp3',
+
+  /* Reward System sounds */
+  './sounds/coin.mp3',
+  './sounds/purchase.mp3',
+  './sounds/equip.mp3',
+  './sounds/challenge.mp3',
+  './sounds/fanfare.mp3',
+  './sounds/drawer-open.mp3'
 ];
 
 /* ---------- INSTALL: cache the app shell ---------- */
