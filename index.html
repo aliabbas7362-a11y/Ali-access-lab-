@@ -4438,30 +4438,26 @@
     /* APK mein native plugin use karo */
     if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
       try {
-        /* PEHLE: CDN se dynamic import() hota tha
-           (cdn.jsdelivr.net/@codetrix-studio/capacitor-google-auth) —
-           bilkul wahi galti jo LocalNotifications mein thi (dekho
-           getNotificationPermissionState() ka comment upar). CDN se
-           import karne se Capacitor ka native bridge is plugin ko
-           register nahi kar paata — isliye account-picker toh khul
-           jaata tha (woh ek alag Android-level intent hai), lekin
-           account select karne ke baad result wapas app mein kabhi
-           nahi aata tha ("redirect nahi hota" wali complaint isi
-           wajah se thi). AB: window.Capacitor.Plugins se seedha
-           access — yeh wahi plugin hai jo APK build ke waqt native
-           side pe already register ho chuka hota hai. */
-        const GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
-        if (!GoogleAuth) throw new Error('GoogleAuth native plugin not found — check it is installed and synced.');
-        await GoogleAuth.initialize({
+        /* PEHLE: @codetrix-studio/capacitor-google-auth use ho raha
+           tha — pehle CDN-import bug thi (window.Capacitor.Plugins
+           se fix bhi kar diya tha), lekin us plugin ke apne GitHub
+           page pe hi likha hai "yeh plugin virtually archived hai,
+           author se contact ka koi tareeka nahi hai" — aur woh khud
+           logon ko @capawesome/capacitor-google-sign-in pe migrate
+           karne ko keh rahe hain. Yeh naya plugin Capacitor 8.x ke
+           liye officially "Active support" mein hai. API bhi thoda
+           alag hai — idToken seedha result.idToken mein aata hai,
+           googleUser.authentication.idToken jaisa nested nahi. */
+        const GoogleSignIn = window.Capacitor.Plugins.GoogleSignIn;
+        if (!GoogleSignIn) throw new Error('GoogleSignIn native plugin not found — check it is installed and synced.');
+        await GoogleSignIn.initialize({
           clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com',
-          scopes: ['profile', 'email'],
-          grantOfflineAccess: true
+          scopes: ['profile', 'email']
         });
-        const googleUser = await GoogleAuth.signIn();
-        const idToken = googleUser.authentication.idToken;
-        const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-        const result = await auth.signInWithCredential(credential);
-        onSignInSuccess(result.user);
+        const result = await GoogleSignIn.signIn();
+        const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken);
+        const fbResult = await auth.signInWithCredential(credential);
+        onSignInSuccess(fbResult.user);
       } catch (error) {
         console.error('Native sign-in error:', error);
         announce('Sign-in failed. ' + (error.message || 'Please try again.'));
