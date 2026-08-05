@@ -2426,7 +2426,21 @@
      tak limited nahi. Purane/unsupported browsers ke liye WhatsApp
      wala fallback rakha hai taaki button kabhi bhi kaam kare bina
      kuch rukawat ke. */
-  const APK_DOWNLOAD_URL = 'https://github.com/aliabbas7362-a11y/Ali-access-lab-/releases/download/v1.5.0-build73/card-game-v1.5.0.apk';
+  /* PEHLE: yeh ek hardcoded string thi jo har naye APK release ke
+     saath HAATH SE update karni padti thi — aur bilkul wahi hui,
+     v1.6.0 release ke baad bhool gaya isko update karna, isliye
+     Share button purana v1.5.0 link bhejta raha. AB: currentApkUrl()
+     function version.json se aaya latestApkUrl (checkForUpdate()
+     dwara already fetch ho chuka hota hai app load ke turant baad)
+     use karta hai — matlab yeh link ab kabhi manually bhoolne se
+     stale nahi hoga, version.json hi single source of truth hai.
+     Fallback sirf tab chalta hai jab version.json fetch abhi tak
+     complete na hua ho (bahut rare, app khulte hi ~1.5 sec ke andar
+     ho jaata hai). */
+  const APK_DOWNLOAD_URL_FALLBACK = 'https://github.com/aliabbas7362-a11y/Ali-access-lab-/releases/download/v1.6.0-build79/card-game-v1.6.0.apk';
+  function currentApkUrl() {
+    return latestApkUrl || APK_DOWNLOAD_URL_FALLBACK;
+  }
 
   /* Share App +10 Crown bonus — ek hi baar milta hai, isliye
      Firestore mein 'shareBonusClaimed' flag check karte hain. Non-
@@ -2469,7 +2483,7 @@
         await window.Capacitor.Plugins.Share.share({
           title: 'Card Game',
           text: shareText,
-          url: APK_DOWNLOAD_URL,
+          url: currentApkUrl(),
           dialogTitle: 'Share Card Game with a friend'
         });
         announce('App shared. Thanks for spreading the word!');
@@ -2486,7 +2500,7 @@
         await navigator.share({
           title: 'Card Game',
           text: shareText,
-          url: APK_DOWNLOAD_URL
+          url: currentApkUrl()
         });
         announce('App shared. Thanks for spreading the word!');
       } catch (e) {
@@ -2498,7 +2512,7 @@
          plugin ho, na browser Web Share API. Seedha WhatsApp
          khulta hai (koi menu nahi). */
       announce('Opening WhatsApp.');
-      const text = encodeURIComponent(shareText + '\n' + APK_DOWNLOAD_URL);
+      const text = encodeURIComponent(shareText + '\n' + currentApkUrl());
       window.open('https://wa.me/?text=' + text, '_blank');
     }
   }
@@ -4956,7 +4970,7 @@
         const resultText = humanWon99 ? 'won! 🏆' : 'lost, better luck next time!';
         const shareMsg = 'I just played 99 on Card Game and ' + resultText
           + ' 🎴 My streak: ' + appStreak + ' day' + (appStreak === 1 ? '' : 's') + '! Try it here:';
-        const shareUrl = APK_DOWNLOAD_URL;
+        const shareUrl = currentApkUrl();
         const text = encodeURIComponent(shareMsg + '\n' + shareUrl);
         window.open('https://wa.me/?text=' + text, '_blank');
       };
@@ -6493,7 +6507,7 @@
         /* NOTE: window.location.href tod deta hai jab app APK ke andar
            chalta hai (local/internal address hota hai, public link nahi).
            Isliye hamesha yeh fixed GitHub Pages URL use karo. */
-        const shareUrl = APK_DOWNLOAD_URL;
+        const shareUrl = currentApkUrl();
         const text = encodeURIComponent(msg + '\n' + shareUrl);
         window.open('https://wa.me/?text=' + text, '_blank');
       };
