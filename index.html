@@ -163,7 +163,7 @@
       position: fixed;
       left: 0; right: 0;
       bottom: 0;
-      display: flex; align-items: center; justify-content: flex-end;
+      display: flex; align-items: center; justify-content: space-between;
       padding: 8px 16px;
       padding-bottom: calc(8px + 56px + var(--safe-bottom));
       z-index: 40;
@@ -192,6 +192,25 @@
     .dash-profile-btn:hover { border-color: var(--gold-dim); }
     .dash-profile-btn.signed-in { border-color: var(--green); }
 
+    /* Wallet button — bottombar mein Profile ke baad (right side).
+       Jab Shop panel banega, is button aur Profile ke DARMIYAN
+       DOM mein add hoga (flex justify-content:flex-end ke saath
+       DOM order hi visual left-to-right order hai: Profile — Shop — Wallet). */
+    .dash-wallet-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px;
+      background: #241c0f;
+      border: 2px solid var(--gold-dim);
+      border-radius: 50%;
+      cursor: pointer; overflow: hidden;
+      transition: border-color 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,184,75,0.15);
+      font-size: 1.5rem;
+    }
+    .dash-wallet-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .dash-wallet-btn:hover { border-color: var(--gold); }
+
     .profile-avatar-img {
       width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
     }
@@ -219,6 +238,13 @@
     .dash-greeting-sub {
       font-size: 0.78rem; color: var(--text-muted);
       margin-top: 4px; letter-spacing: 1px;
+    }
+    .dash-crown-highlight {
+      text-align: center; font-size: 0.8rem; color: var(--gold);
+      background: rgba(232,184,75,0.08);
+      border: 1px solid rgba(232,184,75,0.2);
+      border-radius: var(--r-sm);
+      padding: 8px 14px; margin: -14px auto 20px; max-width: 320px;
     }
 
     /* Section label */
@@ -593,6 +619,134 @@
     }
     .panel-row:last-child { border-bottom: none; }
 
+    /* ═══════════════════════════════════════════
+       WALLET PANEL — jaanbujh kar baaki drawers se
+       ALAG dikhta hai (gold/dark-brass theme, flat
+       --surface nahi) taaki "currency" panel jaisa
+       feel de, na ki ek aur settings-jaisi list.
+       ─────────────────────────────────────────── */
+    .wallet-panel .slide-drawer__panel,
+    .shop-panel .slide-drawer__panel {
+      background: linear-gradient(180deg, #1c1608 0%, #120e05 55%, #0a0805 100%);
+      border-left: 1px solid var(--gold-dim);
+    }
+    .wallet-panel .drawer-topbar,
+    .shop-panel .drawer-topbar {
+      background: rgba(20,15,5,0.85);
+      border-bottom: 1px solid var(--gold-dim);
+    }
+    .wallet-hero {
+      text-align: center;
+      padding: 28px 16px 24px;
+      border-bottom: 1px solid rgba(232,184,75,0.25);
+      margin-bottom: 20px;
+    }
+    .wallet-hero-icon { font-size: 2.4rem; display: block; margin-bottom: 4px; }
+    .wallet-hero-count {
+      font-size: 2.6rem; font-weight: bold; color: var(--gold);
+      line-height: 1.1;
+    }
+    .wallet-hero-label {
+      font-size: 0.75rem; color: var(--text-muted);
+      letter-spacing: 2px; text-transform: uppercase; margin-top: 4px;
+    }
+    .wallet-cups-row {
+      display: flex; gap: 12px; margin-bottom: 22px;
+    }
+    .wallet-cup-card {
+      flex: 1; background: rgba(232,184,75,0.07);
+      border: 1px solid rgba(232,184,75,0.2); border-radius: var(--r-sm);
+      padding: 14px 10px; text-align: center;
+    }
+    .wallet-cup-card-count { font-size: 1.5rem; font-weight: bold; color: var(--gold); }
+    .wallet-cup-card-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .wallet-highlight {
+      background: rgba(232,184,75,0.06);
+      border: 1px dashed rgba(232,184,75,0.3);
+      border-radius: var(--r-sm);
+      padding: 12px 14px; font-size: 0.85rem; color: var(--text);
+      margin-bottom: 22px;
+    }
+    .wallet-shop-link {
+      display: block; width: 100%;
+      background: rgba(232,184,75,0.1);
+      border: 1px solid var(--gold-dim);
+      border-radius: var(--r-sm);
+      padding: 14px; text-align: center;
+      color: var(--gold); font-size: 0.95rem; font-weight: bold;
+      margin-bottom: 24px; cursor: not-allowed; opacity: 0.65;
+    }
+    .wallet-history-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 10px 0; border-bottom: 1px solid rgba(232,184,75,0.12);
+      font-size: 0.88rem;
+    }
+    .wallet-history-row:last-child { border-bottom: none; }
+    .wallet-history-reason { color: var(--text); }
+    .wallet-history-date { color: var(--text-muted); font-size: 0.72rem; display: block; }
+    .wallet-history-amount { color: var(--gold); font-weight: bold; white-space: nowrap; margin-left: 10px; }
+
+    /* ─────────────────────────────────────────
+       SHOP — shares the Wallet's gold theme
+       (both are "currency" screens); item rows
+       for card backs and badges.
+       ───────────────────────────────────────── */
+    .shop-balance-strip {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px; margin-bottom: 20px;
+      background: rgba(232,184,75,0.08);
+      border: 1px solid rgba(232,184,75,0.25);
+      border-radius: var(--r-sm);
+      font-size: 1.1rem; color: var(--gold); font-weight: bold;
+    }
+    .shop-item-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid rgba(232,184,75,0.12);
+    }
+    .shop-item-row:last-child { border-bottom: none; }
+    .shop-item-swatch {
+      width: 34px; height: 48px; flex-shrink: 0;
+      border-radius: 5px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .shop-item-info { flex: 1; min-width: 0; }
+    .shop-item-name { color: var(--text); font-size: 0.92rem; font-weight: bold; }
+    .shop-item-price { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+    .shop-item-btn {
+      flex-shrink: 0; min-height: 40px; padding: 8px 14px;
+      border-radius: var(--r-sm); font-size: 0.82rem; font-weight: bold;
+      cursor: pointer; border: 1px solid var(--gold-dim);
+      background: rgba(232,184,75,0.12); color: var(--gold);
+    }
+    .shop-item-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .shop-item-btn:disabled {
+      opacity: 0.5; cursor: not-allowed;
+    }
+    .shop-item-btn.owned {
+      background: rgba(27,122,62,0.15); border-color: var(--green); color: #7fd39a;
+    }
+    .shop-item-btn.equipped {
+      background: var(--green); border-color: var(--green); color: #fff;
+    }
+    .profile-badge-emoji { font-size: 1.1rem; margin-left: 6px; }
+
+    /* ─────────────────────────────────────────
+       ACHIEVEMENTS
+       ───────────────────────────────────────── */
+    .achievement-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .achievement-row:last-child { border-bottom: none; }
+    .achievement-row.locked { opacity: 0.5; }
+    .achievement-icon { font-size: 1.6rem; flex-shrink: 0; width: 34px; text-align: center; }
+    .achievement-info { flex: 1; }
+    .achievement-name { font-size: 0.95rem; font-weight: bold; color: var(--text); }
+    .achievement-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .achievement-status { font-size: 0.75rem; font-weight: bold; flex-shrink: 0; }
+    .achievement-status.unlocked { color: var(--green); }
+    .achievement-status.locked   { color: var(--text-muted); }
+
     /* ─────────────────────────────────────────
        SHUFFLE SCREEN
        ───────────────────────────────────────── */
@@ -755,6 +909,25 @@
       border: 1px solid #2a3f6a;
       border-radius: 5px; display: flex; align-items: center; justify-content: center;
       font-size: 0.75rem; color: rgba(255,255,255,0.2);
+    }
+    /* Shop-purchasable card back designs — 'classic' (above) is the
+       free default and is never removable. These are additive skins,
+       applied on top of .card-back via a second class. */
+    .cardback-royalgold {
+      background: linear-gradient(135deg, #7a5a10 0%, #3d2e08 100%);
+      border-color: #a8842f; color: rgba(255,225,150,0.35);
+    }
+    .cardback-rubyred {
+      background: linear-gradient(135deg, #6a1a1a 0%, #35090b 100%);
+      border-color: #9a3030; color: rgba(255,180,180,0.3);
+    }
+    .cardback-emerald {
+      background: linear-gradient(135deg, #0f4a2a 0%, #06210f 100%);
+      border-color: #1f7a4a; color: rgba(170,255,200,0.3);
+    }
+    .cardback-midnight {
+      background: linear-gradient(135deg, #232323 0%, #050505 100%);
+      border-color: #666; color: rgba(255,255,255,0.25);
     }
 
     /* ── TRICK ZONE ── */
@@ -953,20 +1126,6 @@
 
     </div>
 
-    <!-- Bottom bar — profile ab top-bar jaisi hi ek poori-width strip
-         mein hai, bottom-right corner par, taake edge-exploration se
-         bhi mil jaaye (jaisa top bar ke notification/3-dot ke saath
-         hota hai). -->
-    <div class="dash-bottombar">
-      <button class="dash-profile-btn"
-        id="btn-profile"
-        aria-label="Profile. Not signed in. Double tap to sign in with Google."
-        aria-haspopup="dialog"
-        onclick="openDrawer('profile')">
-        <span class="profile-avatar-placeholder" id="profile-topbar-avatar" aria-hidden="true">👤</span>
-      </button>
-    </div>
-
     <!-- UPDATE BANNER (hidden by default, shown when a newer version is found) -->
     <div id="update-banner" class="update-banner" style="display:none;" role="alert" aria-live="polite">
       <div class="update-banner-text">
@@ -1002,6 +1161,11 @@
         <div class="dash-greeting-name" id="dash-greeting-name">Welcome!</div>
         <div class="dash-greeting-sub">Choose a game to play</div>
       </div>
+
+      <!-- Crown of the Day — personal-best highlight, always
+           compares against your OWN past record, never other
+           players (Reward System Plan section 8). -->
+      <div class="dash-crown-highlight" id="dash-crown-highlight" style="display:none;"></div>
 
       <!-- Game Selection -->
       <div class="dash-section-label" aria-hidden="true">Games</div>
@@ -1039,6 +1203,36 @@
       </div>
 
     </div><!-- /dash-body -->
+
+    <!-- Bottom bar — DOM ke bilkul AAKHIR mein jaanbujh kar rakha
+         gaya hai (visually bhi neeche hai). Pehle yeh top-bar ke
+         turant baad the — matlab swipe/linear navigation mein
+         dashboard content se PEHLE hi mil jaate the, jo screen
+         par unki asal (neeche wali) position se match nahi karta
+         tha aur confusing tha. Ab DOM order = visual order. -->
+    <div class="dash-bottombar">
+      <button class="dash-wallet-btn"
+        id="btn-wallet"
+        aria-label="Wallet. 0 Crowns. Double tap to open."
+        aria-haspopup="dialog"
+        onclick="openDrawer('wallet')">
+        <span aria-hidden="true">👛</span>
+      </button>
+      <button class="dash-wallet-btn"
+        id="btn-shop"
+        aria-label="Shop. Spend Crowns on card backs and badges."
+        aria-haspopup="dialog"
+        onclick="openDrawer('shop')">
+        <span aria-hidden="true">🛍️</span>
+      </button>
+      <button class="dash-profile-btn"
+        id="btn-profile"
+        aria-label="Profile. Not signed in. Double tap to sign in with Google."
+        aria-haspopup="dialog"
+        onclick="openDrawer('profile')">
+        <span class="profile-avatar-placeholder" id="profile-topbar-avatar" aria-hidden="true">👤</span>
+      </button>
+    </div>
 
   </div><!-- /screen-home -->
 
@@ -1872,6 +2066,130 @@
   </div>
 
   <!-- ══════════════════════════════════════
+       WALLET PANEL — jaanbujh kar alag theme
+       (gold/dark-brass), Profile ke bilkul
+       saath rakha gaya hai bottombar mein.
+       ══════════════════════════════════════ -->
+  <div id="drawer-wallet" class="slide-drawer wallet-panel"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-wallet-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('wallet')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Wallet panel."
+          onclick="closeDrawer('wallet')">&#8592;</button>
+        <span class="drawer-title" id="drawer-wallet-title">Wallet</span>
+      </div>
+      <div class="drawer-body">
+
+        <!-- Shown when signed in -->
+        <div id="wallet-signed-in" style="display:none;">
+
+          <div class="wallet-hero">
+            <span class="wallet-hero-icon" aria-hidden="true">👑</span>
+            <div class="wallet-hero-count" id="wallet-crowns-count">0</div>
+            <div class="wallet-hero-label">Crowns</div>
+          </div>
+
+          <div class="wallet-cups-row">
+            <div class="wallet-cup-card">
+              <div class="wallet-cup-card-count" id="wallet-cups-courtpiece">0</div>
+              <div class="wallet-cup-card-label">🏆 Court Piece</div>
+            </div>
+            <div class="wallet-cup-card">
+              <div class="wallet-cup-card-count" id="wallet-cups-99">0</div>
+              <div class="wallet-cup-card-label">🏆 99</div>
+            </div>
+          </div>
+
+          <div class="wallet-highlight" id="wallet-highlight-text">
+            Best streak so far: 0 days.
+          </div>
+
+          <!-- Daily Challenge — Reward System Plan section 4.
+               Rotates daily, no penalty for missing it. -->
+          <div class="wallet-highlight" id="wallet-daily-challenge" style="border-style:solid;">
+            🎯 Loading today's challenge…
+          </div>
+
+          <button class="wallet-shop-link" style="cursor:pointer;opacity:1;"
+            aria-label="Shop. Double tap to spend Crowns on card backs and badges."
+            onclick="closeDrawer('wallet'); setTimeout(function(){ openDrawer('shop'); }, 360);">
+            🛍️ Go to Shop
+          </button>
+
+          <div class="drawer-section-heading">Recent Earnings</div>
+          <div id="wallet-history-list">
+            <p style="color:var(--text-muted);font-size:0.85rem;">No Crowns earned yet.</p>
+          </div>
+        </div>
+
+        <!-- Shown when not signed in -->
+        <div id="wallet-signed-out">
+          <div class="wallet-hero">
+            <span class="wallet-hero-icon" aria-hidden="true">👑</span>
+            <div class="wallet-hero-label">Sign in to start earning Crowns</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SHOP PANEL — Crowns yahan spend hote
+       hain. Wallet ka hi gold theme share
+       karta hai (dono currency screens hain).
+       ══════════════════════════════════════ -->
+  <div id="drawer-shop" class="slide-drawer shop-panel"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-shop-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('shop')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Shop panel."
+          onclick="closeDrawer('shop')">&#8592;</button>
+        <span class="drawer-title" id="drawer-shop-title">Shop</span>
+      </div>
+      <div class="drawer-body">
+
+        <!-- Shown when signed in -->
+        <div id="shop-signed-in" style="display:none;">
+          <div class="shop-balance-strip">
+            <span aria-hidden="true">👑</span>
+            <span id="shop-crowns-display">0</span> Crowns
+          </div>
+
+          <div class="drawer-section-heading">Card Backs</div>
+          <div id="shop-cardbacks-list"></div>
+
+          <div class="drawer-section-heading" style="margin-top:20px;">Profile Badges</div>
+          <div id="shop-badges-list"></div>
+        </div>
+
+        <!-- Shown when not signed in -->
+        <div id="shop-signed-out">
+          <div class="wallet-hero">
+            <span class="wallet-hero-icon" aria-hidden="true">🛍️</span>
+            <div class="wallet-hero-label">Sign in to shop with your Crowns</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
        MORE OPTIONS DIALOG
        ══════════════════════════════════════ -->
   <div id="drawer-mystats" class="slide-drawer"
@@ -1909,6 +2227,47 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════
+       ACHIEVEMENTS — pure recognition, koi
+       currency nahi lagti unlock karne ke liye.
+       Plain theme (Wallet/Shop ke gold theme
+       se jaanbujh kar alag — yeh currency nahi,
+       collection hai).
+       ══════════════════════════════════════ -->
+  <div id="drawer-achievements" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-achievements-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('achievements')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Achievements panel."
+          onclick="closeDrawer('achievements')">&#8592;</button>
+        <span class="drawer-title" id="drawer-achievements-title">Achievements</span>
+      </div>
+      <div class="drawer-body">
+
+        <!-- Shown when signed in -->
+        <div id="achievements-signed-in" style="display:none;">
+          <div id="achievements-list"></div>
+        </div>
+
+        <!-- Shown when not signed in -->
+        <div id="achievements-signed-out">
+          <div class="notif-empty">
+            <div class="notif-empty-icon" aria-hidden="true">🎖️</div>
+            Sign in to track your Achievements.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <div id="more-options-dialog"
     role="dialog" aria-modal="true" aria-label="More options"
     inert aria-hidden="true">
@@ -1921,6 +2280,12 @@
         onclick="closeMoreOptions(); openDrawer('mystats');">
         <span class="moi-icon" aria-hidden="true">📊</span>
         My Stats
+      </button>
+      <button class="more-options-item" role="menuitem"
+        aria-label="Achievements. Milestone badges you've unlocked."
+        onclick="closeMoreOptions(); openDrawer('achievements');">
+        <span class="moi-icon" aria-hidden="true">🎖️</span>
+        Achievements
       </button>
       <button class="more-options-item" role="menuitem"
         aria-label="Settings. Sound and TalkBack options."
@@ -2012,10 +2377,18 @@
      ════════════════════════════════════════════ */
   let appStreak = parseInt(localStorage.getItem('cardgame_streak') || '0', 10) || 0;
   let appLastPlayedDate = localStorage.getItem('cardgame_last_played') || null;
-
+  let appBestStreak = parseInt(localStorage.getItem('cardgame_best_streak') || '0', 10) || 0;
+  /* Page load par turant dikhao — match khelne ka intezaar nahi
+     karna (renderStreakDisplay function neeche define hai, lekin
+     function declarations hoisted hoti hain isliye yahan call
+     karna safe hai). */
+  setTimeout(() => renderStreakDisplay(), 0);
+  /* Return value: true agar yeh AAJ ka pehla match hai (Wallet ke
+     "First match of the day" +2 Crown bonus ke liye use hota hai),
+     false agar aaj pehle bhi khela ja chuka hai. */
   function updateAppStreak() {
     const today = new Date().toDateString();
-    if (appLastPlayedDate === today) return; /* aaj already count ho chuka */
+    if (appLastPlayedDate === today) return false; /* aaj already count ho chuka */
 
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     if (appLastPlayedDate === yesterday) {
@@ -2026,7 +2399,24 @@
     appLastPlayedDate = today;
     localStorage.setItem('cardgame_streak', String(appStreak));
     localStorage.setItem('cardgame_last_played', appLastPlayedDate);
+
+    if (appStreak > appBestStreak) {
+      appBestStreak = appStreak;
+      localStorage.setItem('cardgame_best_streak', String(appBestStreak));
+    }
+
     renderStreakDisplay();
+    return true;
+  }
+
+  /* Daily streak milestone bonus — Reward Plan section 1: Day 1: +2,
+     Day 3: +5, Day 7: +10, aur har agle hafte (14, 21...) bhi +10.
+     Returns 0 agar is streak length par koi milestone nahi hai. */
+  function streakMilestoneBonus(streakLen) {
+    if (streakLen === 1) return 2;
+    if (streakLen === 3) return 5;
+    if (streakLen >= 7 && streakLen % 7 === 0) return 10;
+    return 0;
   }
 
   /* ════════════════════════════════════════════
@@ -2038,20 +2428,76 @@
      kuch rukawat ke. */
   const APK_DOWNLOAD_URL = 'https://github.com/aliabbas7362-a11y/Ali-access-lab-/releases/download/v1.5.0-build73/card-game-v1.5.0.apk';
 
+  /* Share App +10 Crown bonus — ek hi baar milta hai, isliye
+     Firestore mein 'shareBonusClaimed' flag check karte hain. Non-
+     blocking: share sheet turant khulta hai, bonus check background
+     mein hota hai. Sirf signed-in users ko milta hai (Wallet balance
+     account se juda hai). */
+  function claimShareBonusIfEligible() {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+    const userRef = db.collection('users').doc(uid);
+    userRef.get().then((doc) => {
+      const already = doc.exists && doc.data().shareBonusClaimed;
+      if (already) return;
+      userRef.set({ shareBonusClaimed: true }, { merge: true });
+      awardCrowns(10, 'Shared the app');
+    }).catch((err) => {
+      console.error('Share bonus check error:', err);
+    });
+  }
+
   async function shareApp() {
     const shareText = 'Try this accessible Card Game app — Court Piece and 99, built for TalkBack users!';
+    claimShareBonusIfEligible();
+
+    /* Native app (APK) mein browser ka navigator.share() support
+       nahi hota — isliye pehle seedha WhatsApp wale fallback pe
+       chala jaata tha, "share to ANY app" wala asli menu kabhi
+       dikhta hi nahi tha. Capacitor ka @capacitor/share plugin
+       native Android share sheet kholta hai (WhatsApp, Telegram,
+       Email, jo bhi installed ho, sab options). Yeh plugin abhi
+       project mein install NAHI hai — Abbas ko 'npm install
+       @capacitor/share' + CI/CD workflow mein add karna hoga
+       (text-to-speech plugin jaisa hi pattern), warna yeh
+       Capacitor.Plugins.Share undefined hoga aur code neeche
+       wale fallback (WhatsApp direct) pe chala jayega — jo abhi
+       hai bhi wahi. */
+    if (isNativeApp() && window.Capacitor.Plugins.Share) {
+      try {
+        announce('Opening share menu.');
+        await window.Capacitor.Plugins.Share.share({
+          title: 'Card Game',
+          text: shareText,
+          url: APK_DOWNLOAD_URL,
+          dialogTitle: 'Share Card Game with a friend'
+        });
+        announce('App shared. Thanks for spreading the word!');
+      } catch (e) {
+        /* User cancelled the share sheet — not an error, ignore silently. */
+        announce('Share cancelled.');
+      }
+      return;
+    }
+
     if (navigator.share) {
       try {
+        announce('Opening share menu.');
         await navigator.share({
           title: 'Card Game',
           text: shareText,
           url: APK_DOWNLOAD_URL
         });
+        announce('App shared. Thanks for spreading the word!');
       } catch (e) {
         /* User cancelled the share sheet — not an error, ignore silently. */
+        announce('Share cancelled.');
       }
     } else {
-      /* Fallback for browsers/WebViews that don't support Web Share API. */
+      /* Aakhri fallback — sirf tab chalta hai jab na native Share
+         plugin ho, na browser Web Share API. Seedha WhatsApp
+         khulta hai (koi menu nahi). */
+      announce('Opening WhatsApp.');
       const text = encodeURIComponent(shareText + '\n' + APK_DOWNLOAD_URL);
       window.open('https://wa.me/?text=' + text, '_blank');
     }
@@ -2067,6 +2513,23 @@
         ? 'No streak yet. Play a game today to start one.'
         : appStreak + ' day' + (appStreak === 1 ? '' : 's') + ' streak. Keep playing daily to keep it going.'
     );
+    updateDashboardCrownHighlight();
+  }
+
+  /* Crown of the Day — Reward System Plan section 8. Shows the
+     player's own best-ever streak (never other players — that
+     comparison lives in the Leaderboard instead). Hidden until
+     there's at least one day of a streak to show. */
+  function updateDashboardCrownHighlight() {
+    const el = document.getElementById('dash-crown-highlight');
+    if (!el) return;
+    if (appBestStreak > 0) {
+      el.style.display = '';
+      el.textContent = '👑 Your best streak so far: ' + appBestStreak
+        + ' day' + (appBestStreak === 1 ? '' : 's') + '!';
+    } else {
+      el.style.display = 'none';
+    }
   }
 
   /* ════════════════════════════════════════════
@@ -2103,7 +2566,22 @@
     trickLose: new Audio('sounds/trick-lose.mp3'),
     kingHit:   new Audio('sounds/king-hit.mp3'),
     bust:      new Audio('sounds/bust.mp3'),
-    eliminate: new Audio('sounds/eliminate.mp3')
+    eliminate: new Audio('sounds/eliminate.mp3'),
+    /* Reward System sounds — files abhi repo mein NAHI hain. Jab
+       tak Abbas inhe 'sounds/' folder mein daal kar CI/CD ke zariye
+       deploy nahi karte, yeh silently kuch nahi bajayenge (Audio
+       .play() promise reject ho kar .catch(()=>{}) mein pakda
+       jayega — koi error, koi crash nahi). File aate hi automatic
+       kaam karega, code mein kuch badalna nahi padega. */
+    coin:      new Audio('sounds/coin.mp3'),
+    purchase:  new Audio('sounds/purchase.mp3'),
+    equip:     new Audio('sounds/equip.mp3'),
+    challenge: new Audio('sounds/challenge.mp3'),
+    fanfare:   new Audio('sounds/fanfare.mp3'),
+    /* Panel/drawer open — Settings, About, Wallet, Shop, Score,
+       History, Profile, Notifications, My Stats, Achievements —
+       sab jagah bajega, generic aur halka hona chahiye. */
+    drawerOpen: new Audio('sounds/drawer-open.mp3')
   };
   Object.values(SFX).forEach(s => { s.volume = 1.0; });
 
@@ -2111,6 +2589,16 @@
     if (!state.sound) return;
     try { const s = SFX[key]; if (!s) return; s.currentTime = 0; s.volume = state.soundVolume / 100; s.play().catch(()=>{}); }
     catch(e) {}
+  }
+
+  /* Milestone celebration sound (Achievements, 10th win, 30-day
+     streak). Pehle Web Audio se synthesize kiya tha — Abbas ko
+     woh pasand nahi aaya, isliye hata diya. Ab 'sounds/fanfare.mp3'
+     file expect karta hai (playSound() pattern jaisa baaki sabke
+     saath). File aane tak yeh chup rahega, TalkBack announcement
+     tab bhi chalta rahega. */
+  function playMilestoneFanfare() {
+    playSound('fanfare');
   }
 
   /* ════════════════════════════════════════════
@@ -3169,7 +3657,9 @@
         'Profile. Signed in as ' + profile.name + '. Double tap to open profile.');
 
       /* Panel */
-      document.getElementById('profile-panel-name').textContent  = profile.name;
+      const badgeItem = BADGE_CATALOG.find(b => b.id === equippedBadgeId);
+      document.getElementById('profile-panel-name').innerHTML = profile.name
+        + (badgeItem ? ' <span class="profile-badge-emoji" aria-label="Badge: ' + badgeItem.name + '">' + badgeItem.emoji + '</span>' : '');
       document.getElementById('profile-panel-email').textContent = profile.email;
       const avatarWrap = document.getElementById('profile-panel-avatar-wrap');
       if (profile.avatarUrl) {
@@ -3192,6 +3682,21 @@
         'Profile. Not signed in. Double tap to sign in with Google.');
       document.getElementById('dash-greeting-name').textContent = 'Welcome!';
     }
+
+    /* Wallet button label — signed-out mein generic hint, signed-in
+       mein exact Crowns count (Firestore se ek halki si read, sirf
+       yahan jab auth state badalta hai — har render par nahi). */
+    const walletBtn = document.getElementById('btn-wallet');
+    if (walletBtn) {
+      if (profile.signedIn) {
+        db.collection('users').doc(auth.currentUser.uid).get().then((doc) => {
+          const crowns = doc.exists ? (doc.data().crowns || 0) : 0;
+          walletBtn.setAttribute('aria-label', 'Wallet. ' + crowns + ' Crowns. Double tap to open.');
+        }).catch(() => {});
+      } else {
+        walletBtn.setAttribute('aria-label', 'Wallet. Sign in to start earning Crowns.');
+      }
+    }
   }
 
   /* ════════════════════════════════════════════
@@ -3204,9 +3709,10 @@
      ════════════════════════════════════════════ */
 
   /* Bump this string in index.html every time you cut a new APK release.
-     It must match the "version" field in version.json once that
-     version's APK has been built and uploaded to GitHub Releases. */
-  const CURRENT_APP_VERSION = '1.5.0';
+     Used for on-screen display (About/Settings) and as the browser-
+     preview fallback. NOT used for the update-banner comparison
+     anymore — see note below on installedAppVersion(). */
+  const CURRENT_APP_VERSION = '1.6.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
@@ -3223,30 +3729,62 @@
     return false;
   }
 
+  /* PEHLE: banner CURRENT_APP_VERSION (upar wala JS constant) se
+     compare karta tha. Bug yeh tha — capacitor.config.json ka
+     server.url index.html ko LIVE GitHub Pages se load karta hai,
+     isliye CURRENT_APP_VERSION bhi turant naya push hote hi HAR
+     app mein update ho jaata tha — chahe APK khud purana hi kyun
+     na ho. Matlab jaise hi aap version.json aur CURRENT_APP_VERSION
+     dono ko naya number dete the, dono HAMESHA barabar nikalte
+     the (kyunki dono ek hi push se aa rahe the) — banner ka
+     "isNewerVersion" check kabhi TRUE nahi hota tha.
+
+     AB: native app mein @capacitor/app plugin se ASLI, permanently-
+     baked APK version (android:versionName, jo sirf real APK build
+     ke waqt set hota hai, live-reload se kabhi nahi badalta) padha
+     jaata hai. Yeh sirf tab badalta hai jab user actually naya
+     APK install kare — isliye ab comparison meaningful hai. */
+  async function installedAppVersion() {
+    if (isNativeApp() && window.Capacitor.Plugins.App) {
+      try {
+        const info = await window.Capacitor.Plugins.App.getInfo();
+        if (info && info.version) return info.version;
+      } catch (e) {
+        console.warn('App.getInfo() failed, falling back to JS constant:', e);
+      }
+    }
+    return CURRENT_APP_VERSION; /* Browser preview, ya plugin missing */
+  }
+
   let latestApkUrl = null;
 
-  function checkForUpdate() {
-    fetch(VERSION_CHECK_URL + '?t=' + Date.now())  /* cache-bust */
-      .then((res) => {
-        if (!res.ok) throw new Error('version.json fetch failed: ' + res.status);
-        return res.json();
-      })
-      .then((data) => {
-        if (!data || !data.version || !data.apk_url) return;
+  async function checkForUpdate() {
+    try {
+      const res = await fetch(VERSION_CHECK_URL + '?t=' + Date.now()); /* cache-bust */
+      if (!res.ok) throw new Error('version.json fetch failed: ' + res.status);
+      const data = await res.json();
+      if (!data || !data.version || !data.apk_url) return;
 
-        /* Don't keep nagging if user already dismissed this exact version */
-        const dismissed = localStorage.getItem(UPDATE_DISMISSED_KEY);
-        if (dismissed === data.version) return;
+      /* Don't keep nagging if user already dismissed this exact version */
+      const dismissed = localStorage.getItem(UPDATE_DISMISSED_KEY);
+      if (dismissed === data.version) return;
 
-        if (isNewerVersion(data.version, CURRENT_APP_VERSION)) {
-          latestApkUrl = data.apk_url;
-          showUpdateBanner(data.version, data.notes || '');
-        }
-      })
-      .catch((err) => {
-        /* Silent fail — no internet, or file missing. Don't bother the user. */
-        console.log('Update check skipped:', err.message);
-      });
+      const localVersion = await installedAppVersion();
+      if (isNewerVersion(data.version, localVersion)) {
+        latestApkUrl = data.apk_url;
+        showUpdateBanner(data.version, data.notes || '');
+      }
+    } catch (err) {
+      /* Silent fail — no internet, or file missing. Don't bother the
+         user. RETRY once after 8 seconds — pehle koi retry nahi tha,
+         isliye ek waqti network hiccup se banner poori tarah miss
+         ho jaata tha, dobara try hi nahi hota tha. */
+      console.log('Update check failed, will retry once:', err.message);
+      if (!checkForUpdate._retried) {
+        checkForUpdate._retried = true;
+        setTimeout(checkForUpdate, 8000);
+      }
+    }
   }
 
   function showUpdateBanner(version, notes) {
@@ -3387,14 +3925,533 @@
       });
   }
 
+  /* ════════════════════════════════════════════
+     WALLET — Crowns aur Cups system
+     (Reward System Plan sections 1 & 2)
+
+     Firestore shape: users/{uid}
+       crowns          — number, current spendable balance
+       cupsCourtPiece  — number, permanent, kabhi kam nahi hota
+       cups99          — number, permanent, kabhi kam nahi hota
+       shareBonusClaimed — bool, "Share the app" +10 one-time gate
+
+     users/{uid}/crownHistory/{auto-id} — har award ka ek entry:
+       amount, reason, timestamp
+     ════════════════════════════════════════════ */
+
+  /* Crowns award karo + history mein ek row daalo. Sirf signed-in
+     users ke liye — signed-out mein silently kuch nahi hota (koi
+     account hi nahi jahan save ho). Fire-and-forget, matchResults
+     wale pattern jaisa hi — game flow kabhi iske liye rukta nahi. */
+  function awardCrowns(amount, reason) {
+    if (!amount || amount <= 0) return;
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+
+    playSound('coin');
+
+    db.collection('users').doc(uid).set({
+      crowns: firebase.firestore.FieldValue.increment(amount)
+    }, { merge: true }).catch((err) => {
+      console.error('Crowns award error:', err);
+    });
+
+    db.collection('users').doc(uid).collection('crownHistory').add({
+      amount: amount,
+      reason: reason,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch((err) => {
+      console.error('Crown history save error:', err);
+    });
+  }
+
+  /* Cup +1 karo — game: 'courtpiece' ya '99'. Permanent counter,
+     kabhi decrement nahi hota (Reward Plan section 2, non-negotiable). */
+  /* Cup +1 karta hai atomically (transaction), aur naya total-wins
+     count wapas deta hai — 10th-win Milestone Announcement isi
+     return value se check hota hai (Reward Plan section 9). */
+  function incrementCup(game) {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return Promise.resolve(null);
+    const field = game === '99' ? 'cups99' : 'cupsCourtPiece';
+    const userRef = db.collection('users').doc(uid);
+    return db.runTransaction((tx) => {
+      return tx.get(userRef).then((doc) => {
+        const d = doc.exists ? doc.data() : {};
+        const newCupsCourtPiece = (field === 'cupsCourtPiece' ? (d.cupsCourtPiece || 0) + 1 : (d.cupsCourtPiece || 0));
+        const newCups99         = (field === 'cups99'         ? (d.cups99 || 0) + 1         : (d.cups99 || 0));
+        tx.set(userRef, { [field]: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+        return newCupsCourtPiece + newCups99;
+      });
+    }).catch((err) => {
+      console.error('Cup increment error:', err);
+      return null;
+    });
+  }
+
+  /* 10th-win aur 30-day-streak Milestone Announcements — routine
+     match-win announcement se ALAG, distinct fanfare ke saath. */
+  function checkGameplayMilestones(totalWinsAfter, isFirstMatchToday) {
+    if (totalWinsAfter === 10) {
+      playMilestoneFanfare();
+      announce('Milestone! Your 10th win. Well played.');
+    }
+    if (isFirstMatchToday && appStreak === 30) {
+      playMilestoneFanfare();
+      announce('Milestone! 30-day streak. Amazing consistency.');
+    }
+  }
+
+  /* ════════════════════════════════════════════
+     DAILY CHALLENGE — Reward System Plan section 4.
+     Ek chhota rotating task, 24hr mein reset hota hai.
+     Miss karne par KOI penalty nahi — sirf us din
+     bonus nahi milta (Design Principle, section 10).
+     ════════════════════════════════════════════ */
+  const DAILY_CHALLENGE_CATALOG = [
+    { id: 'win2',      text: 'Win 2 matches today',                    reward: 5, check: (c) => c.winsToday >= 2 },
+    { id: 'play3',     text: 'Play 3 matches today',                   reward: 3, check: (c) => c.playsToday >= 3 },
+    { id: 'winCP',     text: 'Win a Court Piece match today',          reward: 5, check: (c) => c.cpWinToday >= 1 },
+    { id: 'win99',     text: 'Win a 99 game today',                    reward: 5, check: (c) => c.n99WinToday >= 1 },
+    { id: 'playBoth',  text: 'Play both Court Piece and 99 today',     reward: 8, check: (c) => c.playedCP && c.played99 }
+  ];
+
+  /* Date se deterministic challenge chunta hai — sab devices/sessions
+     par same din same challenge dikhega, kisi server-side pick ki
+     zaroorat nahi. */
+  function pickDailyChallengeId(dateStr) {
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) hash = (hash + dateStr.charCodeAt(i)) % DAILY_CHALLENGE_CATALOG.length;
+    return DAILY_CHALLENGE_CATALOG[hash].id;
+  }
+
+  /* Har match ke baad (win ya loss dono) call hota hai. Transaction
+     se: agar date badal gayi hai to counters reset + naya challenge,
+     phir counters increment, phir check karo ke aaj ka challenge
+     poora hua ya nahi. */
+  function updateDailyChallenge(gameType, won) {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+    const userRef = db.collection('users').doc(uid);
+    const today = new Date().toDateString();
+
+    db.runTransaction((tx) => {
+      return tx.get(userRef).then((doc) => {
+        const d = doc.exists ? doc.data() : {};
+        let counters = d.dailyCounters || {};
+        let challengeId = d.dailyChallengeId;
+        let completed = d.dailyChallengeCompleted || false;
+
+        if (d.dailyChallengeDate !== today) {
+          counters = { winsToday: 0, playsToday: 0, cpWinToday: 0, n99WinToday: 0, playedCP: false, played99: false };
+          challengeId = pickDailyChallengeId(today);
+          completed = false;
+        }
+
+        counters.playsToday = (counters.playsToday || 0) + 1;
+        if (won) counters.winsToday = (counters.winsToday || 0) + 1;
+        if (gameType === 'courtpiece') {
+          counters.playedCP = true;
+          if (won) counters.cpWinToday = (counters.cpWinToday || 0) + 1;
+        } else {
+          counters.played99 = true;
+          if (won) counters.n99WinToday = (counters.n99WinToday || 0) + 1;
+        }
+
+        const challenge = DAILY_CHALLENGE_CATALOG.find(c => c.id === challengeId);
+        let justCompleted = false;
+        if (challenge && !completed && challenge.check(counters)) {
+          completed = true;
+          justCompleted = true;
+        }
+
+        tx.set(userRef, {
+          dailyChallengeDate: today,
+          dailyChallengeId: challengeId,
+          dailyCounters: counters,
+          dailyChallengeCompleted: completed
+        }, { merge: true });
+
+        return { justCompleted, challenge };
+      });
+    }).then((result) => {
+      if (result && result.justCompleted && result.challenge) {
+        playSound('challenge');
+        awardCrowns(result.challenge.reward, 'Daily Challenge: ' + result.challenge.text);
+        announce('Daily Challenge complete! ' + result.challenge.text + '. Plus ' + result.challenge.reward + ' Crowns.');
+      }
+    }).catch((err) => {
+      console.error('Daily Challenge update error:', err);
+    });
+  }
+
+  /* Wallet panel khulte hi balance, Cups, aur recent history load
+     karta hai. Plain DOM text update — koi extra announcement nahi,
+     openDrawer() pehle se 'Wallet drawer opened' bol chuka hoga. */
+  function loadWalletData() {
+    const signedInEl  = document.getElementById('wallet-signed-in');
+    const signedOutEl = document.getElementById('wallet-signed-out');
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+
+    if (!uid) {
+      if (signedInEl)  signedInEl.style.display  = 'none';
+      if (signedOutEl) signedOutEl.style.display = '';
+      return;
+    }
+    if (signedInEl)  signedInEl.style.display  = '';
+    if (signedOutEl) signedOutEl.style.display = 'none';
+
+    const highlightEl = document.getElementById('wallet-highlight-text');
+    if (highlightEl) {
+      highlightEl.textContent = appBestStreak > 0
+        ? 'Best streak so far: ' + appBestStreak + ' day' + (appBestStreak === 1 ? '' : 's') + '.'
+        : 'Best streak so far: 0 days. Play today to start one!';
+    }
+
+    db.collection('users').doc(uid).get().then((doc) => {
+      const d = doc.exists ? doc.data() : {};
+      const crownsEl = document.getElementById('wallet-crowns-count');
+      const cupsCpEl = document.getElementById('wallet-cups-courtpiece');
+      const cups99El = document.getElementById('wallet-cups-99');
+      if (crownsEl) crownsEl.textContent = String(d.crowns || 0);
+      if (cupsCpEl) cupsCpEl.textContent = String(d.cupsCourtPiece || 0);
+      if (cups99El) cups99El.textContent = String(d.cups99 || 0);
+      const walletBtn = document.getElementById('btn-wallet');
+      if (walletBtn) walletBtn.setAttribute('aria-label', 'Wallet. ' + (d.crowns || 0) + ' Crowns. Double tap to open.');
+
+      /* Daily Challenge — agar aaj ke liye abhi tak koi challenge
+         nahi chuna gaya (naya user ya pehla match abhi tak nahi
+         khela), toh aaj ki tareekh se ek deterministically chun lo,
+         sirf DISPLAY ke liye (Firestore mein tabhi save hoga jab
+         pehla match khelega). */
+      const today = new Date().toDateString();
+      const challengeId = (d.dailyChallengeDate === today && d.dailyChallengeId)
+        ? d.dailyChallengeId
+        : pickDailyChallengeId(today);
+      const isCompleted = d.dailyChallengeDate === today && d.dailyChallengeCompleted;
+      const challenge = DAILY_CHALLENGE_CATALOG.find(c => c.id === challengeId);
+      const dcEl = document.getElementById('wallet-daily-challenge');
+      if (dcEl && challenge) {
+        dcEl.textContent = isCompleted
+          ? '✅ Today\'s Challenge complete: ' + challenge.text + ' (+' + challenge.reward + ' Crowns earned)'
+          : '🎯 Today\'s Challenge: ' + challenge.text + ' — Reward: +' + challenge.reward + ' Crowns';
+      }
+    }).catch((err) => {
+      console.error('Wallet balance load error:', err);
+    });
+
+    const historyEl = document.getElementById('wallet-history-list');
+    if (historyEl) historyEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Loading…</p>';
+
+    db.collection('users').doc(uid).collection('crownHistory')
+      .orderBy('timestamp', 'desc')
+      .limit(20)
+      .get()
+      .then((snapshot) => {
+        if (!historyEl) return;
+        if (snapshot.empty) {
+          historyEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No Crowns earned yet.</p>';
+          return;
+        }
+        const rows = [];
+        snapshot.forEach((doc) => {
+          const d = doc.data();
+          const dateStr = (d.timestamp && typeof d.timestamp.toDate === 'function')
+            ? d.timestamp.toDate().toLocaleDateString()
+            : 'Just now';
+          rows.push(
+            '<div class="wallet-history-row">'
+            + '<span class="wallet-history-reason">' + (d.reason || 'Crowns earned')
+            + '<span class="wallet-history-date">' + dateStr + '</span></span>'
+            + '<span class="wallet-history-amount">+' + d.amount + '</span>'
+            + '</div>'
+          );
+        });
+        historyEl.innerHTML = rows.join('');
+      })
+      .catch((err) => {
+        console.error('Wallet history load error:', err);
+        if (historyEl) historyEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Couldn\'t load history.</p>';
+      });
+  }
+
+  /* ════════════════════════════════════════════
+     SHOP — Crowns purely cosmetic spending
+     (Reward System Plan section 7). Card backs
+     apply to Court Piece's face-down AI hand
+     visual; badges show next to the profile name.
+     'classic' card back is the free default and
+     is always owned — cannot be bought or lost.
+     ════════════════════════════════════════════ */
+  const CARD_BACK_CATALOG = [
+    { id: 'classic',    name: 'Classic Blue',  price: 0,  cls: '' },
+    { id: 'royalgold',  name: 'Royal Gold',    price: 15, cls: 'cardback-royalgold' },
+    { id: 'rubyred',    name: 'Ruby Red',      price: 15, cls: 'cardback-rubyred' },
+    { id: 'emerald',    name: 'Emerald Green', price: 20, cls: 'cardback-emerald' },
+    { id: 'midnight',   name: 'Midnight Black',price: 25, cls: 'cardback-midnight' }
+  ];
+  const BADGE_CATALOG = [
+    { id: 'champion',   name: 'Champion',    price: 10, emoji: '🏅' },
+    { id: 'onfire',     name: 'On Fire',     price: 10, emoji: '🔥' },
+    { id: 'cardmaster', name: 'Card Master', price: 15, emoji: '🎴' },
+    { id: 'starplayer', name: 'Star Player', price: 20, emoji: '⭐' }
+  ];
+
+  let equippedCardBackId = 'classic';
+  let ownedCardBacks     = ['classic'];
+  let equippedBadgeId    = null;
+  let ownedBadges        = [];
+
+  function cardBackClass() {
+    const item = CARD_BACK_CATALOG.find(c => c.id === equippedCardBackId);
+    return 'card-back' + (item && item.cls ? ' ' + item.cls : '');
+  }
+
+  /* Sign-in par ek baar cosmetics padho — cheeni-transaction jaisi
+     har render pe nahi, sirf auth state badalne par. */
+  function loadCosmetics(uid) {
+    db.collection('users').doc(uid).get().then((doc) => {
+      const d = doc.exists ? doc.data() : {};
+      ownedCardBacks     = Array.from(new Set(['classic', ...(d.ownedCardBacks || [])]));
+      equippedCardBackId = d.equippedCardBack || 'classic';
+      ownedBadges         = d.ownedBadges || [];
+      equippedBadgeId      = d.equippedBadge || null;
+      updateAICardCount();   /* agar Court Piece screen abhi khula hai to turant refresh */
+      updateProfileUI();
+    }).catch((err) => {
+      console.error('Cosmetics load error:', err);
+    });
+  }
+
+  function resetCosmeticsToDefault() {
+    ownedCardBacks     = ['classic'];
+    equippedCardBackId = 'classic';
+    ownedBadges         = [];
+    equippedBadgeId      = null;
+  }
+
+  /* Buy — Firestore transaction se atomic: balance check aur
+     decrement ek hi operation mein, taaki do baar tap karne par
+     ya slow connection par bhi crowns negative na ho sakein. */
+  function buyCosmetic(kind, id, price, ownedField, catalog) {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+    const userRef = db.collection('users').doc(uid);
+
+    db.runTransaction((tx) => {
+      return tx.get(userRef).then((doc) => {
+        const d = doc.exists ? doc.data() : {};
+        const currentCrowns = d.crowns || 0;
+        const owned = d[ownedField] || (ownedField === 'ownedCardBacks' ? ['classic'] : []);
+        if (owned.includes(id)) throw new Error('already-owned');
+        if (currentCrowns < price) throw new Error('insufficient-funds');
+        tx.set(userRef, {
+          crowns: currentCrowns - price,
+          [ownedField]: [...owned, id]
+        }, { merge: true });
+      });
+    }).then(() => {
+      if (ownedField === 'ownedCardBacks') { ownedCardBacks.push(id); }
+      else { ownedBadges.push(id); }
+      playSound('purchase');
+      announce(catalog.find(c => c.id === id).name + ' purchased.');
+      loadShopData();
+    }).catch((err) => {
+      if (err.message === 'insufficient-funds') {
+        announce('Not enough Crowns for this item.');
+      } else if (err.message === 'already-owned') {
+        loadShopData();
+      } else {
+        console.error('Purchase error:', err);
+        announce("Couldn't complete purchase. Check your connection.");
+      }
+    });
+  }
+
+  function equipCosmetic(kind, id, equippedField, refreshFn) {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+    db.collection('users').doc(uid).set({ [equippedField]: id }, { merge: true }).catch((err) => {
+      console.error('Equip error:', err);
+    });
+    if (equippedField === 'equippedCardBack') { equippedCardBackId = id; updateAICardCount(); }
+    else { equippedBadgeId = id; updateProfileUI(); }
+    playSound('equip');
+    announce(refreshFn + ' equipped.');
+    loadShopData();
+  }
+
+  function buyCardBack(id, price)  { buyCosmetic('cardback', id, price, 'ownedCardBacks', CARD_BACK_CATALOG); }
+  function buyBadge(id, price)     { buyCosmetic('badge', id, price, 'ownedBadges', BADGE_CATALOG); }
+  function equipCardBack(id, name) { equipCosmetic('cardback', id, 'equippedCardBack', name); }
+  function equipBadge(id, name)    { equipCosmetic('badge', id, 'equippedBadge', name); }
+
+  function renderShopRow(item, owned, equipped, currentCrowns, swatchHtml, buyFn, equipFn) {
+    let btnHtml;
+    if (item.price === 0 || equipped) {
+      btnHtml = '<button class="shop-item-btn equipped" disabled aria-label="' + item.name + '. Currently equipped.">Equipped</button>';
+    } else if (owned) {
+      btnHtml = '<button class="shop-item-btn owned" onclick="' + equipFn + "('" + item.id + "', '" + item.name.replace(/'/g, "\\'") + "')\""
+        + ' aria-label="' + item.name + '. Owned. Double tap to equip.">Equip</button>';
+    } else {
+      const canAfford = currentCrowns >= item.price;
+      btnHtml = '<button class="shop-item-btn" ' + (canAfford ? '' : 'disabled ')
+        + 'onclick="' + buyFn + "('" + item.id + "', " + item.price + ')"'
+        + ' aria-label="' + item.name + '. ' + item.price + ' Crowns. '
+        + (canAfford ? 'Double tap to buy.' : 'Not enough Crowns.') + '">Buy</button>';
+    }
+    return '<div class="shop-item-row">'
+      + swatchHtml
+      + '<div class="shop-item-info">'
+      + '<div class="shop-item-name">' + item.name + '</div>'
+      + '<div class="shop-item-price">' + (item.price === 0 ? 'Default — free' : item.price + ' 👑 Crowns') + '</div>'
+      + '</div>' + btnHtml + '</div>';
+  }
+
+  /* Shop panel khulte hi ek fresh Firestore read se balance +
+     owned/equipped lists laata hai, phir dono lists render karta hai. */
+  function loadShopData() {
+    const signedInEl  = document.getElementById('shop-signed-in');
+    const signedOutEl = document.getElementById('shop-signed-out');
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+
+    if (!uid) {
+      if (signedInEl)  signedInEl.style.display  = 'none';
+      if (signedOutEl) signedOutEl.style.display = '';
+      return;
+    }
+    if (signedInEl)  signedInEl.style.display  = '';
+    if (signedOutEl) signedOutEl.style.display = 'none';
+
+    db.collection('users').doc(uid).get().then((doc) => {
+      const d = doc.exists ? doc.data() : {};
+      const crowns = d.crowns || 0;
+      ownedCardBacks     = Array.from(new Set(['classic', ...(d.ownedCardBacks || [])]));
+      equippedCardBackId = d.equippedCardBack || 'classic';
+      ownedBadges         = d.ownedBadges || [];
+      equippedBadgeId      = d.equippedBadge || null;
+
+      const balEl = document.getElementById('shop-crowns-display');
+      if (balEl) balEl.textContent = String(crowns);
+
+      const cbList = document.getElementById('shop-cardbacks-list');
+      if (cbList) {
+        cbList.innerHTML = CARD_BACK_CATALOG.map((item) => {
+          const swatch = '<div class="shop-item-swatch card-back ' + item.cls + '" aria-hidden="true"></div>';
+          return renderShopRow(item, ownedCardBacks.includes(item.id), equippedCardBackId === item.id, crowns, swatch, 'buyCardBack', 'equipCardBack');
+        }).join('');
+      }
+
+      const bgList = document.getElementById('shop-badges-list');
+      if (bgList) {
+        bgList.innerHTML = BADGE_CATALOG.map((item) => {
+          const swatch = '<div class="shop-item-swatch" aria-hidden="true" style="background:rgba(232,184,75,0.1);border:1px solid var(--gold-dim);">' + item.emoji + '</div>';
+          return renderShopRow(item, ownedBadges.includes(item.id), equippedBadgeId === item.id, crowns, swatch, 'buyBadge', 'equipBadge');
+        }).join('');
+      }
+    }).catch((err) => {
+      console.error('Shop load error:', err);
+    });
+  }
+
+  /* ════════════════════════════════════════════
+     ACHIEVEMENTS — Reward System Plan section 3.
+     Pure recognition, no Crowns needed to unlock
+     (a small bonus IS given on unlock — plan marks
+     this optional/nice-to-have, so included). Criteria
+     computed from data already tracked: Cups (wins)
+     and best-ever streak — no new counters needed.
+     ════════════════════════════════════════════ */
+  const ACHIEVEMENT_CATALOG = [
+    { id: 'first_win',   name: 'Pehli Jeet', icon: '🥇', desc: 'Apna pehla match jeeto.',
+      bonus: 3,  check: (s) => s.totalWins >= 1 },
+    { id: 'ten_wins',    name: '10 Wins',    icon: '🏆', desc: '10 matches jeeto (koi bhi game).',
+      bonus: 5,  check: (s) => s.totalWins >= 10 },
+    { id: 'ninetynine_master', name: '99 Master', icon: '🎯', desc: '99 game mein 50 matches jeeto.',
+      bonus: 15, check: (s) => s.cups99 >= 50 },
+    { id: 'week_streak', name: '7 Din Streak', icon: '🔥', desc: 'Lagatar 7 din khelo.',
+      bonus: 5,  check: (s) => s.bestStreak >= 7 }
+  ];
+
+  function loadAchievements() {
+    const signedInEl  = document.getElementById('achievements-signed-in');
+    const signedOutEl = document.getElementById('achievements-signed-out');
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+
+    if (!uid) {
+      if (signedInEl)  signedInEl.style.display  = 'none';
+      if (signedOutEl) signedOutEl.style.display = '';
+      return;
+    }
+    if (signedInEl)  signedInEl.style.display  = '';
+    if (signedOutEl) signedOutEl.style.display = 'none';
+
+    const userRef = db.collection('users').doc(uid);
+    userRef.get().then((doc) => {
+      const d = doc.exists ? doc.data() : {};
+      const stats = {
+        totalWins:  (d.cupsCourtPiece || 0) + (d.cups99 || 0),
+        cups99:     d.cups99 || 0,
+        bestStreak: appBestStreak
+      };
+      const unlocked = d.unlockedAchievements || [];
+      const newlyUnlocked = [];
+
+      ACHIEVEMENT_CATALOG.forEach((a) => {
+        if (!unlocked.includes(a.id) && a.check(stats)) newlyUnlocked.push(a);
+      });
+
+      if (newlyUnlocked.length > 0) {
+        userRef.set({
+          unlockedAchievements: firebase.firestore.FieldValue.arrayUnion(...newlyUnlocked.map(a => a.id))
+        }, { merge: true }).catch((err) => console.error('Achievement unlock save error:', err));
+        playMilestoneFanfare();
+        newlyUnlocked.forEach((a) => {
+          awardCrowns(a.bonus, 'Achievement unlocked: ' + a.name);
+          announce('Achievement unlocked: ' + a.name + '! Plus ' + a.bonus + ' Crowns.');
+        });
+      }
+
+      const finalUnlocked = unlocked.concat(newlyUnlocked.map(a => a.id));
+      const listEl = document.getElementById('achievements-list');
+      if (listEl) {
+        listEl.innerHTML = ACHIEVEMENT_CATALOG.map((a) => {
+          const isUnlocked = finalUnlocked.includes(a.id);
+          return '<div class="achievement-row' + (isUnlocked ? '' : ' locked') + '">'
+            + '<span class="achievement-icon" aria-hidden="true">' + a.icon + '</span>'
+            + '<div class="achievement-info">'
+            + '<div class="achievement-name">' + a.name + '</div>'
+            + '<div class="achievement-desc">' + a.desc + '</div>'
+            + '</div>'
+            + '<span class="achievement-status ' + (isUnlocked ? 'unlocked">Unlocked' : 'locked">Locked') + '</span>'
+            + '</div>';
+        }).join('');
+      }
+    }).catch((err) => {
+      console.error('Achievements load error:', err);
+    });
+  }
+
   async function handleGoogleSignIn() {
     announce('Opening Google Sign-In. Please wait.');
 
     /* APK mein native plugin use karo */
     if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
       try {
-        /* Dynamically import native plugin */
-        const { GoogleAuth } = await import('https://cdn.jsdelivr.net/npm/@codetrix-studio/capacitor-google-auth/dist/esm/index.js');
+        /* PEHLE: CDN se dynamic import() hota tha
+           (cdn.jsdelivr.net/@codetrix-studio/capacitor-google-auth) —
+           bilkul wahi galti jo LocalNotifications mein thi (dekho
+           getNotificationPermissionState() ka comment upar). CDN se
+           import karne se Capacitor ka native bridge is plugin ko
+           register nahi kar paata — isliye account-picker toh khul
+           jaata tha (woh ek alag Android-level intent hai), lekin
+           account select karne ke baad result wapas app mein kabhi
+           nahi aata tha ("redirect nahi hota" wali complaint isi
+           wajah se thi). AB: window.Capacitor.Plugins se seedha
+           access — yeh wahi plugin hai jo APK build ke waqt native
+           side pe already register ho chuka hota hai. */
+        const GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
+        if (!GoogleAuth) throw new Error('GoogleAuth native plugin not found — check it is installed and synced.');
         await GoogleAuth.initialize({
           clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
@@ -3533,11 +4590,13 @@
       profile.name      = user.displayName || 'Player';
       profile.email     = user.email || '';
       profile.avatarUrl = user.photoURL || '';
+      loadCosmetics(user.uid);
     } else {
       profile.signedIn  = false;
       profile.name      = '';
       profile.email     = '';
       profile.avatarUrl = '';
+      resetCosmeticsToDefault();
     }
     updateProfileUI();
   });
@@ -3823,9 +4882,26 @@
   function endGame99(winner) {
     state99.gameOver = true;
     renderGame99();
-    playSound(winner && winner.isHuman ? 'win' : 'lose');
-    updateAppStreak();
+    const humanWon99 = !!(winner && winner.isHuman);
+    playSound(humanWon99 ? 'win' : 'lose');
+    const isFirstMatchToday99 = updateAppStreak();
     scheduleDailyReminder();
+
+    /* ── Wallet: Crowns + Cups (Reward System Plan) ── */
+    awardCrowns(humanWon99 ? 3 : 1, humanWon99 ? 'Won a 99 game' : 'Played a 99 game');
+    updateDailyChallenge('99', humanWon99);
+    if (humanWon99) {
+      incrementCup('99').then((totalWinsAfter) => {
+        if (totalWinsAfter !== null) checkGameplayMilestones(totalWinsAfter, isFirstMatchToday99);
+      });
+    } else if (isFirstMatchToday99 && appStreak === 30) {
+      checkGameplayMilestones(null, isFirstMatchToday99);
+    }
+    if (isFirstMatchToday99) awardCrowns(2, 'First match of the day');
+    const milestoneBonus99 = streakMilestoneBonus(appStreak);
+    if (isFirstMatchToday99 && milestoneBonus99 > 0) {
+      awardCrowns(milestoneBonus99, appStreak + '-day streak milestone');
+    }
 
     const durationSec99 = Math.round((Date.now() - (state99MatchStartTime || Date.now())) / 1000);
 
@@ -4156,6 +5232,7 @@
   }
 
   function openMoreOptions() {
+    playSound('drawerOpen');
     const dialog = document.getElementById('more-options-dialog');
     dialog.removeAttribute('inert');
     dialog.removeAttribute('aria-hidden');
@@ -4179,6 +5256,7 @@
   }
 
   function openAbout() {
+    playSound('drawerOpen');
     const vEl = document.getElementById('about-version');
     if (vEl) vEl.textContent = CURRENT_APP_VERSION;
     document.getElementById('screen-home').classList.remove('active');
@@ -4321,7 +5399,7 @@
       aiRow.innerHTML = '';
       for (let i = 0; i < 7; i++) {
         const cb = document.createElement('div');
-        cb.className = 'card-back'; cb.textContent = '🂠';
+        cb.className = cardBackClass(); cb.textContent = '🂠';
         aiRow.appendChild(cb);
       }
     }
@@ -5311,8 +6389,24 @@
   function endMatch(winner, lastRoundMsg) {
     const humanWon = winner === 'human';
     playSound(humanWon ? 'win' : 'lose');
-    updateAppStreak();
+    const isFirstMatchToday = updateAppStreak();
     scheduleDailyReminder();
+
+    /* ── Wallet: Crowns + Cups (Reward System Plan) ── */
+    awardCrowns(humanWon ? 5 : 1, humanWon ? 'Won a Court Piece match' : 'Played a Court Piece match');
+    updateDailyChallenge('courtpiece', humanWon);
+    if (humanWon) {
+      incrementCup('courtpiece').then((totalWinsAfter) => {
+        if (totalWinsAfter !== null) checkGameplayMilestones(totalWinsAfter, isFirstMatchToday);
+      });
+    } else if (isFirstMatchToday && appStreak === 30) {
+      checkGameplayMilestones(null, isFirstMatchToday); /* streak milestone loss ke baad bhi lagu hota hai */
+    }
+    if (isFirstMatchToday) awardCrowns(2, 'First match of the day');
+    const milestoneBonus = streakMilestoneBonus(appStreak);
+    if (isFirstMatchToday && milestoneBonus > 0) {
+      awardCrowns(milestoneBonus, appStreak + '-day streak milestone');
+    }
 
     const durationSec = Math.round((Date.now() - (state.matchStartTime || Date.now())) / 1000);
 
@@ -5457,7 +6551,7 @@
     aiRow.innerHTML = '';
     for (let i = 0; i < maxCards; i++) {
       const cb = document.createElement('div');
-      cb.className = 'card-back'; cb.textContent = '🂠';
+      cb.className = cardBackClass(); cb.textContent = '🂠';
       aiRow.appendChild(cb);
     }
   }
@@ -5497,6 +6591,7 @@
      closeDrawer(type)
      ════════════════════════════════════════════ */
   function openDrawer(type) {
+    playSound('drawerOpen');
     /* Data populate karo khulne se pehle */
     if (type === 'score') {
       document.getElementById('score-human').textContent = state.scoreHuman + ' tricks';
@@ -5526,14 +6621,14 @@
     } else if (type === 'notifications') {
       updateNotifButtonState();
       renderNotificationHistory();
-      getNotificationPermissionState().then((state) => {
-        const status = state === 'denied'
-          ? 'Notifications are blocked.'
-          : state === 'granted'
-            ? 'Notifications are enabled.'
-            : 'Notifications are not yet enabled.';
-        announce('Notifications panel opened. ' + status);
-      });
+      /* PEHLE: announce() async getNotificationPermissionState()
+         ke .then() ke ANDAR tha — race condition: 340ms baad focus
+         wapas drawer-back-btn par chala jaata tha, aur agar permission
+         check usse zyada time le leta (ya kabhi kabhi turant resolve
+         ho jaata), TalkBack kabhi announcement sunta, kabhi chup ho
+         jaata (missed live-region update). AB: announce() turant,
+         SYNC hota hai — permission status ka wait nahi karta. */
+      announce('Notifications panel opened.');
     } else if (type === 'profile') {
       announce(profile.signedIn
         ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
@@ -5543,6 +6638,21 @@
         ? 'My Stats panel opened.'
         : 'My Stats panel opened. Not signed in. Sign in to see your stats.');
       loadProfileStats();
+    } else if (type === 'wallet') {
+      announce(profile.signedIn
+        ? 'Wallet opened.'
+        : 'Wallet opened. Not signed in. Sign in to start earning Crowns.');
+      loadWalletData();
+    } else if (type === 'shop') {
+      announce(profile.signedIn
+        ? 'Shop opened.'
+        : 'Shop opened. Not signed in. Sign in to shop with your Crowns.');
+      loadShopData();
+    } else if (type === 'achievements') {
+      announce(profile.signedIn
+        ? 'Achievements panel opened.'
+        : 'Achievements panel opened. Not signed in. Sign in to track your Achievements.');
+      loadAchievements();
     } else {
       /* Settings drawer — version update karo */
       const svd = document.getElementById('settings-version-display');
@@ -5582,7 +6692,10 @@
                      history:       'History drawer closed.',
                      profile:       'Profile drawer closed.',
                      mystats:       'My Stats panel closed.',
-                     notifications: 'Notifications panel closed.' };
+                     notifications: 'Notifications panel closed.',
+                     wallet:        'Wallet closed.',
+                     shop:          'Shop closed.',
+                     achievements:  'Achievements panel closed.' };
     announce(labels[type] || 'Panel closed.');
 
     const triggers = {
@@ -5591,7 +6704,10 @@
       history:       document.getElementById('btn-history'),
       profile:       document.getElementById('btn-profile'),
       mystats:       document.getElementById('btn-more-options'),
-      notifications: document.getElementById('btn-notifications')
+      notifications: document.getElementById('btn-notifications'),
+      wallet:        document.getElementById('btn-wallet'),
+      shop:          document.getElementById('btn-shop'),
+      achievements:  document.getElementById('btn-more-options')
     };
     const t = triggers[type];
     if (t) setTimeout(() => t.focus(), 50);
