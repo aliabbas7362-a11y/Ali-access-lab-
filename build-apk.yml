@@ -99,7 +99,7 @@ jobs:
         npm install @capacitor-community/text-to-speech
         npm install @capacitor/app
         npm install @capacitor/share
-        npm install @codetrix-studio/capacitor-google-auth
+        npm install @capawesome/capacitor-google-sign-in
         echo "==== Capacitor packages installed ===="
         ls node_modules/@capacitor/
 
