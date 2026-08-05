@@ -22,16 +22,27 @@ jobs:
         git fetch origin main
         git checkout origin/main -- index.html
 
+    - name: Get app version from index.html
+      id: appver
+      run: |
+        VERSION=$(grep -oP "CURRENT_APP_VERSION = '\K[^']+" index.html)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Detected app version: $VERSION"
+
     - name: Prepare web assets
       run: |
         mkdir -p www
         cp -f index.html www/
-        for dir in assets css js images fonts img stylesheets scripts; do
+        for dir in assets css js images fonts img stylesheets scripts sounds; do
           if [ -d "$dir" ]; then
             cp -r "$dir" www/
             echo "Copied $dir/"
           fi
         done
+        if [ -f "sw.js" ]; then
+          cp -f sw.js www/
+          echo "Copied sw.js"
+        fi
         echo "==== www/ contents ===="
         ls -la www/
 
@@ -86,6 +97,9 @@ jobs:
         npm install @capacitor/push-notifications
         npm install @capacitor-community/fcm
         npm install @capacitor-community/text-to-speech
+        npm install @capacitor/app
+        npm install @capacitor/share
+        npm install @codetrix-studio/capacitor-google-auth
         echo "==== Capacitor packages installed ===="
         ls node_modules/@capacitor/
 
@@ -94,6 +108,14 @@ jobs:
         npx cap add android
         echo "==== Android folder created ===="
         ls -la android/app/src/main/
+
+    - name: Set real Android versionName (fixes update-banner bug)
+      run: |
+        APP_GRADLE="android/app/build.gradle"
+        VERSION="${{ steps.appver.outputs.version }}"
+        echo "Setting versionName to $VERSION"
+        sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION\"/" "$APP_GRADLE"
+        grep "versionName" "$APP_GRADLE"
 
     - name: Write google-services.json (needed for FCM push notifications)
       run: |
@@ -209,13 +231,6 @@ jobs:
       with:
         name: app-debug-apk
         path: android/app/build/outputs/apk/debug/*.apk
-
-    - name: Get app version from index.html
-      id: appver
-      run: |
-        VERSION=$(grep -oP "CURRENT_APP_VERSION = '\K[^']+" index.html)
-        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-        echo "Detected app version: $VERSION"
 
     - name: Rename APK with version
       run: |
