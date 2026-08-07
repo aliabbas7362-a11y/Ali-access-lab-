@@ -4446,6 +4446,19 @@
     });
   }
 
+  /* Timeout helper — agar koi Promise 15 second mein settle
+     (resolve/reject) nahi hoti, isse ek error throw ho jaata hai.
+     Bina isके, agar native plugin ka Promise kabhi bhi resolve ya
+     reject na ho (silent hang), user ko HAMESHA ke liye chup rehna
+     padta — na success, na TalkBack error. Ab 15 sec baad zaroor
+     kuch bolega. */
+  function withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(label + ' timed out after ' + (ms/1000) + ' seconds.')), ms))
+    ]);
+  }
+
   async function handleGoogleSignIn() {
     announce('Opening Google Sign-In. Please wait.');
 
@@ -4464,17 +4477,26 @@
            googleUser.authentication.idToken jaisa nested nahi. */
         const GoogleSignIn = window.Capacitor.Plugins.GoogleSignIn;
         if (!GoogleSignIn) throw new Error('GoogleSignIn native plugin not found — check it is installed and synced.');
-        await GoogleSignIn.initialize({
+
+        await withTimeout(GoogleSignIn.initialize({
           clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com',
           scopes: ['profile', 'email']
-        });
-        const result = await GoogleSignIn.signIn();
+        }), 15000, 'Initialize');
+
+        announce('Choose your Google account.');
+        const result = await withTimeout(GoogleSignIn.signIn(), 60000, 'Account selection');
+        /* 60 sec — account chunne ka waqt user pe depend karta hai,
+           isliye baaki steps se lamba timeout diya hai. */
+
+        if (!result || !result.idToken) throw new Error('No ID token received from Google.');
+
+        announce('Finishing sign-in.');
         const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken);
-        const fbResult = await auth.signInWithCredential(credential);
+        const fbResult = await withTimeout(auth.signInWithCredential(credential), 15000, 'Firebase sign-in');
         onSignInSuccess(fbResult.user);
       } catch (error) {
         console.error('Native sign-in error:', error);
-        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+        announce('Sign-in failed: ' + (error.message || 'Please try again.'));
       }
     } else {
       /* Browser mein popup use karo */
