@@ -373,6 +373,52 @@
       transition: background 0.12s;
     }
     .more-options-item:last-child { border-bottom: none; }
+
+    /* ── EXIT GAME CONFIRM DIALOG (accidental back button) ── */
+    #exit-game-confirm-dialog {
+      position: fixed; inset: 0; z-index: 500;
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    #exit-game-confirm-dialog.open { display: flex; }
+    #exit-game-confirm-dialog .dialog-scrim {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.6);
+    }
+    .exit-confirm-box {
+      position: relative; z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      max-width: 320px; width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .exit-confirm-box h2 {
+      margin: 0 0 8px; color: var(--gold);
+      font-family: var(--font); font-size: 1.1rem;
+    }
+    .exit-confirm-box p {
+      margin: 0 0 20px; color: var(--text);
+      font-family: var(--font); font-size: 0.9rem;
+    }
+    .exit-confirm-actions { display: flex; gap: 10px; }
+    .exit-confirm-actions button {
+      flex: 1; min-height: 48px; min-width: 48px;
+      border-radius: var(--r-sm); font-family: var(--font);
+      font-size: 0.95rem; cursor: pointer;
+    }
+    #btn-exit-confirm-no {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    #btn-exit-confirm-yes {
+      background: var(--red); color: #fff; border: none;
+    }
+    #btn-exit-confirm-no:focus-visible,
+    #btn-exit-confirm-yes:focus-visible {
+      outline: 3px solid var(--gold); outline-offset: 2px;
+    }
     .more-options-item:hover { background: rgba(255,255,255,0.06); }
     .more-options-item:focus-visible { outline: 3px solid var(--gold); outline-offset: -2px; }
     .more-options-item .moi-icon { font-size: 1.1rem; width: 22px; text-align: center; }
@@ -2111,6 +2157,14 @@
             Best streak so far: 0 days.
           </div>
 
+          <!-- Daily Check-in — 24hr rolling cooldown, Firebase server
+               timestamp based (device clock cheat-proof). -->
+          <button id="btn-daily-checkin" class="wallet-shop-link" style="cursor:pointer;opacity:1;"
+            aria-label="Daily check-in. Double tap to claim your Crowns."
+            onclick="performDailyCheckIn()">
+            <span id="daily-checkin-label">🔥 Daily Check-in — Loading…</span>
+          </button>
+
           <!-- Daily Challenge — Reward System Plan section 4.
                Rotates daily, no penalty for missing it. -->
           <div class="wallet-highlight" id="wallet-daily-challenge" style="border-style:solid;">
@@ -2302,7 +2356,241 @@
     </div>
   </div>
 
+  <!-- Accidental system back button (mid-game) confirmation —
+       "confirmExitGame()" isse control karta hai, index.html ke
+       naye JS section mein. -->
+  <div id="exit-game-confirm-dialog"
+    role="alertdialog" aria-modal="true"
+    aria-labelledby="exit-confirm-title" aria-describedby="exit-confirm-desc"
+    inert aria-hidden="true">
+
+    <div class="dialog-scrim" aria-hidden="true" onclick="confirmExitGameNo()"></div>
+
+    <div class="exit-confirm-box">
+      <h2 id="exit-confirm-title">Exit game?</h2>
+      <p id="exit-confirm-desc">Your current match progress will be lost.</p>
+      <div class="exit-confirm-actions">
+        <button id="btn-exit-confirm-no"
+          aria-label="Stay in game. Cancel exit."
+          onclick="confirmExitGameNo()">Stay</button>
+        <button id="btn-exit-confirm-yes"
+          aria-label="Exit to dashboard. Progress will be lost."
+          onclick="confirmExitGameYes()">Exit</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+  /* ════════════════════════════════════════════
+     BACK BUTTON / MODAL HISTORY STACK MANAGER
+     (Navigation fix — system back button ab kisi
+     bhi khule modal/drawer/panel ko band karega,
+     poori app ko exit nahi karega)
+
+     Problem: Pehle jab koi drawer, "More Options"
+     dialog, ya About screen khula hota tha, browser
+     history mein koi extra entry push hi nahi hoti
+     thi. Is wajah se Android/system back button seedha
+     app se bahar (ya WebView ki default history se
+     bahar) chala jaata tha, aur khula hua panel band
+     hone ki bajaye poori app exit ho jaati thi.
+
+     Fix: Jab bhi koi modal/drawer/dialog/panel khulta
+     hai, hum history.pushState() se ek extra history
+     entry add karte hain (sirf pehli baar jab kuch bhi
+     khula na ho — 0 se 1 modal). Ab system back button
+     pehle usi entry ko "pop" karega — hum us popstate
+     event ko sunte hain aur khud panel band kar dete
+     hain, history ko khud consume nahi karne dete
+     (isliye app exit nahi hoti). Jab koi bhi modal khula
+     NA ho, back button apna NORMAL kaam karega (app
+     minimize / default Android behaviour) — usme hum
+     kuch intercept nahi karte.
+
+     __modalStack: currently open panel-ids ki list
+     (stack ke taur par — sabse aakhri wala sabse upar,
+     usi ko pehle band karna hai).
+
+     IMPORTANT — "switch" case (More Options ke andar se
+     Settings/About/My Stats/Achievements khulna): wahan
+     code "closeMoreOptions(); openDrawer('settings');"
+     jaisa CHAINED call karta hai (ek hi tap mein close +
+     open dono, turant). history.back() ASYNC hota hai —
+     agar turant baad pushState() chala jaaye back() ke
+     poora hone se PEHLE, to history galat state mein chali
+     jaati thi (real bug tha — back button seedha app exit
+     kar deta tha Settings/About/My Stats mein).
+     Fix: modalHistoryPop() history.back() FAURAN call nahi
+     karta — ek setTimeout(0) se "agle tick" tak defer karta
+     hai. Agar usi tick mein turant koi naya panel khul jaaye
+     (modalHistoryPush), to wo pending back() ko CANCEL kar
+     ke sirf history.replaceState() karta hai — matlab
+     "switch" ek hi history step rehta hai, koi race hi nahi
+     banti. Agar sach mein kuch nahi khulta (genuine close),
+     to timer fire ho ke back() normally chalta hai.
+
+     Note: Ye sirf DRAWERS / DIALOGS / About-screen ko
+     cover karta hai — trump selector, gameover overlay,
+     aur 99-choice overlay (10/Ace pick) jaisi GAMEPLAY
+     ke doraan zaroori overlays isme SHAAMIL nahi hain,
+     kyunki unhe back button se beech mein band karna
+     game state ko galat halat mein chhod sakta hai.
+     Agar in overlays ke liye bhi alag se back-button
+     handling chahiye ho, wo agla, separate kaam hoga.
+     ════════════════════════════════════════════ */
+  window.__modalStack = [];
+  window.__suppressPopstate = false;
+  window.__pendingPopTimer = null;
+
+  /* Har open* function ke AAKHIR mein call karo. */
+  function modalHistoryPush(modalId) {
+    const wasEmpty = window.__modalStack.length === 0;
+    window.__modalStack.push(modalId);
+
+    if (window.__pendingPopTimer !== null) {
+      /* Same-tick "switch": abhi abhi ek panel close hua tha aur
+         uska history.back() pending tha (agle tick ke liye scheduled),
+         lekin turant naya panel khul gaya. Ye asal mein REPLACE hai,
+         do alag steps nahi — pending back() cancel karo, sirf state
+         replace karo. Isse back()+pushState() ki race hi nahi banti. */
+      clearTimeout(window.__pendingPopTimer);
+      window.__pendingPopTimer = null;
+      history.replaceState({ modalStack: window.__modalStack.slice() }, '');
+      return;
+    }
+
+    if (wasEmpty) {
+      /* Base app state se "1 modal open" state mein ja rahe hain
+         — ek nayi history entry chahiye taaki back button ise
+         consume kar sake. */
+      history.pushState({ modalStack: window.__modalStack.slice() }, '');
+    } else {
+      /* Pehle se koi modal khula tha (nested case) — sirf state
+         object update karo, nayi entry mat banao. */
+      history.replaceState({ modalStack: window.__modalStack.slice() }, '');
+    }
+  }
+
+  /* Har close* function ke AAKHIR mein call karo, JAB close user
+     ke apne tap (X / back-arrow button) se hua ho — back button se
+     NAHI (us case mein browser khud hi history entry consume kar
+     chuka hota hai, dobara consume nahi karna). */
+  function modalHistoryPop(modalId) {
+    const idx = window.__modalStack.lastIndexOf(modalId);
+    if (idx !== -1) window.__modalStack.splice(idx, 1);
+
+    if (window.__modalStack.length > 0) {
+      /* Abhi bhi koi aur panel khula hai (nested case) — turant
+         state object update karo, history depth mat badlo. */
+      history.replaceState({ modalStack: window.__modalStack.slice() }, '');
+      return;
+    }
+
+    /* Stack khaali ho gaya — lekin history.back() FAURAN mat karo.
+       Agle tick tak wait karo (setTimeout 0) — agar isi synchronous
+       click ke andar koi naya panel turant khul gaya (chained
+       close+open), to modalHistoryPush() ye pending timer dekh kar
+       cancel kar dega aur sirf replace karega. Agar sach mein kuch
+       nahi khulta, to ye timer fire hoga aur history entry consume
+       ho jayegi. */
+    window.__pendingPopTimer = setTimeout(function () {
+      window.__pendingPopTimer = null;
+      window.__suppressPopstate = true;
+      history.back();
+    }, 0);
+  }
+
+  window.addEventListener('popstate', function () {
+    if (window.__suppressPopstate) {
+      /* Ye popstate hamare apne history.back() call ki wajah se
+         aaya hai (modalHistoryPop se) — already handle ho chuka,
+         bas flag reset karo. */
+      window.__suppressPopstate = false;
+      return;
+    }
+
+    if (window.__modalStack.length === 0) {
+      /* Koi modal khula nahi hai — kuch intercept mat karo,
+         Android ko apna normal back behaviour karne do
+         (app minimize / exit). */
+      return;
+    }
+
+    /* Asli system back button press — sabse upar wala modal band
+       karo, is baar history.back() call KIYE bina (browser ne khud
+       hi navigate kar diya hai). */
+    const topModalId = window.__modalStack.pop();
+    closeTopModalById(topModalId);
+  });
+
+  /* modalId string dekh kar sahi close function ko fromBackButton=true
+     ke saath call karta hai (taaki wo dobara history.back() na kare). */
+  function closeTopModalById(modalId) {
+    if (modalId === 'more-options') { closeMoreOptions(true); }
+    else if (modalId === 'about') { closeAbout(true); }
+    else if (modalId === 'history99') { closeHistory99(true); }
+    else if (modalId.indexOf('drawer:') === 0) { closeDrawer(modalId.slice(7), true); }
+    else if (modalId === 'game:courtpiece' || modalId === 'game:99') { confirmExitGame(modalId); }
+  }
+
+  /* ════════════════════════════════════════════
+     ACCIDENTAL BACK BUTTON MID-GAME — confirmation dialog
+     (Court Piece aur 99 dono). System back button galti se
+     dab jaaye to seedha match chhod ke bahar nahi nikalna —
+     ek "Exit game?" confirm dialog dikhega. "Stay" dabao to
+     wapas game mein, "Exit" dabao to dashboard pe.
+
+     Jab confirmExitGame() call hota hai (popstate se, back
+     button ki wajah se), browser ne pehle hi history se ek
+     kadam wapas kar liya hota hai — isliye yahan turant
+     modalHistoryPush() se history "re-arm" karte hain taaki
+     AGLI baar bhi back button intercept ho, chahe user "Stay"
+     dabaye ya kuch na kare. ════════════════════════════════════════════ */
+  function confirmExitGame(modalId) {
+    modalHistoryPush(modalId);
+    window.__pendingExitGameId = modalId;
+
+    const dialog = document.getElementById('exit-game-confirm-dialog');
+    dialog.removeAttribute('inert');
+    dialog.removeAttribute('aria-hidden');
+    dialog.classList.add('open');
+    setMainScreenInert(true);
+    announce('Exit game? Your current match progress will be lost.');
+    setTimeout(() => document.getElementById('btn-exit-confirm-no').focus(), 100);
+  }
+
+  function hideExitGameConfirmDialog() {
+    const dialog = document.getElementById('exit-game-confirm-dialog');
+    dialog.classList.remove('open');
+    setMainScreenInert(false);
+    setTimeout(() => {
+      dialog.setAttribute('inert', '');
+      dialog.setAttribute('aria-hidden', 'true');
+    }, 200);
+  }
+
+  function confirmExitGameYes() {
+    const modalId = window.__pendingExitGameId;
+    hideExitGameConfirmDialog();
+    window.__pendingExitGameId = null;
+
+    if (modalId === 'game:courtpiece') {
+      if (document.getElementById('screen-game').classList.contains('active')) {
+        quitGame();
+      } else {
+        backToDashboard();
+      }
+    } else if (modalId === 'game:99') {
+      backToDashboardFrom99();
+    }
+  }
+
+  function confirmExitGameNo() {
+    hideExitGameConfirmDialog();
+    window.__pendingExitGameId = null;
+    announce('Staying in game.');
+  }
+
   /* ════════════════════════════════════════════
      FIREBASE INITIALIZATION
      Real config from "Card Game" Firebase project.
@@ -4099,6 +4387,102 @@
     });
   }
 
+  /* ════════════════════════════════════════════
+     DAILY CHECK-IN — Wallet mein alag button, 24-ghante
+     ROLLING cooldown (calendar-date NAHI, exact last-claim-time
+     se 24h). Firebase server timestamp (request.time) use hota
+     hai — device ki local clock badal ke cheat karna kaam nahi
+     karega, kyunki security rule server ke apne time se compare
+     karta hai, client ke bheje hue time se nahi.
+
+     Reward: streakMilestoneBonus() wahi function reuse karta hai
+     jo match-play streak ke liye already bana hua hai (Day1:+2,
+     Day3:+5, Day7:+10). Day 7 poora hone ke baad streak wapas
+     Day 1 se shuru hota hai (Snapchat-style cycle).
+     ════════════════════════════════════════════ */
+  function updateCheckInButton(lastCheckInAt, checkInStreak) {
+    const btn   = document.getElementById('btn-daily-checkin');
+    const label = document.getElementById('daily-checkin-label');
+    if (!btn || !label) return;
+
+    const nowMs = Date.now();
+    const lastMs = lastCheckInAt ? lastCheckInAt.toMillis() : null;
+    const elapsedMs = lastMs ? nowMs - lastMs : Infinity;
+    const cooldownMs = 24 * 60 * 60 * 1000;
+
+    if (elapsedMs >= cooldownMs) {
+      const nextStreak = (!lastMs || elapsedMs > 48 * 60 * 60 * 1000 || checkInStreak >= 7)
+        ? 1 : checkInStreak + 1;
+      const reward = streakMilestoneBonus(nextStreak) || 2;
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      label.textContent = '🔥 Daily Check-in — Claim ' + reward + ' Crowns (Day ' + nextStreak + ')';
+      btn.setAttribute('aria-label', 'Daily check-in. ' + reward + ' Crowns available. Double tap to claim.');
+    } else {
+      const remainingMs = cooldownMs - elapsedMs;
+      const hrs = Math.floor(remainingMs / (60 * 60 * 1000));
+      const mins = Math.floor((remainingMs % (60 * 60 * 1000)) / 60000);
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      label.textContent = '⏳ Next check-in in ' + hrs + 'h ' + mins + 'm';
+      btn.setAttribute('aria-label', 'Daily check-in. Already claimed. Next check-in available in ' + hrs + ' hours ' + mins + ' minutes.');
+    }
+  }
+
+  function performDailyCheckIn() {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) { announce('Sign in to claim your Daily Check-in.'); return; }
+
+    const btn = document.getElementById('btn-daily-checkin');
+    if (btn) btn.disabled = true;
+
+    const userRef = db.collection('users').doc(uid);
+    db.runTransaction((tx) => {
+      return tx.get(userRef).then((doc) => {
+        const d = doc.exists ? doc.data() : {};
+        const lastCheckInAt = d.lastCheckInAt || null;
+        const nowMs = Date.now();
+        const cooldownMs = 24 * 60 * 60 * 1000;
+
+        if (lastCheckInAt && (nowMs - lastCheckInAt.toMillis()) < cooldownMs) {
+          throw new Error('too-soon');
+        }
+
+        const prevStreak = d.checkInStreak || 0;
+        const gapMs = lastCheckInAt ? nowMs - lastCheckInAt.toMillis() : Infinity;
+        let newStreak;
+        if (!lastCheckInAt || gapMs > 48 * 60 * 60 * 1000 || prevStreak >= 7) {
+          newStreak = 1; /* pehli baar, ek din miss hua, ya 7-din cycle poora — fresh shuru */
+        } else {
+          newStreak = prevStreak + 1;
+        }
+
+        const reward = streakMilestoneBonus(newStreak) || 2;
+
+        tx.set(userRef, {
+          crowns: (d.crowns || 0) + reward,
+          lastCheckInAt: firebase.firestore.FieldValue.serverTimestamp(),
+          checkInStreak: newStreak
+        }, { merge: true });
+
+        return { newStreak, reward };
+      });
+    }).then((result) => {
+      playSound('coin');
+      announce('Daily Check-in complete! Day ' + result.newStreak + ' streak. Plus ' + result.reward + ' Crowns.');
+      loadWalletData();
+    }).catch((err) => {
+      if (btn) btn.disabled = false;
+      if (err.message === 'too-soon') {
+        announce('Already checked in. Come back later.');
+        loadWalletData();
+      } else {
+        console.error('Check-in error:', err);
+        announce("Couldn't complete check-in. Check your connection.");
+      }
+    });
+  }
+
   /* Wallet panel khulte hi balance, Cups, aur recent history load
      karta hai. Plain DOM text update — koi extra announcement nahi,
      openDrawer() pehle se 'Wallet drawer opened' bol chuka hoga. */
@@ -4132,6 +4516,12 @@
       if (cups99El) cups99El.textContent = String(d.cups99 || 0);
       const walletBtn = document.getElementById('btn-wallet');
       if (walletBtn) walletBtn.setAttribute('aria-label', 'Wallet. ' + (d.crowns || 0) + ' Crowns. Double tap to open.');
+
+      updateCheckInButton(d.lastCheckInAt || null, d.checkInStreak || 0);
+      if (window.__checkinCountdownInterval) clearInterval(window.__checkinCountdownInterval);
+      window.__checkinCountdownInterval = setInterval(() => {
+        updateCheckInButton(d.lastCheckInAt || null, d.checkInStreak || 0);
+      }, 60000);
 
       /* Daily Challenge — agar aaj ke liye abhi tak koi challenge
          nahi chuna gaya (naya user ya pehla match abhi tak nahi
@@ -4198,17 +4588,17 @@
      is always owned — cannot be bought or lost.
      ════════════════════════════════════════════ */
   const CARD_BACK_CATALOG = [
-    { id: 'classic',    name: 'Classic Blue',  price: 0,  cls: '' },
-    { id: 'royalgold',  name: 'Royal Gold',    price: 15, cls: 'cardback-royalgold' },
-    { id: 'rubyred',    name: 'Ruby Red',      price: 15, cls: 'cardback-rubyred' },
-    { id: 'emerald',    name: 'Emerald Green', price: 20, cls: 'cardback-emerald' },
-    { id: 'midnight',   name: 'Midnight Black',price: 25, cls: 'cardback-midnight' }
+    { id: 'classic',    name: 'Classic Blue',  price: 0,    cls: '' },
+    { id: 'royalgold',  name: 'Royal Gold',    price: 200,  cls: 'cardback-royalgold' },
+    { id: 'rubyred',    name: 'Ruby Red',      price: 250,  cls: 'cardback-rubyred' },
+    { id: 'emerald',    name: 'Emerald Green', price: 700,  cls: 'cardback-emerald' },
+    { id: 'midnight',   name: 'Midnight Black',price: 3000, cls: 'cardback-midnight' }
   ];
   const BADGE_CATALOG = [
-    { id: 'champion',   name: 'Champion',    price: 10, emoji: '🏅' },
-    { id: 'onfire',     name: 'On Fire',     price: 10, emoji: '🔥' },
-    { id: 'cardmaster', name: 'Card Master', price: 15, emoji: '🎴' },
-    { id: 'starplayer', name: 'Star Player', price: 20, emoji: '⭐' }
+    { id: 'champion',   name: 'Champion',    price: 150,  emoji: '🏅' },
+    { id: 'onfire',     name: 'On Fire',     price: 180,  emoji: '🔥' },
+    { id: 'cardmaster', name: 'Card Master', price: 650,  emoji: '🎴' },
+    { id: 'starplayer', name: 'Star Player', price: 3000, emoji: '⭐' }
   ];
 
   let equippedCardBackId = 'classic';
@@ -4645,6 +5035,7 @@
       document.getElementById('btn-launch-courtpiece').focus();
       announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
     }, 150);
+    modalHistoryPop('game:courtpiece');
   }
 
   function launchCourtPiece() {
@@ -4654,6 +5045,7 @@
       document.getElementById('shuffle-title').focus();
       announce('Court Piece. Tap Shuffle and Deal to begin.');
     }, 300);
+    modalHistoryPush('game:courtpiece');
   }
 
   /* ════════════════════════════════════════════
@@ -4667,6 +5059,7 @@
       document.getElementById('shuffle-title-99').focus();
       announce('99. Choose number of robot opponents, then tap Start Game.');
     }, 300);
+    modalHistoryPush('game:99');
   }
 
   function start99Game() {
@@ -4702,6 +5095,7 @@
       document.getElementById('btn-launch-99').focus();
       announce('Back to dashboard. 99 button focused.');
     }, 150);
+    modalHistoryPop('game:99');
   }
 
   /* Inert helper scoped ONLY to screen-game-99 — Court Piece ke
@@ -4745,9 +5139,10 @@
       const backBtn = drawer.querySelector('.drawer-back-btn');
       if (backBtn) backBtn.focus();
     }, 340);
+    modalHistoryPush('history99');
   }
 
-  function closeHistory99() {
+  function closeHistory99(fromBackButton) {
     const drawer = document.getElementById('drawer-history-99');
     drawer.classList.remove('open');
     setGame99ScreenInert(false);
@@ -4757,6 +5152,7 @@
     }, 350);
     announce('History panel closed.');
     setTimeout(() => document.getElementById('btn-history-99').focus(), 50);
+    if (!fromBackButton) modalHistoryPop('history99');
   }
 
   /* ════════════════════════════════════════════
@@ -5274,9 +5670,10 @@
     setTimeout(() => {
       dialog.querySelector('.more-options-item').focus();
     }, 100);
+    modalHistoryPush('more-options');
   }
 
-  function closeMoreOptions() {
+  function closeMoreOptions(fromBackButton) {
     const dialog = document.getElementById('more-options-dialog');
     dialog.classList.remove('open');
     setMainScreenInert(false);
@@ -5285,6 +5682,7 @@
       dialog.setAttribute('aria-hidden', 'true');
     }, 200);
     setTimeout(() => document.getElementById('btn-more-options').focus(), 50);
+    if (!fromBackButton) modalHistoryPop('more-options');
   }
 
   function openAbout() {
@@ -5294,12 +5692,14 @@
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-about').classList.add('active');
     announce('About screen opened. App version ' + CURRENT_APP_VERSION + '.');
+    modalHistoryPush('about');
   }
 
-  function closeAbout() {
+  function closeAbout(fromBackButton) {
     document.getElementById('screen-about').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
     announce('Back to dashboard.');
+    if (!fromBackButton) modalHistoryPop('about');
   }
 
   /* ════════════════════════════════════════════
@@ -5318,7 +5718,47 @@
       if (s === 'granted') registerForPushNotifications();
     });
     announce('Card Game. Dashboard loaded. Choose a game to play.');
+    initHardwareBackButton();
   });
+
+  /* ════════════════════════════════════════════
+     HARDWARE BACK BUTTON — dashboard pe "Press again to
+     exit" pattern (jaise WhatsApp/Instagram wagera mein
+     hota hai). Ye sirf NATIVE APK mein kaam karta hai —
+     browser tab mein "back button" jaisi cheez OS-level pe
+     exist hi nahi karti, isliye wahan ye function kuch nahi
+     karta, purana popstate-based system hi chalta rehta hai
+     (jo browser mein bhi sahi kaam karta hai).
+
+     @capacitor/app ka 'backButton' listener register karte
+     hi Capacitor apna DEFAULT back-button behaviour (khud
+     goBack()/exit()) band kar deta hai — humein khud decide
+     karna padta hai. canGoBack true ho (matlab koi modal/
+     drawer/game history mein khula hai) to hum sirf
+     history.back() call karte hain — usi se hamara existing
+     popstate listener chal jaata hai, kuch naya nahi karna
+     padta. canGoBack false ho (matlab dashboard pe hain,
+     kuch khula nahi) tabhi ye "press again" logic chalti hai. */
+  let __lastDashboardBackPressAt = 0;
+
+  function initHardwareBackButton() {
+    if (!isNativeApp() || !window.Capacitor.Plugins.App) return;
+
+    window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        history.back();
+        return;
+      }
+
+      const now = Date.now();
+      if (now - __lastDashboardBackPressAt < 2000) {
+        window.Capacitor.Plugins.App.exitApp();
+      } else {
+        __lastDashboardBackPressAt = now;
+        announce('Press back again to exit.');
+      }
+    });
+  }
 
   /* ════════════════════════════════════════════
      SETTINGS TOGGLE (legacy alias — now uses drawer)
@@ -5442,6 +5882,7 @@
       document.getElementById('btn-launch-courtpiece').focus();
       announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
     }, 150);
+    modalHistoryPop('game:courtpiece');
   }
 
   /* ════════════════════════════════════════════
@@ -6706,12 +7147,19 @@
       const backBtn = drawer.querySelector('.drawer-back-btn');
       if (backBtn) backBtn.focus();
     }, 340);
+
+    modalHistoryPush('drawer:' + type);
   }
 
-  function closeDrawer(type) {
+  function closeDrawer(type, fromBackButton) {
     const drawer = document.getElementById('drawer-' + type);
     drawer.classList.remove('open');
     setMainScreenInert(false);
+
+    if (type === 'wallet' && window.__checkinCountdownInterval) {
+      clearInterval(window.__checkinCountdownInterval);
+      window.__checkinCountdownInterval = null;
+    }
 
     /* Re-apply inert after transition so TalkBack cannot reach closed drawer */
     setTimeout(() => {
@@ -6743,6 +7191,8 @@
     };
     const t = triggers[type];
     if (t) setTimeout(() => t.focus(), 50);
+
+    if (!fromBackButton) modalHistoryPop('drawer:' + type);
   }
   </script>
 
