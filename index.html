@@ -2725,7 +2725,7 @@
      Fallback sirf tab chalta hai jab version.json fetch abhi tak
      complete na hua ho (bahut rare, app khulte hi ~1.5 sec ke andar
      ho jaata hai). */
-  const APK_DOWNLOAD_URL_FALLBACK = 'https://github.com/aliabbas7362-a11y/Ali-access-lab-/releases/download/v1.6.0-build79/card-game-v1.6.0.apk';
+  const APK_DOWNLOAD_URL_FALLBACK = 'https://github.com/aliabbas7362-a11y/Ali-access-lab-/releases/download/v1.6.0-build1/card-game-v1.6.0.apk';
   function currentApkUrl() {
     return latestApkUrl || APK_DOWNLOAD_URL_FALLBACK;
   }
@@ -4067,13 +4067,22 @@
       const data = await res.json();
       if (!data || !data.version || !data.apk_url) return;
 
+      /* PEHLE yeh yahan neeche if(isNewerVersion) ke ANDAR thi —
+         matlab agar installed APK already version.json jitna ya
+         usse naya hota, latestApkUrl kabhi set hi nahi hota, aur
+         Share button hardcoded APK_DOWNLOAD_URL_FALLBACK (purana
+         link) bhejta rehta — bilkul wahi bug jo abhi mila. AB:
+         version.json se mila apk_url HAMESHA turant store hota hai,
+         "newer hai ya nahi" ka check sirf banner dikhane ke liye
+         hai, link store karne ke liye nahi. */
+      latestApkUrl = data.apk_url;
+
       /* Don't keep nagging if user already dismissed this exact version */
       const dismissed = localStorage.getItem(UPDATE_DISMISSED_KEY);
       if (dismissed === data.version) return;
 
       const localVersion = await installedAppVersion();
       if (isNewerVersion(data.version, localVersion)) {
-        latestApkUrl = data.apk_url;
         showUpdateBanner(data.version, data.notes || '');
       }
     } catch (err) {
