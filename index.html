@@ -4470,6 +4470,18 @@
     }).then((result) => {
       playSound('coin');
       announce('Daily Check-in complete! Day ' + result.newStreak + ' streak. Plus ' + result.reward + ' Crowns.');
+
+      /* awardCrowns() jaisa hi pattern — history mein ek row daalo.
+         Ye ALAG write hai (crownHistory subcollection ki apni rule
+         hai, users/{uid} doc wali rule se independent). */
+      db.collection('users').doc(uid).collection('crownHistory').add({
+        amount: result.reward,
+        reason: 'Daily Check-in — Day ' + result.newStreak + ' streak',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch((err) => {
+        console.error('Crown history save error (check-in):', err);
+      });
+
       loadWalletData();
     }).catch((err) => {
       if (btn) btn.disabled = false;
