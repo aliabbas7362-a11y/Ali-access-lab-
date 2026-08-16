@@ -3804,8 +3804,43 @@
       });
       if (list.length > 20) list.length = 20; /* sirf recent 20 rakho */
       localStorage.setItem('push_notif_history', JSON.stringify(list));
+
+      /* ── BUG FIX — panel "No notifications" dikhata tha jabke
+         history mein entry aa chuki hoti thi ──
+         Agar notifications drawer is waqt khula hai, user turant
+         dekh raha hai, panel ko turant dobara render karo — usko
+         close/reopen nahi karna padega. Agar drawer band hai,
+         unread counter badhao taaki bell icon ka badge/label
+         sahi count dikhaye jab user baad mein dekhe. */
+      const drawer = document.getElementById('drawer-notifications');
+      if (drawer && drawer.classList.contains('open')) {
+        renderNotificationHistory();
+      } else {
+        const unread = parseInt(localStorage.getItem('push_notif_unread') || '0', 10) + 1;
+        localStorage.setItem('push_notif_unread', String(unread));
+        updateNotifBellBadge();
+      }
     } catch (e) {
       console.log('Could not save notification history:', e.message);
+    }
+  }
+
+  /* Bell icon ke upar red dot + aria-label ko unread count ke
+     hisaab se update karta hai. Pehle yeh HTML/CSS mein tha lekin
+     JS se kabhi chala hi nahi jata tha — bell hamesha "No new
+     notifications" bolta rehta tha chahe kuch bhi ho. */
+  function updateNotifBellBadge() {
+    const badge = document.getElementById('notif-badge');
+    const btn = document.getElementById('btn-notifications');
+    if (!badge || !btn) return;
+    let unread = 0;
+    try { unread = parseInt(localStorage.getItem('push_notif_unread') || '0', 10) || 0; } catch (e) { unread = 0; }
+    if (unread > 0) {
+      badge.classList.add('visible');
+      btn.setAttribute('aria-label', 'Notifications. ' + unread + (unread === 1 ? ' new notification.' : ' new notifications.'));
+    } else {
+      badge.classList.remove('visible');
+      btn.setAttribute('aria-label', 'Notifications. No new notifications.');
     }
   }
 
@@ -3816,6 +3851,10 @@
     try {
       list = JSON.parse(localStorage.getItem('push_notif_history') || '[]');
     } catch (e) { list = []; }
+
+    /* Panel dekh liya gaya — unread badge clear karo. */
+    localStorage.setItem('push_notif_unread', '0');
+    updateNotifBellBadge();
 
     if (list.length === 0) {
       container.innerHTML =
@@ -3852,28 +3891,27 @@
     return div.innerHTML;
   }
 
-  async function registerForPushNotifications() {
-    if (!isNativeApp()) return;
+  /* ── BUG FIX — race condition ──
+     Pehle yeh 4 listeners registerForPushNotifications() ke ANDAR,
+     permission-check ke baad lagte the — matlab app boot pe sirf
+     tab lagte jab permission pehle se granted ho, aur woh bhi ek
+     async await ke baad. Iske wajah se: tray notification tap karke
+     app cold-open hone par, agar user turant panel khol le, listener
+     abhi tak lagta hi nahi hota, history save hone mein der ho jaati.
+
+     AB: yeh apna alag function hai, jo app boot pe SABSE PEHLE,
+     permission-check se bhi pehle call hota hai (dekho INIT block).
+     Listener lagane ke liye permission ki zaroorat nahi hoti — sirf
+     register() call (neeche wale function mein) ke liye hoti hai.
+     window.__pushListenersAttached guard se duplicate listeners
+     nahi lagte agar yeh function dobara call ho jaye. */
+  async function attachPushListeners() {
+    if (!isNativeApp() || window.__pushListenersAttached) return;
     try {
       const { PushNotifications } = window.Capacitor.Plugins;
-      let permStatus = await PushNotifications.checkPermissions();
-      if (permStatus.receive === 'prompt') {
-        permStatus = await PushNotifications.requestPermissions();
-      }
-      if (permStatus.receive !== 'granted') {
-        localStorage.setItem('push_reg_status', 'permission_denied');
-        return;
-      }
+      if (!PushNotifications) return;
+      window.__pushListenersAttached = true;
 
-      /* ── BUG FIX ──
-         Pehle sirf register() call hota tha, uska result kabhi
-         suna hi nahi jata tha. register() khud sirf "registration
-         shuru karo" bolta hai — asli success/failure ek ALAG,
-         async event ("registration" / "registrationError") se
-         aata hai. Listeners register() se PEHLE lagana zaroori
-         hai, warna result miss ho jata hai. Ab result localStorage
-         mein save karte hain taaki Settings se check kiya ja sake
-         (koi console/DevTools ki zaroorat nahi). */
       await PushNotifications.addListener('registration', (token) => {
         localStorage.setItem('push_reg_status', 'success');
         localStorage.setItem('push_reg_detail', token.value);
@@ -3911,7 +3949,28 @@
         const n = action.notification;
         saveNotificationToHistory(n.title, n.body);
       });
+    } catch (err) {
+      console.log('attachPushListeners failed:', err.message);
+    }
+  }
 
+  async function registerForPushNotifications() {
+    if (!isNativeApp()) return;
+    try {
+      const { PushNotifications } = window.Capacitor.Plugins;
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+      if (permStatus.receive !== 'granted') {
+        localStorage.setItem('push_reg_status', 'permission_denied');
+        return;
+      }
+
+      /* Listeners ab yahan nahi lagte — attachPushListeners() unhe
+         boot pe hi laga chuka hota hai (ya yahan safety-net ke
+         taur pe, agar kisi wajah se boot pe attach nahi ho paya). */
+      await attachPushListeners();
       await PushNotifications.register();
     } catch (err) {
       localStorage.setItem('push_reg_status', 'exception');
@@ -5734,7 +5793,22 @@
     /* Notification permission is NOT requested automatically on load.
        User can enable it manually via the bell icon > notification panel.
        Lekin agar pehle se granted hai, to FCM registration refresh kar
-       do (silently) — token expire/rotate ho sakta hai. */
+       do (silently) — token expire/rotate ho sakta hai.
+
+       BUG FIX — reload-tap race condition:
+       Jab user ek tray notification tap karke app kholta hai, Android
+       activity ko fresh reload karta hai — yeh poora boot block dobara
+       chalta hai. Pehle listeners sirf getNotificationPermissionState()
+       ke async .then() ke ANDAR (registerForPushNotifications() ke
+       through) lagte the — us await ke poora hone tak agar user turant
+       bell/panel pe pahunch jaye, history abhi save hi nahi hui hoti,
+       panel "No notifications" dikhata tha. AB: listeners (jo history
+       save karte hain) permission-check se PEHLE, turant attach hote
+       hain — listener lagane ke liye permission ki zaroorat nahi,
+       sirf register() call ke liye hoti hai. Race window ab JS ke
+       ek tick jitna reh gaya hai. */
+    updateNotifBellBadge();
+    attachPushListeners();
     getNotificationPermissionState().then((s) => {
       if (s === 'granted') registerForPushNotifications();
     });
