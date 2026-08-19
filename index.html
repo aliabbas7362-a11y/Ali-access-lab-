@@ -1187,65 +1187,25 @@
     <!-- SCROLLABLE BODY -->
     <div class="dash-body">
 
-      <!-- STREAK DISPLAY -->
-      <div id="dash-streak" role="text" aria-label="No streak yet. Play a game today to start one."
-        style="text-align:center;padding:6px 0;font-size:0.85rem;color:var(--gold);">
-        <span aria-hidden="true">🔥 <span id="dash-streak-count">0</span> din streak</span>
-      </div>
-
-      <!-- SHARE APP -->
-      <div style="padding:0 16px;margin-bottom:8px;">
-        <button class="btn btn-outline" style="width:100%;font-size:0.9rem;"
-          aria-label="Share this app with friends. Opens your device's share menu — WhatsApp, Telegram, SMS, or any app you choose."
-          onclick="shareApp()">
-          📤 Share App with Friends
-        </button>
-      </div>
-
       <!-- Greeting -->
       <div class="dash-greeting" aria-live="polite" id="dash-greeting">
         <div class="dash-greeting-name" id="dash-greeting-name">Welcome!</div>
         <div class="dash-greeting-sub">Choose a game to play</div>
       </div>
 
-      <!-- Crown of the Day — personal-best highlight, always
-           compares against your OWN past record, never other
-           players (Reward System Plan section 8). -->
-      <div class="dash-crown-highlight" id="dash-crown-highlight" style="display:none;"></div>
-
-      <!-- Game Selection -->
-      <div class="dash-section-label" aria-hidden="true">Games</div>
-      <div class="dash-game-grid" role="group" aria-label="Available games">
-
-        <!-- Court Piece -->
-        <button class="game-card"
-          id="btn-launch-courtpiece"
-          aria-label="Court Piece. Card game. Human versus 3 robots. Double tap to play."
-          onclick="launchCourtPiece()">
-          <div class="game-card-badge" aria-hidden="true">v1.0</div>
-          <div class="game-card-icon" aria-hidden="true">🃏</div>
-          <div class="game-card-name" aria-hidden="true">Court Piece</div>
+      <!-- GAME SELECTION MENU — entry point.
+           Court Piece / 99 / More Games cards pehle seedha
+           dashboard par the, ab ek dedicated menu (drawer-gameselect)
+           mein hain — "More Options" (3-dot Settings/About menu) se
+           bilkul alag cheez hai. Aage jab naye games aayenge, wahi
+           menu mein add honge, dashboard clutter nahi hoga. -->
+      <div style="padding:0 16px;margin-top:8px;">
+        <button class="btn" style="width:100%;font-size:1rem;padding:16px;"
+          id="btn-open-gameselect"
+          aria-label="Choose a game to play. Opens the game selection menu with Court Piece and 99."
+          onclick="openDrawer('gameselect')">
+          🎮 Choose a Game
         </button>
-
-        <!-- 99 -->
-        <button class="game-card"
-          id="btn-launch-99"
-          aria-label="99. Card game. Human versus configurable number of robots. Double tap to play."
-          onclick="launch99Game()">
-          <div class="game-card-badge" aria-hidden="true">v1.0</div>
-          <div class="game-card-icon" aria-hidden="true">🔢</div>
-          <div class="game-card-name" aria-hidden="true">99</div>
-        </button>
-
-        <!-- Coming Soon placeholder -->
-        <button class="game-card"
-          aria-label="More games coming soon. Not available yet."
-          aria-disabled="true" disabled>
-          <div class="game-card-badge soon" aria-hidden="true">Soon</div>
-          <div class="game-card-icon" aria-hidden="true">🎮</div>
-          <div class="game-card-name" aria-hidden="true">More Games</div>
-        </button>
-
       </div>
 
     </div><!-- /dash-body -->
@@ -2107,6 +2067,28 @@
           </form>
         </div>
 
+        <!-- STREAK — dashboard se yahan shift kiya gaya, taaki
+             dashboard clean rahe. IDs same rakhi hain isliye
+             renderStreakDisplay() / updateDashboardCrownHighlight()
+             mein koi JS change nahi karna pada. -->
+        <div id="dash-streak" role="text" aria-label="No streak yet. Play a game today to start one."
+          style="text-align:center;padding:20px 0 4px;font-size:0.95rem;color:var(--gold);border-top:1px solid #333;margin-top:20px;">
+          <span aria-hidden="true">🔥 <span id="dash-streak-count">0</span> din streak</span>
+        </div>
+        <div class="dash-crown-highlight" id="dash-crown-highlight" style="display:none;text-align:center;padding-bottom:8px;"></div>
+
+        <!-- INVITE A FRIEND — dashboard se yahan shift, aur
+             "Share App with Friends" se rename karke "Invite a
+             Friend" kar diya. Same shareApp() function, sirf
+             location aur naam badla. -->
+        <div style="padding:8px 0 0;">
+          <button class="btn btn-outline" style="width:100%;font-size:0.9rem;"
+            aria-label="Invite a friend. Opens your device's share menu — WhatsApp, Telegram, SMS, or any app you choose."
+            onclick="shareApp()">
+            📤 Invite a Friend
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -2316,6 +2298,67 @@
             <div class="notif-empty-icon" aria-hidden="true">🎖️</div>
             Sign in to track your Achievements.
           </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       GAME SELECTION MENU — dedicated menu (alag hai
+       "More Options" 3-dot menu se). Court Piece, 99,
+       aur "More Games" placeholder yahan hain, dashboard
+       se hata diye gaye taaki dashboard clean rahe. Aage
+       jab naye games aayenge, wahi is grid mein add honge.
+       ══════════════════════════════════════ -->
+  <div id="drawer-gameselect" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-gameselect-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeDrawer('gameselect')"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close game selection menu."
+          onclick="closeDrawer('gameselect')">&#8592;</button>
+        <span class="drawer-title" id="drawer-gameselect-title">Choose a Game</span>
+      </div>
+      <div class="drawer-body">
+
+        <div class="dash-game-grid" role="group" aria-label="Available games">
+
+          <!-- Court Piece -->
+          <button class="game-card"
+            id="btn-launch-courtpiece"
+            aria-label="Court Piece. Card game. Human versus 3 robots. Double tap to play."
+            onclick="closeGameSelectAndLaunch(launchCourtPiece)">
+            <div class="game-card-badge" aria-hidden="true">v1.0</div>
+            <div class="game-card-icon" aria-hidden="true">🃏</div>
+            <div class="game-card-name" aria-hidden="true">Court Piece</div>
+          </button>
+
+          <!-- 99 -->
+          <button class="game-card"
+            id="btn-launch-99"
+            aria-label="99. Card game. Human versus configurable number of robots. Double tap to play."
+            onclick="closeGameSelectAndLaunch(launch99Game)">
+            <div class="game-card-badge" aria-hidden="true">v1.0</div>
+            <div class="game-card-icon" aria-hidden="true">🔢</div>
+            <div class="game-card-name" aria-hidden="true">99</div>
+          </button>
+
+          <!-- Coming Soon placeholder -->
+          <button class="game-card"
+            aria-label="More games coming soon. Not available yet."
+            aria-disabled="true" disabled>
+            <div class="game-card-badge soon" aria-hidden="true">Soon</div>
+            <div class="game-card-icon" aria-hidden="true">🎮</div>
+            <div class="game-card-name" aria-hidden="true">More Games</div>
+          </button>
+
         </div>
 
       </div>
@@ -2660,21 +2703,52 @@
      STREAK COUNTER (Phase 5 — retention plan)
      Har match/game khatam hone par update hota hai (Court Piece
      aur 99 dono — koi bhi khela to streak count hota hai).
-     Purana localStorage-based, phone ki apni memory mein rehta
-     hai, koi server/internet nahi chahiye.
+
+     ── Firestore MIGRATION ──
+     Pehle localStorage mein tha (phone-only, koi account link
+     nahi). Ab users/{uid}.matchStreak / matchBestStreak /
+     lastMatchPlayedAt mein store hota hai — isliye SIRF
+     SIGNED-IN users ke liye kaam karta hai. Bina account ke
+     (offline) koi streak track nahi hoti — jaanbujh kar decision
+     hai. Signed-in hote hi (ya app boot par agar pehle se
+     signed-in hain) auth.onAuthStateChanged() streak Firestore
+     se load karta hai; sign-out par 0 pe reset hota hai.
      ════════════════════════════════════════════ */
-  let appStreak = parseInt(localStorage.getItem('cardgame_streak') || '0', 10) || 0;
-  let appLastPlayedDate = localStorage.getItem('cardgame_last_played') || null;
-  let appBestStreak = parseInt(localStorage.getItem('cardgame_best_streak') || '0', 10) || 0;
+  let appStreak = 0;
+  let appLastPlayedDate = null;
+  let appBestStreak = 0;
+
+  /* Sign-in hone par (ya boot par agar pehle se signed-in) yeh
+     Firestore se streak values local cache mein la deta hai.
+     auth.onAuthStateChanged() se call hota hai. */
+  function loadStreakFromCloud(uid) {
+    db.collection('users').doc(uid).get().then((doc) => {
+      const d = doc.exists ? doc.data() : {};
+      appStreak = d.matchStreak || 0;
+      appBestStreak = d.matchBestStreak || 0;
+      appLastPlayedDate = d.lastMatchPlayedAt
+        ? d.lastMatchPlayedAt.toDate().toDateString()
+        : null;
+      renderStreakDisplay();
+    }).catch((err) => {
+      console.log('loadStreakFromCloud failed:', err.message);
+    });
+  }
+
   /* Page load par turant dikhao — match khelne ka intezaar nahi
      karna (renderStreakDisplay function neeche define hai, lekin
      function declarations hoisted hoti hain isliye yahan call
-     karna safe hai). */
+     karna safe hai). Agar signed-in hain, loadStreakFromCloud()
+     (auth.onAuthStateChanged se) thodi der baad real value la
+     dega. */
   setTimeout(() => renderStreakDisplay(), 0);
   /* Return value: true agar yeh AAJ ka pehla match hai (Wallet ke
      "First match of the day" +2 Crown bonus ke liye use hota hai),
-     false agar aaj pehle bhi khela ja chuka hai. */
+     false agar aaj pehle bhi khela ja chuka hai YA signed-in nahi hai. */
   function updateAppStreak() {
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return false; /* signed-in nahi — streak track nahi hoti */
+
     const today = new Date().toDateString();
     if (appLastPlayedDate === today) return false; /* aaj already count ho chuka */
 
@@ -2685,13 +2759,21 @@
       appStreak = 1;                /* streak toot gayi ya pehli baar khela */
     }
     appLastPlayedDate = today;
-    localStorage.setItem('cardgame_streak', String(appStreak));
-    localStorage.setItem('cardgame_last_played', appLastPlayedDate);
 
     if (appStreak > appBestStreak) {
       appBestStreak = appStreak;
-      localStorage.setItem('cardgame_best_streak', String(appBestStreak));
     }
+
+    /* Background write — crowns/cups jaisa hi fire-and-forget
+       pattern, taaki match-khatam hone ka announcement Firestore
+       round-trip ke liye ruke na. */
+    db.collection('users').doc(uid).set({
+      matchStreak: appStreak,
+      matchBestStreak: appBestStreak,
+      lastMatchPlayedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch((err) => {
+      console.log('Streak save failed:', err.message);
+    });
 
     renderStreakDisplay();
     return true;
@@ -2805,7 +2887,33 @@
     }
   }
 
+  /* ── BUG FIX — streak stuck, kabhi 0 nahi hota tha ──
+     Pehle appStreak sirf updateAppStreak() ke andar recalculate
+     hota tha — jo SIRF match khatam hone par chalta hai. Sirf
+     dashboard dekhne se (bina khele) kabhi expiry check hi nahi
+     hota tha, isliye 5 din na khelne ke baad bhi purani value
+     dikhti rehti thi. Ab renderStreakDisplay() har baar (boot pe,
+     dashboard pe wapas aane pe) yeh check karta hai — agar aaj
+     ya kal nahi khela, streak 0 ho jata hai. Best streak (all-time
+     high) is se untouched rehta hai — filhal koi decision nahi
+     liya gaya ke usko chhedna hai, isliye wo apne default
+     "kabhi reset nahi hota" behavior mein hi hai. */
+  /* ── Firestore migration note ──
+     Yahan bhi 0 sirf DISPLAY ke liye hai — Firestore mein kabhi
+     "0" likhte hi nahi (jaise pehle localStorage mein bhi nahi
+     likhte the is case mein... ab to bilkul, sirf agla match
+     khelne par hi asli naya number save hota hai). */
+  function checkStreakExpiry() {
+    if (appStreak === 0 || !appLastPlayedDate) return;
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (appLastPlayedDate !== today && appLastPlayedDate !== yesterday) {
+      appStreak = 0;
+    }
+  }
+
   function renderStreakDisplay() {
+    checkStreakExpiry();
     const el = document.getElementById('dash-streak-count');
     const wrap = document.getElementById('dash-streak');
     if (!el || !wrap) return;
@@ -3750,7 +3858,19 @@
   /* ── Bug B fix: pehle sirf permission maangi jaati thi, lekin
      schedule() kabhi call hi nahi hota tha — matlab permission
      milne ke baad bhi koi notification kabhi aata hi nahi tha.
-     Yeh function asal mein ek daily reminder schedule karta hai. ── */
+     Yeh function asal mein ek daily reminder schedule karta hai.
+
+     ── Bug C fix (gap): pehle yeh sirf EK din aage ke liye
+     one-shot schedule hoti thi ("kal 8pm"). Sirf match khelne
+     ke baad hi dobara call hoti thi — isliye agar user ek din
+     bhi miss kar de, koi naya reminder kabhi schedule hi nahi
+     hota tha, system hamesha ke liye chup ho jata tha. Ab
+     `schedule.on` mein sirf hour/minute diya hai (koi specific
+     date nahi) — Capacitor isko khud-ba-khud HAR DIN us waqt
+     repeat karta hai, ek hi baar schedule karne se. Ab yeh
+     permanently chalta rahega jab tak user notifications band
+     na kare — chahe woh 1 din miss kare ya 10 din, reminder
+     rukega nahi. ── */
   async function scheduleDailyReminder() {
     if (!isNativeApp()) return;
     try {
@@ -3761,17 +3881,15 @@
       /* Purana reminder cancel karo (agar tha), taaki duplicate na bane. */
       await LocalNotifications.cancel({ notifications: [{ id: 100 }] });
 
-      /* Kal shaam 8 baje ke liye naya schedule karo. */
-      const tomorrow8pm = new Date();
-      tomorrow8pm.setDate(tomorrow8pm.getDate() + 1);
-      tomorrow8pm.setHours(20, 0, 0, 0);
-
+      /* Har din shaam 8 baje repeat — sirf hour/minute diya hai,
+         koi date nahi, isliye yeh EK BAAR schedule karne se
+         hamesha ke liye daily chalta rahega. */
       await LocalNotifications.schedule({
         notifications: [{
           id: 100,
-          title: 'Aaj Card Game khelo! 🎴',
-          body: 'Tumhari streak: ' + (appStreak || 1) + ' din. Kal miss mat karo!',
-          schedule: { at: tomorrow8pm },
+          title: 'Card Game 🎴',
+          body: 'Apna streak zinda rakhne ke liye aaj thoda khelo — miss mat karo!',
+          schedule: { on: { hour: 20, minute: 0 }, allowWhileIdle: true },
           extra: { route: 'dashboard' }
         }]
       });
@@ -4313,25 +4431,57 @@
      users ke liye — signed-out mein silently kuch nahi hota (koi
      account hi nahi jahan save ho). Fire-and-forget, matchResults
      wale pattern jaisa hi — game flow kabhi iske liye rukta nahi. */
+  /* amount > 0 = award (increment, jaisa pehle tha).
+     amount < 0 = deduct (match loss) — transaction se, floor 0
+     tak, kabhi negative nahi ja sakta. Dono paths crownHistory
+     mein bhi log karte hain (deduct wale negative amount ke
+     saath), taaki Wallet history mein pura ledger dikhe. */
   function awardCrowns(amount, reason) {
-    if (!amount || amount <= 0) return;
+    if (!amount) return;
     const uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) return;
 
-    playSound('coin');
+    if (amount > 0) {
+      playSound('coin');
+      db.collection('users').doc(uid).set({
+        crowns: firebase.firestore.FieldValue.increment(amount)
+      }, { merge: true }).catch((err) => {
+        console.error('Crowns award error:', err);
+      });
+      db.collection('users').doc(uid).collection('crownHistory').add({
+        amount: amount,
+        reason: reason,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch((err) => {
+        console.error('Crown history save error:', err);
+      });
+      return;
+    }
 
-    db.collection('users').doc(uid).set({
-      crowns: firebase.firestore.FieldValue.increment(amount)
-    }, { merge: true }).catch((err) => {
-      console.error('Crowns award error:', err);
-    });
-
-    db.collection('users').doc(uid).collection('crownHistory').add({
-      amount: amount,
-      reason: reason,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    /* Deduction — balance kabhi 0 se neeche nahi jana chahiye.
+       Increment() se seedha nahi kar sakte (floor clamp nahi
+       karta), isliye transaction: current padho, jitna hai
+       usse zyada mat kaato. */
+    const userRef = db.collection('users').doc(uid);
+    db.runTransaction((tx) => {
+      return tx.get(userRef).then((doc) => {
+        const current = doc.exists ? (doc.data().crowns || 0) : 0;
+        if (current <= 0) return 0; /* pehle se 0, kuch nahi katega */
+        const deduct = Math.min(Math.abs(amount), current);
+        tx.set(userRef, { crowns: current - deduct }, { merge: true });
+        return deduct;
+      });
+    }).then((deducted) => {
+      if (!deducted) return;
+      db.collection('users').doc(uid).collection('crownHistory').add({
+        amount: -deducted,
+        reason: reason,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch((err) => {
+        console.error('Crown history save error:', err);
+      });
     }).catch((err) => {
-      console.error('Crown history save error:', err);
+      console.error('Crowns deduct error:', err);
     });
   }
 
@@ -4643,11 +4793,13 @@
           const dateStr = (d.timestamp && typeof d.timestamp.toDate === 'function')
             ? d.timestamp.toDate().toLocaleDateString()
             : 'Just now';
+          const amt = d.amount || 0;
           rows.push(
             '<div class="wallet-history-row">'
             + '<span class="wallet-history-reason">' + (d.reason || 'Crowns earned')
             + '<span class="wallet-history-date">' + dateStr + '</span></span>'
-            + '<span class="wallet-history-amount">+' + d.amount + '</span>'
+            + '<span class="wallet-history-amount"' + (amt < 0 ? ' style="color:#e57373;"' : '') + '>'
+            + (amt > 0 ? '+' : '') + amt + '</span>'
             + '</div>'
           );
         });
@@ -5085,7 +5237,12 @@
     });
   }
 
-  /* ── Auth state listener — keeps UI in sync if already signed in ── */
+  /* ── Auth state listener — keeps UI in sync if already signed in ──
+     Yahi ek jagah hai jo boot (agar pehle se signed-in ho) AUR
+     fresh sign-in/sign-out — dono cover karti hai, isliye streak
+     load/reset yahin wire kiya, alag se onSignInSuccess/
+     handleSignOut chhedne ki zaroorat nahi padi (cosmetics wale
+     pattern jaisa hi). */
   auth.onAuthStateChanged((user) => {
     if (user) {
       profile.signedIn  = true;
@@ -5093,12 +5250,20 @@
       profile.email     = user.email || '';
       profile.avatarUrl = user.photoURL || '';
       loadCosmetics(user.uid);
+      loadStreakFromCloud(user.uid);
     } else {
       profile.signedIn  = false;
       profile.name      = '';
       profile.email     = '';
       profile.avatarUrl = '';
       resetCosmeticsToDefault();
+      /* Signed-in nahi — koi streak track nahi hoti, purani cloud
+         wali value bhi memory se hata do taaki purani signed-in
+         session ki stale value na dikhe. */
+      appStreak = 0;
+      appBestStreak = 0;
+      appLastPlayedDate = null;
+      renderStreakDisplay();
     }
     updateProfileUI();
   });
@@ -5112,8 +5277,11 @@
     document.getElementById('screen-game').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
     setTimeout(() => {
-      document.getElementById('btn-launch-courtpiece').focus();
-      announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
+      /* Game cards ab drawer-gameselect ke andar hain (jo band/inert
+         hai) — unhe seedha focus nahi kiya ja sakta. Dashboard ke
+         naye "Choose a Game" entry button ko focus karo. */
+      document.getElementById('btn-open-gameselect').focus();
+      announce('Back to dashboard. Choose a Game button focused. Double tap to play again.');
     }, 150);
     modalHistoryPop('game:courtpiece');
   }
@@ -5172,8 +5340,11 @@
     }
     document.getElementById('screen-home').classList.add('active');
     setTimeout(() => {
-      document.getElementById('btn-launch-99').focus();
-      announce('Back to dashboard. 99 button focused.');
+      /* Game cards ab drawer-gameselect ke andar hain (jo band/inert
+         hai) — unhe seedha focus nahi kiya ja sakta. Dashboard ke
+         naye "Choose a Game" entry button ko focus karo. */
+      document.getElementById('btn-open-gameselect').focus();
+      announce('Back to dashboard. Choose a Game button focused.');
     }, 150);
     modalHistoryPop('game:99');
   }
@@ -5395,8 +5566,11 @@
     const isFirstMatchToday99 = updateAppStreak();
     scheduleDailyReminder();
 
-    /* ── Wallet: Crowns + Cups (Reward System Plan) ── */
-    awardCrowns(humanWon99 ? 3 : 1, humanWon99 ? 'Won a 99 game' : 'Played a 99 game');
+    /* ── Wallet: Crowns + Cups (Reward System Plan) ──
+       Jeeto +5, haaro -4 (floor 0) — pehle haarne par bhi +1
+       milta tha, jo galat decision tha (koi consequence nahi
+       thi). Ab risk/reward dono hain. */
+    awardCrowns(humanWon99 ? 5 : -4, humanWon99 ? 'Won a 99 game' : 'Lost a 99 game');
     updateDailyChallenge('99', humanWon99);
     if (humanWon99) {
       incrementCup('99').then((totalWinsAfter) => {
@@ -5974,8 +6148,11 @@
     document.getElementById('screen-game').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
     setTimeout(() => {
-      document.getElementById('btn-launch-courtpiece').focus();
-      announce('Back to dashboard. Court Piece button focused. Double tap to play again.');
+      /* Game cards ab drawer-gameselect ke andar hain (jo band/inert
+         hai) — unhe seedha focus nahi kiya ja sakta. Dashboard ke
+         naye "Choose a Game" entry button ko focus karo. */
+      document.getElementById('btn-open-gameselect').focus();
+      announce('Back to dashboard. Choose a Game button focused. Double tap to play again.');
     }, 150);
     modalHistoryPop('game:courtpiece');
   }
@@ -6960,8 +7137,11 @@
     const isFirstMatchToday = updateAppStreak();
     scheduleDailyReminder();
 
-    /* ── Wallet: Crowns + Cups (Reward System Plan) ── */
-    awardCrowns(humanWon ? 5 : 1, humanWon ? 'Won a Court Piece match' : 'Played a Court Piece match');
+    /* ── Wallet: Crowns + Cups (Reward System Plan) ──
+       Jeeto +5, haaro -4 (floor 0) — 99 ke saath uniform,
+       pehle haarne par bhi +1 milta tha, jo galat decision
+       tha (koi consequence nahi thi). */
+    awardCrowns(humanWon ? 5 : -4, humanWon ? 'Won a Court Piece match' : 'Lost a Court Piece match');
     updateDailyChallenge('courtpiece', humanWon);
     if (humanWon) {
       incrementCup('courtpiece').then((totalWinsAfter) => {
@@ -7198,6 +7378,7 @@
          SYNC hota hai — permission status ka wait nahi karta. */
       announce('Notifications panel opened.');
     } else if (type === 'profile') {
+      renderStreakDisplay(); /* streak expiry-check fresh chale, kabhi stale na dikhe */
       announce(profile.signedIn
         ? 'Profile drawer opened. Signed in as ' + profile.name + '.'
         : 'Profile drawer opened. Not signed in. Sign in with Google to save your progress.');
@@ -7221,8 +7402,9 @@
         ? 'Achievements panel opened.'
         : 'Achievements panel opened. Not signed in. Sign in to track your Achievements.');
       loadAchievements();
+    } else if (type === 'gameselect') {
+      announce('Game selection menu opened. Court Piece and 99 available.');
     } else {
-      /* Settings drawer — version update karo */
       const svd = document.getElementById('settings-version-display');
       if (svd) svd.textContent = CURRENT_APP_VERSION;
       announce('Settings drawer opened. Sound and TalkBack toggles available. App version ' + CURRENT_APP_VERSION + '.');
@@ -7270,7 +7452,8 @@
                      notifications: 'Notifications panel closed.',
                      wallet:        'Wallet closed.',
                      shop:          'Shop closed.',
-                     achievements:  'Achievements panel closed.' };
+                     achievements:  'Achievements panel closed.',
+                     gameselect:    'Game selection menu closed.' };
     announce(labels[type] || 'Panel closed.');
 
     const triggers = {
@@ -7282,12 +7465,35 @@
       notifications: document.getElementById('btn-notifications'),
       wallet:        document.getElementById('btn-wallet'),
       shop:          document.getElementById('btn-shop'),
-      achievements:  document.getElementById('btn-more-options')
+      achievements:  document.getElementById('btn-more-options'),
+      gameselect:    document.getElementById('btn-open-gameselect')
     };
     const t = triggers[type];
     if (t) setTimeout(() => t.focus(), 50);
 
     if (!fromBackButton) modalHistoryPop('drawer:' + type);
+  }
+
+  /* Game Selection menu se koi game choose karne par: drawer ko
+     PEHLE cleanly band karo (taaki wo naye game screen ke peeche
+     "open" na reh jaye — warna overlay dikhta rahega), phir game
+     launch karo. Generic closeDrawer() nahi use kiya kyunki uska
+     announce("Panel closed") aur trigger-focus turant 300ms baad
+     wale game-screen announce/focus se takra jata — is chhote
+     helper mein sirf zaroori state cleanup hai, koi announcement
+     nahi (launchFn khud apna announce karta hai).
+     modalHistoryPop() ke turant baad modalHistoryPush() (launchFn
+     ke andar) same tick mein chalta hai — jo pehle se maujood
+     "chained close+open" collapse mechanism (modalHistoryPush ke
+     __pendingPopTimer check) khud sambhal leta hai. */
+  function closeGameSelectAndLaunch(launchFn) {
+    const drawer = document.getElementById('drawer-gameselect');
+    drawer.classList.remove('open');
+    setMainScreenInert(false);
+    drawer.setAttribute('inert', '');
+    drawer.setAttribute('aria-hidden', 'true');
+    modalHistoryPop('drawer:gameselect');
+    launchFn();
   }
   </script>
 
