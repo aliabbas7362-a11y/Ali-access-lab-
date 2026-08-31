@@ -877,6 +877,46 @@
     #screen-game-99.active { display: flex; }
 
     /* ─────────────────────────────────────────
+       CALL BREAK — SHUFFLE / RULES SCREEN (mirrors #shuffle-screen-99)
+       ───────────────────────────────────────── */
+    #shuffle-screen-cb {
+      display: none; position: fixed; inset: 0;
+      background: var(--bg); z-index: 100;
+      flex-direction: column;
+    }
+    #shuffle-screen-cb.active { display: flex; }
+
+    /* ─────────────────────────────────────────
+       CALL BREAK — GAME SCREEN (mirrors #screen-game-99)
+       ───────────────────────────────────────── */
+    #screen-game-callbreak {
+      position: fixed; inset: 0;
+      flex-direction: column;
+      background:
+        radial-gradient(ellipse 100% 70% at 50% 40%, rgba(15,35,18,0.9) 0%, transparent 80%),
+        var(--felt);
+      display: none;
+      overflow: hidden;
+    }
+    #screen-game-callbreak.active { display: flex; }
+
+    /* Bid stepper */
+    .bid-stepper-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 18px; margin: 10px 0;
+    }
+    .bid-stepper-btn {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.06);
+      color: var(--text); font-size: 1.4rem; font-weight: bold;
+    }
+    .bid-stepper-btn:active { background: rgba(255,255,255,0.14); }
+    .bid-stepper-value {
+      min-width: 70px; text-align: center;
+      font-size: 2rem; font-weight: bold; color: var(--gold);
+    }
+
+    /* ─────────────────────────────────────────
        GAME SCREEN — FULL-SCREEN FELT TABLE
        ───────────────────────────────────────── */
     #screen-game {
@@ -1123,6 +1163,26 @@
       gap: 6px;
       padding: 4px 14px 8px;
     }
+
+    /* ── CALL BREAK — human hand strip + trick status (mirrors above) ── */
+    #human-zone-cb {
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.32);
+      border-top: 1px solid var(--border);
+      padding-bottom: calc(6px + var(--safe-bottom));
+    }
+    #human-cards-row-cb {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: flex-end;
+      gap: 6px;
+      padding: 4px 14px 8px;
+    }
+    #cb-trick-status {
+      font-size: 0.8rem; color: var(--text-muted);
+      line-height: 1.4; max-width: 280px; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -1258,7 +1318,7 @@
 
     <div class="privacy-body" role="document">
       <h2>Card Game — Court Piece</h2>
-      <p>Version <strong id="about-version">1.5.0</strong></p>
+      <p>Version <strong id="about-version">1.7.0</strong></p>
 
       <h2>Developer</h2>
       <p>Developed by <strong>Abbas Ali</strong> — Blind Developer<br>
@@ -1276,6 +1336,7 @@
       <h2>About the Game</h2>
       <p>Court Piece (also known as Rung or Coat Piece) is a traditional South Asian trick-taking card game. This app implements the authentic 13-trick rules with 3 AI opponents, full TalkBack screen reader support, and sound effects.</p>
       <p>99 is a fast-paced elimination card game where players keep a shared running total under 99, using card values, tokens, and strategic King and reverse plays.</p>
+      <p>Call Break is a trick-taking bidding game where every player bids how many of the 13 tricks they can win, spades are always trump, and scores add up across multiple rounds.</p>
 
       <h2>Sound Credits</h2>
       <p>Sound effects (King hit, Bust, Elimination) sourced from Zapsplat.com</p>
@@ -1452,6 +1513,111 @@
   </div>
 
   <!-- ══════════════════════════════════════
+       CALL BREAK — SHUFFLE / SETUP SCREEN (mirrors #shuffle-screen-99)
+       ══════════════════════════════════════ -->
+  <div id="shuffle-screen-cb" role="dialog"
+    aria-modal="true"
+    aria-labelledby="shuffle-title-cb"
+    aria-describedby="shuffle-desc-cb">
+
+    <div class="shuffle-topbar">
+      <button class="drawer-back-btn"
+        aria-label="Back. Return to dashboard."
+        onclick="backToDashboardFromCB()">&#8592;</button>
+      <span class="shuffle-topbar-title">Call Break</span>
+    </div>
+
+    <div class="shuffle-body">
+      <div class="shuffle-icon" aria-hidden="true">♠️</div>
+      <p class="shuffle-title" id="shuffle-title-cb" tabindex="-1">Ready to Play?</p>
+      <p class="shuffle-desc" id="shuffle-desc-cb">
+        Choose how many robot opponents and how many rounds, then tap Start Game.
+      </p>
+
+      <div class="robot-count-fieldset">
+        <div class="robot-count-legend">Number of robot opponents</div>
+        <div role="radiogroup" aria-label="Number of robot opponents. 1, 2, or 3."
+          style="display:flex;gap:10px;margin-top:10px;">
+          <button type="button" id="btn-cb-robotcount-1" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="1 robot opponent. Double tap to select."
+            style="flex:1;" onclick="setRobotCountCB(1)">1 Robot</button>
+          <button type="button" id="btn-cb-robotcount-2" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="2 robot opponents. Double tap to select."
+            style="flex:1;" onclick="setRobotCountCB(2)">2 Robots</button>
+          <button type="button" id="btn-cb-robotcount-3" class="btn-small"
+            role="radio" aria-checked="true"
+            aria-label="3 robot opponents. Currently selected."
+            style="flex:1;border-color:var(--gold);color:var(--gold);"
+            onclick="setRobotCountCB(3)">3 Robots</button>
+        </div>
+      </div>
+
+      <div class="robot-count-fieldset" style="margin-top:12px;">
+        <div class="robot-count-legend">Number of rounds</div>
+        <div role="radiogroup" aria-label="Number of rounds. 1 to 5."
+          style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button type="button" id="btn-cb-rounds-1" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="1 round. Double tap to select."
+            style="flex:1;min-width:56px;" onclick="setRoundsCB(1)">1</button>
+          <button type="button" id="btn-cb-rounds-2" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="2 rounds. Double tap to select."
+            style="flex:1;min-width:56px;" onclick="setRoundsCB(2)">2</button>
+          <button type="button" id="btn-cb-rounds-3" class="btn-small"
+            role="radio" aria-checked="true"
+            aria-label="3 rounds. Currently selected."
+            style="flex:1;min-width:56px;border-color:var(--gold);color:var(--gold);"
+            onclick="setRoundsCB(3)">3</button>
+          <button type="button" id="btn-cb-rounds-4" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="4 rounds. Double tap to select."
+            style="flex:1;min-width:56px;" onclick="setRoundsCB(4)">4</button>
+          <button type="button" id="btn-cb-rounds-5" class="btn-small"
+            role="radio" aria-checked="false"
+            aria-label="5 rounds. Double tap to select."
+            style="flex:1;min-width:56px;" onclick="setRoundsCB(5)">5</button>
+        </div>
+      </div>
+
+      <button class="btn-shuffle"
+        aria-label="Start game with the selected number of robot opponents and rounds."
+        onclick="startCallBreak()">
+        🔀 Start Game
+      </button>
+
+      <!-- GAME RULES — Call Break -->
+      <div id="shuffle-rules-block-cb" role="document"
+        style="font-weight:bold; text-align:left; max-width:340px;
+               max-height:50vh; overflow-y:auto; padding:12px 6px;
+               color:var(--text);">
+        <h2>How to Play — Game Rules</h2>
+
+        <h2>Players and Cards</h2>
+        <p>2 to 4 players (you plus your chosen number of robot opponents). A standard 52-card deck is used. All 13 cards are dealt to each player at the start of every round.</p>
+
+        <h2>Trump Suit</h2>
+        <p>Spades are always the trump suit — this never changes, round to round.</p>
+
+        <h2>Bidding</h2>
+        <p>Before each round, every player bids how many of the 13 tricks they think they can win, from 1 to 13. Bid using the stepper, then confirm.</p>
+
+        <h2>Playing Tricks</h2>
+        <p>The first player leads any card. Everyone else must follow the led suit if they can. If you have none of the led suit, you may play any card, including a spade — you are never forced to play a spade, and never forced to play a higher spade than one already played. The highest spade played wins the trick; if no spade was played, the highest card of the led suit wins. The trick winner leads the next trick.</p>
+
+        <h2>Scoring</h2>
+        <p>If you win at least as many tricks as you bid, you score your bid plus 0.1 for every extra trick above your bid. If you win fewer tricks than you bid, you lose points equal to your bid.</p>
+
+        <h2>Winning the Match</h2>
+        <p>Scores add up across all rounds. After the last round, whoever has the highest total score wins the match.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
        99 — GAME SCREEN (placeholder shell — logic to be added next session)
        ══════════════════════════════════════ -->
   <div id="screen-game-99" role="main" aria-label="99 game screen">
@@ -1532,7 +1698,7 @@
       <button class="btn" id="btn-share-whatsapp-99"
         aria-label="Share result on WhatsApp. Opens WhatsApp with your result pre-filled."
         style="max-width:280px;background:#25D366;color:#fff;">
-        📱 WhatsApp pe Share karo
+        📱 Share on WhatsApp
       </button>
       <button class="btn-shuffle" onclick="backToDashboardFrom99()">Back to Dashboard</button>
     </div>
@@ -1564,6 +1730,214 @@
         <p class="drawer-section-heading">All Moves</p>
         <div id="history-list-99">
           <p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CALL BREAK — GAME SCREEN (mirrors #screen-game-99 structure)
+       Self-contained: apna stateCB object, apne DOM elements
+       (id/class suffix "-cb" ya "cb-"). Court Piece ke state/
+       renderHand/playCard aur 99 ke state99 ko bilkul touch
+       nahi karta. Shared reuse sirf: announce(), announceRobotPlay(),
+       clearAllAnnouncements(), buildCardSpans(), addRipple(),
+       createDeck(), shuffleDeck(), decideWinner(), awardCrowns(),
+       playSound(), logGameEvent(), updateAppStreak(),
+       modalHistoryPush/Pop(), .card-human CSS class.
+       ══════════════════════════════════════ -->
+  <div id="screen-game-callbreak" role="main" aria-label="Call Break game screen">
+
+    <div id="cb-board" style="display:contents;">
+    <!-- TOP BAR -->
+    <div class="game-topbar" role="banner">
+      <span class="game-topbar-title" aria-hidden="true">♠ Call Break</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-small"
+          aria-label="Quit game and return to home screen"
+          onclick="quitGameCB()">
+          Quit
+        </button>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="trump-bar" id="cb-status-bar" tabindex="0"
+      aria-label="Round 1 of 3. Bidding phase.">
+      <span id="cb-status-text">Round 1 of 3 — Bidding</span>
+    </div>
+
+    <!-- SCROLLABLE MIDDLE -->
+    <div class="game-middle">
+
+      <!-- OPPONENTS — face-down cards -->
+      <div class="ai-zone" role="region" aria-label="Opponents area. Their cards are hidden.">
+        <p class="zone-label">Opponents</p>
+        <div class="ai-cards-row" aria-hidden="true" id="cb-ai-cards-visual"></div>
+      </div>
+
+      <!-- TRICK ZONE -->
+      <div class="trick-zone" role="region"
+        id="trick-zone-cb"
+        aria-label="Current trick area">
+        <p class="trick-zone-label">Current Trick</p>
+        <div class="trick-played-cards" id="cb-trick-cards" aria-hidden="true"></div>
+        <p id="cb-trick-status">Waiting for bids…</p>
+        <p id="cb-commentary-caption" class="commentary-caption" aria-hidden="true"></p>
+      </div>
+
+      <!-- SCORES + HISTORY -->
+      <div class="game-info-bar" role="region" aria-label="Scores and history">
+        <button class="info-btn"
+          aria-label="View bids and scores."
+          aria-haspopup="dialog"
+          id="btn-scores-cb"
+          onclick="openScoresCB()">
+          <div class="info-btn-label">Scores</div>
+          <div class="info-btn-value">📊</div>
+        </button>
+        <button class="info-btn"
+          aria-label="View move history. No moves yet."
+          aria-haspopup="dialog"
+          id="btn-history-cb"
+          onclick="openHistoryCB()">
+          <div class="info-btn-label">History</div>
+          <div class="info-btn-value">📋</div>
+        </button>
+      </div>
+
+    </div><!-- /game-middle -->
+
+    <!-- HUMAN HAND -->
+    <div id="human-zone-cb" role="region" aria-label="Your cards">
+      <p class="human-zone-label">Your Cards</p>
+      <div id="human-cards-row-cb"
+        role="group"
+        aria-label="Your hand. Select a card to play.">
+        <p style="color:var(--text-muted);font-size:0.85rem;padding:8px 12px;" id="cb-cards-placeholder">
+          Dealing your cards…
+        </p>
+      </div>
+    </div>
+
+    </div><!-- /cb-board -->
+
+    <!-- BID OVERLAY -->
+    <div id="cb-bid-overlay" style="display:none;position:fixed;inset:0;z-index:150;
+         background:rgba(5,10,8,0.94);flex-direction:column;align-items:center;
+         justify-content:center;gap:16px;padding:24px;text-align:center;">
+      <p id="cb-bid-title" tabindex="-1"
+        style="font-size:1.2rem;font-weight:bold;color:var(--gold);margin:0;">
+        Your Bid
+      </p>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0;max-width:280px;">
+        How many of the 13 tricks do you think you'll win?
+      </p>
+      <div class="bid-stepper-row">
+        <button type="button" class="bid-stepper-btn"
+          aria-label="Decrease bid."
+          onclick="adjustBidCB(-1)">&#8722;</button>
+        <span class="bid-stepper-value" id="cb-bid-value" aria-live="polite">3</span>
+        <button type="button" class="bid-stepper-btn"
+          aria-label="Increase bid."
+          onclick="adjustBidCB(1)">+</button>
+      </div>
+      <button class="btn-shuffle" style="max-width:260px;"
+        aria-label="Confirm bid."
+        onclick="confirmBidCB()">
+        Confirm Bid
+      </button>
+    </div>
+
+    <!-- ROUND SUMMARY OVERLAY -->
+    <div id="cb-round-summary-overlay" style="display:none;position:fixed;inset:0;z-index:150;
+         background:rgba(5,10,8,0.94);flex-direction:column;align-items:center;
+         justify-content:center;gap:14px;padding:24px;text-align:center;overflow-y:auto;">
+      <p id="cb-round-summary-title" tabindex="-1"
+        style="font-size:1.2rem;font-weight:bold;color:var(--gold);margin:0;">
+        Round 1 Complete
+      </p>
+      <div id="cb-round-summary-table" role="document"
+        style="width:100%;max-width:320px;text-align:left;font-size:0.9rem;"></div>
+      <button class="btn-shuffle" id="cb-round-summary-btn" onclick="continueAfterRoundCB()">
+        Next Round
+      </button>
+    </div>
+
+    <!-- MATCH OVER OVERLAY -->
+    <div id="cb-gameover-overlay" style="display:none;position:fixed;inset:0;z-index:150;
+         background:rgba(5,10,8,0.94);flex-direction:column;align-items:center;
+         justify-content:center;gap:16px;padding:24px;text-align:center;overflow-y:auto;">
+      <p id="cb-gameover-msg" tabindex="-1"
+        style="font-size:1.3rem;font-weight:bold;color:var(--gold);margin:0;"></p>
+      <div id="cb-gameover-table" role="document"
+        style="width:100%;max-width:320px;text-align:left;font-size:0.9rem;"></div>
+      <p id="cb-gameover-summary-text"
+        style="font-size:0.85rem;color:var(--text-muted);margin:0;"></p>
+      <button class="btn" id="btn-share-whatsapp-cb"
+        aria-label="Share result on WhatsApp. Opens WhatsApp with your result pre-filled."
+        style="max-width:280px;background:#25D366;color:#fff;">
+        📱 Share on WhatsApp
+      </button>
+      <button class="btn-shuffle" onclick="backToDashboardFromCB()">Back to Dashboard</button>
+    </div>
+
+  </div><!-- /screen-game-callbreak -->
+
+  <!-- ══════════════════════════════════════
+       CALL BREAK — HISTORY DRAWER (sibling, reuses .slide-drawer /
+       .panel-row CSS; own open/close functions)
+       ══════════════════════════════════════ -->
+  <div id="drawer-history-cb" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-history-cb-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeHistoryCB()"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close History panel."
+          onclick="closeHistoryCB()">&#8592;</button>
+        <span class="drawer-title" id="drawer-history-cb-title">Move History</span>
+      </div>
+      <div class="drawer-body">
+        <p class="drawer-section-heading">All Moves</p>
+        <div id="history-list-cb">
+          <p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CALL BREAK — SCORES DRAWER
+       ══════════════════════════════════════ -->
+  <div id="drawer-scores-cb" class="slide-drawer"
+    role="dialog" aria-modal="true" aria-labelledby="drawer-scores-cb-title"
+    inert aria-hidden="true">
+
+    <div class="slide-drawer__scrim"
+      aria-hidden="true"
+      onclick="closeScoresCB()"></div>
+
+    <div class="slide-drawer__panel">
+      <div class="drawer-topbar">
+        <button class="drawer-back-btn"
+          aria-label="Back. Close Scores panel."
+          onclick="closeScoresCB()">&#8592;</button>
+        <span class="drawer-title" id="drawer-scores-cb-title">Bids &amp; Scores</span>
+      </div>
+      <div class="drawer-body">
+        <p class="drawer-section-heading">This Round</p>
+        <div id="scores-list-cb">
+          <p style="color:var(--text-muted);font-size:0.85rem;">No bids yet.</p>
+        </div>
+        <p class="drawer-section-heading" style="margin-top:16px;">Total Scores</p>
+        <div id="totals-list-cb">
+          <p style="color:var(--text-muted);font-size:0.85rem;">—</p>
         </div>
       </div>
     </div>
@@ -1687,7 +2061,7 @@
     <button class="btn" id="btn-share-whatsapp"
       aria-label="Share result on WhatsApp. Opens WhatsApp with your result pre-filled."
       style="max-width:280px;background:#25D366;color:#fff;margin-top:8px;display:none;">
-      📱 WhatsApp pe Share karo
+      📱 Share on WhatsApp
     </button>
   </div>
 
@@ -2073,7 +2447,7 @@
              mein koi JS change nahi karna pada. -->
         <div id="dash-streak" role="text" aria-label="No streak yet. Play a game today to start one."
           style="text-align:center;padding:20px 0 4px;font-size:0.95rem;color:var(--gold);border-top:1px solid #333;margin-top:20px;">
-          <span aria-hidden="true">🔥 <span id="dash-streak-count">0</span> din streak</span>
+          <span aria-hidden="true">🔥 <span id="dash-streak-count">0</span> day streak</span>
         </div>
         <div class="dash-crown-highlight" id="dash-crown-highlight" style="display:none;text-align:center;padding-bottom:8px;"></div>
 
@@ -2132,6 +2506,10 @@
             <div class="wallet-cup-card">
               <div class="wallet-cup-card-count" id="wallet-cups-99">0</div>
               <div class="wallet-cup-card-label">🏆 99</div>
+            </div>
+            <div class="wallet-cup-card">
+              <div class="wallet-cup-card-count" id="wallet-cups-callbreak">0</div>
+              <div class="wallet-cup-card-label">🏆 Call Break</div>
             </div>
           </div>
 
@@ -2348,6 +2726,16 @@
             <div class="game-card-badge" aria-hidden="true">v1.0</div>
             <div class="game-card-icon" aria-hidden="true">🔢</div>
             <div class="game-card-name" aria-hidden="true">99</div>
+          </button>
+
+          <!-- Call Break -->
+          <button class="game-card"
+            id="btn-launch-callbreak"
+            aria-label="Call Break. Card game. Human versus configurable number of robots. Double tap to play."
+            onclick="closeGameSelectAndLaunch(launchCallBreak)">
+            <div class="game-card-badge" aria-hidden="true">v1.0</div>
+            <div class="game-card-icon" aria-hidden="true">♠️</div>
+            <div class="game-card-name" aria-hidden="true">Call Break</div>
           </button>
 
           <!-- Coming Soon placeholder -->
@@ -2572,8 +2960,10 @@
     if (modalId === 'more-options') { closeMoreOptions(true); }
     else if (modalId === 'about') { closeAbout(true); }
     else if (modalId === 'history99') { closeHistory99(true); }
+    else if (modalId === 'historycb') { closeHistoryCB(true); }
+    else if (modalId === 'scorescb') { closeScoresCB(true); }
     else if (modalId.indexOf('drawer:') === 0) { closeDrawer(modalId.slice(7), true); }
-    else if (modalId === 'game:courtpiece' || modalId === 'game:99') { confirmExitGame(modalId); }
+    else if (modalId === 'game:courtpiece' || modalId === 'game:99' || modalId === 'game:callbreak') { confirmExitGame(modalId); }
   }
 
   /* ════════════════════════════════════════════
@@ -2625,6 +3015,8 @@
       }
     } else if (modalId === 'game:99') {
       backToDashboardFrom99();
+    } else if (modalId === 'game:callbreak') {
+      backToDashboardFromCB();
     }
   }
 
@@ -3299,7 +3691,8 @@
     if (!state.talkback) { if (callback) setTimeout(callback, 100); return; }
 
     const inGame = document.getElementById('screen-game').classList.contains('active')
-      || document.getElementById('screen-game-99').classList.contains('active');
+      || document.getElementById('screen-game-99').classList.contains('active')
+      || document.getElementById('screen-game-callbreak').classList.contains('active');
     if (inGame) {
       try {
         VoiceEngine.speak(msg, callback);   /* game ke andar — sirf commentary, TalkBack live region touch nahi */
@@ -3705,9 +4098,16 @@
      screen behind an open panel.
      ════════════════════════════════════════════ */
   function setMainScreenInert(makeInert) {
-    const bg = document.getElementById('screen-game').classList.contains('active')
-      ? document.getElementById('screen-game')
-      : document.getElementById('screen-home');
+    let bg;
+    if (document.getElementById('screen-game').classList.contains('active')) {
+      bg = document.getElementById('screen-game');
+    } else if (document.getElementById('screen-game-99').classList.contains('active')) {
+      bg = document.getElementById('screen-game-99');
+    } else if (document.getElementById('screen-game-callbreak').classList.contains('active')) {
+      bg = document.getElementById('screen-game-callbreak');
+    } else {
+      bg = document.getElementById('screen-home');
+    }
     if (makeInert) {
       bg.setAttribute('inert', '');
       bg.setAttribute('aria-hidden', 'true');
@@ -3888,7 +4288,7 @@
         notifications: [{
           id: 100,
           title: 'Card Game 🎴',
-          body: 'Apna streak zinda rakhne ke liye aaj thoda khelo — miss mat karo!',
+          body: 'Keep your streak alive — play a little today, don\u2019t miss it!',
           schedule: { on: { hour: 20, minute: 0 }, allowWhileIdle: true },
           extra: { route: 'dashboard' }
         }]
@@ -4191,7 +4591,7 @@
      Used for on-screen display (About/Settings) and as the browser-
      preview fallback. NOT used for the update-banner comparison
      anymore — see note below on installedAppVersion(). */
-  const CURRENT_APP_VERSION = '1.6.0';
+  const CURRENT_APP_VERSION = '1.7.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
@@ -4389,6 +4789,15 @@
               + '</span>'
               + '</div>'
             );
+          } else if (d.game === 'callbreak') {
+            rows.push(
+              '<div class="panel-row">'
+              + '<span style="min-width:76px;color:var(--text-muted);">' + dateStr + '</span>'
+              + '<span>' + (isWin ? 'Win' : 'Loss')
+              + ' — Call Break, rank ' + d.rank + ', total ' + d.totalScore
+              + '</span>'
+              + '</div>'
+            );
           } else {
             rows.push(
               '<div class="panel-row">'
@@ -4493,15 +4902,16 @@
   function incrementCup(game) {
     const uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) return Promise.resolve(null);
-    const field = game === '99' ? 'cups99' : 'cupsCourtPiece';
+    const field = game === '99' ? 'cups99' : (game === 'callbreak' ? 'cupsCallBreak' : 'cupsCourtPiece');
     const userRef = db.collection('users').doc(uid);
     return db.runTransaction((tx) => {
       return tx.get(userRef).then((doc) => {
         const d = doc.exists ? doc.data() : {};
         const newCupsCourtPiece = (field === 'cupsCourtPiece' ? (d.cupsCourtPiece || 0) + 1 : (d.cupsCourtPiece || 0));
         const newCups99         = (field === 'cups99'         ? (d.cups99 || 0) + 1         : (d.cups99 || 0));
+        const newCupsCallBreak  = (field === 'cupsCallBreak'  ? (d.cupsCallBreak || 0) + 1  : (d.cupsCallBreak || 0));
         tx.set(userRef, { [field]: firebase.firestore.FieldValue.increment(1) }, { merge: true });
-        return newCupsCourtPiece + newCups99;
+        return newCupsCourtPiece + newCups99 + newCupsCallBreak;
       });
     }).catch((err) => {
       console.error('Cup increment error:', err);
@@ -4533,6 +4943,7 @@
     { id: 'play3',     text: 'Play 3 matches today',                   reward: 3, check: (c) => c.playsToday >= 3 },
     { id: 'winCP',     text: 'Win a Court Piece match today',          reward: 5, check: (c) => c.cpWinToday >= 1 },
     { id: 'win99',     text: 'Win a 99 game today',                    reward: 5, check: (c) => c.n99WinToday >= 1 },
+    { id: 'winCB',     text: 'Win a Call Break match today',           reward: 5, check: (c) => c.cbWinToday >= 1 },
     { id: 'playBoth',  text: 'Play both Court Piece and 99 today',     reward: 8, check: (c) => c.playedCP && c.played99 }
   ];
 
@@ -4563,7 +4974,7 @@
         let completed = d.dailyChallengeCompleted || false;
 
         if (d.dailyChallengeDate !== today) {
-          counters = { winsToday: 0, playsToday: 0, cpWinToday: 0, n99WinToday: 0, playedCP: false, played99: false };
+          counters = { winsToday: 0, playsToday: 0, cpWinToday: 0, n99WinToday: 0, cbWinToday: 0, playedCP: false, played99: false, playedCB: false };
           challengeId = pickDailyChallengeId(today);
           completed = false;
         }
@@ -4573,6 +4984,9 @@
         if (gameType === 'courtpiece') {
           counters.playedCP = true;
           if (won) counters.cpWinToday = (counters.cpWinToday || 0) + 1;
+        } else if (gameType === 'callbreak') {
+          counters.playedCB = true;
+          if (won) counters.cbWinToday = (counters.cbWinToday || 0) + 1;
         } else {
           counters.played99 = true;
           if (won) counters.n99WinToday = (counters.n99WinToday || 0) + 1;
@@ -4741,9 +5155,11 @@
       const crownsEl = document.getElementById('wallet-crowns-count');
       const cupsCpEl = document.getElementById('wallet-cups-courtpiece');
       const cups99El = document.getElementById('wallet-cups-99');
+      const cupsCbEl = document.getElementById('wallet-cups-callbreak');
       if (crownsEl) crownsEl.textContent = String(d.crowns || 0);
       if (cupsCpEl) cupsCpEl.textContent = String(d.cupsCourtPiece || 0);
       if (cups99El) cups99El.textContent = String(d.cups99 || 0);
+      if (cupsCbEl) cupsCbEl.textContent = String(d.cupsCallBreak || 0);
       const walletBtn = document.getElementById('btn-wallet');
       if (walletBtn) walletBtn.setAttribute('aria-label', 'Wallet. ' + (d.crowns || 0) + ' Crowns. Double tap to open.');
 
@@ -4999,13 +5415,13 @@
      and best-ever streak — no new counters needed.
      ════════════════════════════════════════════ */
   const ACHIEVEMENT_CATALOG = [
-    { id: 'first_win',   name: 'Pehli Jeet', icon: '🥇', desc: 'Apna pehla match jeeto.',
+    { id: 'first_win',   name: 'First Win',   icon: '🥇', desc: 'Win your first match.',
       bonus: 3,  check: (s) => s.totalWins >= 1 },
-    { id: 'ten_wins',    name: '10 Wins',    icon: '🏆', desc: '10 matches jeeto (koi bhi game).',
+    { id: 'ten_wins',    name: '10 Wins',     icon: '🏆', desc: 'Win 10 matches (any game).',
       bonus: 5,  check: (s) => s.totalWins >= 10 },
-    { id: 'ninetynine_master', name: '99 Master', icon: '🎯', desc: '99 game mein 50 matches jeeto.',
+    { id: 'ninetynine_master', name: '99 Master', icon: '🎯', desc: 'Win 50 matches in 99.',
       bonus: 15, check: (s) => s.cups99 >= 50 },
-    { id: 'week_streak', name: '7 Din Streak', icon: '🔥', desc: 'Lagatar 7 din khelo.',
+    { id: 'week_streak', name: '7-Day Streak', icon: '🔥', desc: 'Play 7 days in a row.',
       bonus: 5,  check: (s) => s.bestStreak >= 7 }
   ];
 
@@ -5026,7 +5442,7 @@
     userRef.get().then((doc) => {
       const d = doc.exists ? doc.data() : {};
       const stats = {
-        totalWins:  (d.cupsCourtPiece || 0) + (d.cups99 || 0),
+        totalWins:  (d.cupsCourtPiece || 0) + (d.cups99 || 0) + (d.cupsCallBreak || 0),
         cups99:     d.cups99 || 0,
         bestStreak: appBestStreak
       };
@@ -5070,7 +5486,7 @@
 
   /* Timeout helper — agar koi Promise 15 second mein settle
      (resolve/reject) nahi hoti, isse ek error throw ho jaata hai.
-     Bina isके, agar native plugin ka Promise kabhi bhi resolve ya
+     Bina iske, agar native plugin ka Promise kabhi bhi resolve ya
      reject na ho (silent hang), user ko HAMESHA ke liye chup rehna
      padta — na success, na TalkBack error. Ab 15 sec baad zaroor
      kuch bolega. */
@@ -7497,8 +7913,838 @@
   }
   </script>
 
-  <!-- ============================================================
-       SERVICE WORKER REGISTRATION
+  <!-- ══════════════════════════════════════
+       CALL BREAK — GAME ENGINE
+       Self-contained: apna stateCB object, apne DOM
+       elements (id/class suffix "-cb" ya "cb-").
+       Court Piece ke state/ 99 ke state99 ko kabhi
+       touch nahi karta.
+       Shared reuse: announce(), announceRobotPlay(),
+       clearAllAnnouncements(), buildCardSpans(),
+       addRipple(), createDeck(), shuffleDeck(),
+       decideWinner(), awardCrowns(), playSound(),
+       logGameEvent(), updateAppStreak(),
+       scheduleDailyReminder(), streakMilestoneBonus(),
+       formatDuration(), currentApkUrl(), lvl(),
+       modalHistoryPush()/Pop(), .card-human CSS,
+       auth/db (Firebase), appStreak.
+       ══════════════════════════════════════ -->
+  <script>
+  const SUIT_ORDER_CB = { Spades: 0, Hearts: 1, Clubs: 2, Diamonds: 3 };
+
+  let stateCB = null;
+  let cbRobotCount = 3;
+  let cbRoundsToPlay = 3;
+  let cbMatchStartTime = null;
+  let cbBidValue = 3;
+
+  /* ── SETUP SCREEN — robot count / rounds selectors ── */
+  function setRobotCountCB(n) {
+    cbRobotCount = n;
+    [1, 2, 3].forEach(i => {
+      const btn = document.getElementById('btn-cb-robotcount-' + i);
+      const sel = i === n;
+      btn.setAttribute('aria-checked', sel ? 'true' : 'false');
+      btn.style.borderColor = sel ? 'var(--gold)' : '';
+      btn.style.color = sel ? 'var(--gold)' : '';
+      btn.setAttribute('aria-label', i + ' robot opponent' + (i === 1 ? '' : 's') + '. ' + (sel ? 'Currently selected.' : 'Double tap to select.'));
+    });
+    announce(n + ' robot opponent' + (n === 1 ? '' : 's') + ' selected.');
+  }
+
+  function setRoundsCB(n) {
+    cbRoundsToPlay = n;
+    [1, 2, 3, 4, 5].forEach(i => {
+      const btn = document.getElementById('btn-cb-rounds-' + i);
+      const sel = i === n;
+      btn.setAttribute('aria-checked', sel ? 'true' : 'false');
+      btn.style.borderColor = sel ? 'var(--gold)' : '';
+      btn.style.color = sel ? 'var(--gold)' : '';
+      btn.setAttribute('aria-label', i + ' round' + (i === 1 ? '' : 's') + '. ' + (sel ? 'Currently selected.' : 'Double tap to select.'));
+    });
+    announce(n + ' round' + (n === 1 ? '' : 's') + ' selected.');
+  }
+
+  /* ── LAUNCH / START / QUIT ── */
+  function launchCallBreak() {
+    document.getElementById('screen-home').classList.remove('active');
+    document.getElementById('shuffle-screen-cb').classList.add('active');
+    setTimeout(() => {
+      document.getElementById('shuffle-title-cb').focus();
+      announce('Call Break. Choose robots and rounds, then tap Start Game.');
+    }, 300);
+    modalHistoryPush('game:callbreak');
+  }
+
+  function startCallBreak() {
+    document.getElementById('shuffle-screen-cb').classList.remove('active');
+    document.getElementById('screen-game-callbreak').classList.add('active');
+    logGameEvent('game_started', { game_type: 'callbreak', robot_count: cbRobotCount, rounds: cbRoundsToPlay });
+    cbMatchStartTime = Date.now();
+    initCallBreakMatch(cbRobotCount, cbRoundsToPlay);
+  }
+
+  function backToDashboardFromCB() {
+    clearAllAnnouncements();
+    document.getElementById('shuffle-screen-cb').classList.remove('active');
+    document.getElementById('screen-game-callbreak').classList.remove('active');
+    document.getElementById('cb-gameover-overlay').style.display = 'none';
+    document.getElementById('cb-bid-overlay').style.display = 'none';
+    document.getElementById('cb-round-summary-overlay').style.display = 'none';
+    setCallBreakBoardInert(false);
+    setCallBreakScreenInert(false);
+    ['drawer-history-cb', 'drawer-scores-cb'].forEach(id => {
+      const d = document.getElementById(id);
+      if (d) {
+        d.classList.remove('open');
+        d.setAttribute('inert', '');
+        d.setAttribute('aria-hidden', 'true');
+      }
+    });
+    document.getElementById('screen-home').classList.add('active');
+    setTimeout(() => {
+      document.getElementById('btn-open-gameselect').focus();
+      announce('Back to dashboard. Choose a Game button focused.');
+    }, 150);
+    modalHistoryPop('game:callbreak');
+  }
+
+  function quitGameCB() { backToDashboardFromCB(); }
+
+  /* Inert helpers — cb-board covers topbar/status/middle/hand
+     (siblings of bid/round-summary/gameover overlays, which live
+     INSIDE screen-game-callbreak, so only the board — not the
+     overlay itself — should go inert). screen-game-callbreak
+     covers the WHOLE screen, for history/scores drawers which
+     are siblings of the screen itself. */
+  function setCallBreakBoardInert(makeInert) {
+    const bg = document.getElementById('cb-board');
+    if (makeInert) { bg.setAttribute('inert', ''); bg.setAttribute('aria-hidden', 'true'); }
+    else { bg.removeAttribute('inert'); bg.removeAttribute('aria-hidden'); }
+  }
+  function setCallBreakScreenInert(makeInert) {
+    const bg = document.getElementById('screen-game-callbreak');
+    if (makeInert) { bg.setAttribute('inert', ''); bg.setAttribute('aria-hidden', 'true'); }
+    else { bg.removeAttribute('inert'); bg.removeAttribute('aria-hidden'); }
+  }
+
+  /* ── MATCH INIT ── */
+  function initCallBreakMatch(robotCount, roundsToPlay) {
+    const players = [{ id: 0, name: 'You', isHuman: true, hand: [], bid: null, tricksWon: 0, roundScore: 0, totalScore: 0 }];
+    for (let i = 1; i <= robotCount; i++) {
+      players.push({ id: i, name: 'Robot ' + i, isHuman: false, hand: [], bid: null, tricksWon: 0, roundScore: 0, totalScore: 0 });
+    }
+    stateCB = {
+      players,
+      roundNumber: 1,
+      roundsToPlay: roundsToPlay,
+      dealerIndex: 0,
+      leaderIndex: 0,
+      currentTrick: [],
+      ledSuit: null,
+      currentIndex: 0,
+      biddingOrder: [],
+      biddingQueueIdx: 0,
+      phase: 'dealing',
+      history: [],
+      tricksPlayedThisRound: 0,
+      inputLocked: true
+    };
+    document.getElementById('cb-gameover-overlay').style.display = 'none';
+    document.getElementById('cb-round-summary-overlay').style.display = 'none';
+    document.getElementById('cb-bid-overlay').style.display = 'none';
+    document.getElementById('history-list-cb').innerHTML =
+      '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
+    updateHistoryBtnCB();
+    startRoundCB();
+  }
+
+  function startRoundCB() {
+    const deck = shuffleDeck(createDeck());
+    stateCB.players.forEach((p, i) => {
+      p.hand = deck.slice(i * 13, i * 13 + 13);
+      p.hand.sort((a, b) => {
+        if (a.suit !== b.suit) return SUIT_ORDER_CB[a.suit] - SUIT_ORDER_CB[b.suit];
+        return b.value - a.value;
+      });
+      p.bid = null;
+      p.tricksWon = 0;
+      p.roundScore = 0;
+    });
+    stateCB.currentTrick = [];
+    stateCB.ledSuit = null;
+    stateCB.tricksPlayedThisRound = 0;
+    stateCB.phase = 'bidding';
+    stateCB.inputLocked = true;
+
+    const n = stateCB.players.length;
+    const startIdx = (stateCB.dealerIndex + 1) % n;
+    stateCB.biddingOrder = [];
+    for (let i = 0; i < n; i++) stateCB.biddingOrder.push((startIdx + i) % n);
+    stateCB.biddingQueueIdx = 0;
+    stateCB.leaderIndex = startIdx;
+
+    renderAiZoneCB();
+    renderHandCB();
+    updateStatusBarCB();
+    clearTrickZoneCB('Waiting for bids…');
+    updateScoresDrawerCB();
+
+    stateCB.history.push('--- Round ' + stateCB.roundNumber + ' — cards dealt ---');
+    updateHistoryBtnCB();
+
+    const roundMsg = lvl(
+      'Round ' + stateCB.roundNumber + ' of ' + stateCB.roundsToPlay + '. Cards dealt.',
+      'Round ' + stateCB.roundNumber + ' of ' + stateCB.roundsToPlay + ' begins. 13 cards dealt to each player. Bidding starts now.'
+    );
+    announce(roundMsg, () => { processBidQueueCB(); });
+  }
+
+  /* ── BIDDING ── */
+  function estimateBidCB(hand) {
+    let est = 0;
+    hand.forEach(c => {
+      if (c.suit === 'Spades') {
+        if (c.rank === 'Ace') est += 1.0;
+        else if (c.rank === 'King') est += 0.9;
+        else if (c.rank === 'Queen') est += 0.7;
+        else if (c.rank === 'Jack') est += 0.5;
+        else est += 0.25;
+      } else {
+        if (c.rank === 'Ace') est += 0.85;
+        else if (c.rank === 'King') est += 0.5;
+        else if (c.rank === 'Queen') est += 0.15;
+      }
+    });
+    let bid = Math.round(est + (Math.random() - 0.5));
+    return Math.max(1, Math.min(13, bid));
+  }
+
+  /* Robot ka bid decide hote hi, uske bid jitni quick beeps
+     bajti hain (counting jaisa) — TalkBack ke bolne se pehle
+     hi sirf awaaz se andaza ho jaata hai kitna bid lagaya.
+     Beeps khatam hone ke BAAD hi spoken announcement chalta
+     hai. */
+  function playBidCountBeepsCB(count, onDone) {
+    let i = 0;
+    function step() {
+      if (i >= count) { if (onDone) onDone(); return; }
+      playBidTickCB(1);
+      i++;
+      setTimeout(step, 110);
+    }
+    step();
+  }
+
+  function processBidQueueCB() {
+    if (stateCB.biddingQueueIdx >= stateCB.players.length) {
+      finishBiddingCB();
+      return;
+    }
+    const idx = stateCB.biddingOrder[stateCB.biddingQueueIdx];
+    const player = stateCB.players[idx];
+    updateStatusBarCB();
+
+    if (player.isHuman) {
+      openBidOverlayCB(player);
+    } else {
+      setTimeout(() => {
+        const bid = estimateBidCB(player.hand);
+        player.bid = bid;
+        stateCB.history.push(player.name + ' bids ' + bid + '.');
+        updateHistoryBtnCB();
+        updateScoresDrawerCB();
+        playBidCountBeepsCB(bid, () => {
+          const msg = lvl(
+            player.name + ' bids ' + bid + '.',
+            player.name + ' looks at their hand and bids ' + bid + ' trick' + (bid === 1 ? '' : 's') + '.'
+          );
+          announceRobotPlay(msg, () => {
+            stateCB.biddingQueueIdx++;
+            processBidQueueCB();
+          });
+        });
+      }, 900);
+    }
+  }
+
+  function openBidOverlayCB(player) {
+    cbBidValue = Math.max(1, Math.min(13, estimateBidCB(player.hand)));
+    document.getElementById('cb-bid-value').textContent = cbBidValue;
+    const overlay = document.getElementById('cb-bid-overlay');
+    overlay.style.display = 'flex';
+    setCallBreakBoardInert(true);
+    setTimeout(() => {
+      document.getElementById('cb-bid-title').focus();
+      announce('Your turn to bid. Current bid ' + cbBidValue + '. Adjust and confirm.');
+    }, 200);
+  }
+
+  /* Bid stepper beep — Web Audio API se seedha synthesize hota
+     hai, koi naya sound file 'sounds/' folder mein daalne ki
+     zaroorat nahi, turant kaam karta hai. Increase (+) par
+     thodi ऊँची pitch, decrease (−) par thodi neechi pitch —
+     isse sirf awaaz se pata chal jaata hai kis taraf gaya,
+     TalkBack ke bolne ka intezaar kiye bina. Square wave +
+     high gain (0.75) — baaki SFX (volume 1.0) ke barabar
+     zoo sunayi de. */
+  let cbBeepCtx = null;
+  function playBidTickCB(direction) {
+    try {
+      if (!cbBeepCtx) {
+        cbBeepCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (cbBeepCtx.state === 'suspended') cbBeepCtx.resume();
+      const ctx = cbBeepCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = direction > 0 ? 880 : 550;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.75, ctx.currentTime + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.13);
+    } catch (e) {
+      console.log('Bid tick beep failed:', e.message);
+    }
+  }
+
+  function adjustBidCB(delta) {
+    cbBidValue = Math.max(1, Math.min(13, cbBidValue + delta));
+    playBidTickCB(delta);
+    document.getElementById('cb-bid-value').textContent = cbBidValue;
+    announce('Bid ' + cbBidValue + '.');
+  }
+
+  function confirmBidCB() {
+    const overlay = document.getElementById('cb-bid-overlay');
+    if (overlay.style.display === 'none') return; /* already confirmed — duplicate tap/callback, ignore */
+    const idx = stateCB.biddingOrder[stateCB.biddingQueueIdx];
+    const player = stateCB.players[idx];
+    player.bid = cbBidValue;
+    overlay.style.display = 'none';
+    setCallBreakBoardInert(false);
+    stateCB.history.push('You bid ' + cbBidValue + '.');
+    updateHistoryBtnCB();
+    updateScoresDrawerCB();
+    logGameEvent('bid_placed', { game_type: 'callbreak', bid: cbBidValue });
+    announce('You bid ' + cbBidValue + '.', () => {
+      stateCB.biddingQueueIdx++;
+      processBidQueueCB();
+    });
+  }
+
+  function finishBiddingCB() {
+    stateCB.phase = 'playing';
+    stateCB.currentIndex = stateCB.leaderIndex;
+    updateStatusBarCB();
+    updateScoresDrawerCB();
+    const bidsSummary = stateCB.players.map(p => (p.isHuman ? 'You' : p.name) + ': ' + p.bid).join(', ');
+    const msg = lvl('All bids in. Play begins.', 'All bids are in — ' + bidsSummary + '. Play begins.');
+    announce(msg, () => { takeTurnCB(); });
+  }
+
+  /* ── CARD PLAY ── */
+  function legalCardsCB(hand, ledSuit) {
+    if (!ledSuit) return hand.slice();
+    const followable = hand.filter(c => c.suit === ledSuit);
+    return followable.length > 0 ? followable : hand.slice();
+  }
+
+  function takeTurnCB() {
+    if (!stateCB || stateCB.phase !== 'playing') return;
+    const player = stateCB.players[stateCB.currentIndex];
+    updateStatusBarCB();
+    renderAiZoneCB();
+    /* 99/Court Piece jaisa turn-cue — har baari se pehle
+       "Your turn." ya "Robot X turn." bolta hai, taaki pata
+       chale kiski baari hai TalkBack ke bina hand explore
+       kiye. Speech khatam hone ke BAAD hi agla step chalta
+       hai — koi fixed setTimeout delay nahi. */
+    const cue = player.isHuman ? 'Your turn.' : player.name + ' turn.';
+    announceRobotPlay(cue, () => {
+      if (player.isHuman) {
+        stateCB.inputLocked = false;   /* ab hi asli turn hai — unlock */
+        renderHandCB();
+        document.getElementById('cb-trick-status').textContent = 'Your turn — choose a card.';
+      } else {
+        robotPlayCB(player);
+      }
+    });
+  }
+
+  function renderHandCB() {
+    const row = document.getElementById('human-cards-row-cb');
+    document.getElementById('cb-cards-placeholder')?.remove();
+    row.innerHTML = '';
+    const human = stateCB.players[0];
+    const isHumanTurn = stateCB.phase === 'playing'
+      && !stateCB.inputLocked
+      && stateCB.players[stateCB.currentIndex].isHuman;
+    const legal = isHumanTurn ? legalCardsCB(human.hand, stateCB.ledSuit) : [];
+
+    human.hand.forEach(card => {
+      const suitSymbol = card.display.replace(/[^♠♥♣♦]/g, '');
+      const rankShort  = card.display.replace(/[♠♥♣♦]/g, '');
+      const isRed      = card.red;
+      const isLegal     = isHumanTurn && legal.includes(card);
+
+      const btn = document.createElement('button');
+      btn.className = 'card-human' + (isRed ? ' suit-red' : '');
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('data-label', card.label);
+
+      if (!isLegal) {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+        btn.setAttribute('aria-label', card.label + (isHumanTurn ? '. Not playable — must follow suit.' : '. Disabled.'));
+      } else {
+        btn.setAttribute('aria-label', card.label + '. Double tap to play.');
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          addRipple(btn);
+          onHumanPlayCB(card);
+        });
+      }
+
+      const [tl, center, br] = buildCardSpans(suitSymbol, rankShort, isRed);
+      btn.appendChild(tl); btn.appendChild(center); btn.appendChild(br);
+      row.appendChild(btn);
+    });
+  }
+
+  function onHumanPlayCB(card) {
+    if (!stateCB || stateCB.inputLocked) return; /* stale/double-tap guard */
+    const focusAnchor = document.getElementById('focus-anchor');
+    if (focusAnchor) focusAnchor.focus();
+    playCardCB(stateCB.currentIndex, card);
+  }
+
+  function chooseRobotCardCB(player) {
+    const ledSuit = stateCB.ledSuit;
+    const legal = legalCardsCB(player.hand, ledSuit);
+
+    function wouldWin(card) {
+      const hypothetical = stateCB.currentTrick.concat([{ player: player.id, card: card }]);
+      const winner = decideWinner(hypothetical, ledSuit || card.suit, 'Spades');
+      return winner && winner.player === player.id;
+    }
+
+    if (!ledSuit) {
+      const nonSpades = legal.filter(c => c.suit !== 'Spades');
+      const pool = nonSpades.length > 0 ? nonSpades : legal;
+      const bySuitCount = {};
+      pool.forEach(c => { bySuitCount[c.suit] = (bySuitCount[c.suit] || 0) + 1; });
+      let bestSuit = pool[0].suit;
+      Object.keys(bySuitCount).forEach(s => { if (bySuitCount[s] > bySuitCount[bestSuit]) bestSuit = s; });
+      const suitCards = pool.filter(c => c.suit === bestSuit).sort((a, b) => b.value - a.value);
+      return suitCards[suitCards.length - 1];
+    }
+
+    const winningCards = legal.filter(wouldWin);
+    if (winningCards.length > 0) {
+      const nonTrumpWinners = winningCards.filter(c => c.suit !== 'Spades');
+      const pool2 = (nonTrumpWinners.length > 0 ? nonTrumpWinners : winningCards).slice()
+        .sort((a, b) => a.value - b.value);
+      return pool2[0];
+    }
+
+    const nonSpadeLegal = legal.filter(c => c.suit !== 'Spades');
+    const pool3 = (nonSpadeLegal.length > 0 ? nonSpadeLegal : legal).slice()
+      .sort((a, b) => a.value - b.value);
+    return pool3[0];
+  }
+
+  function robotPlayCB(player) {
+    if (!stateCB || stateCB.phase !== 'playing') return;
+    const card = chooseRobotCardCB(player);
+    playCardCB(stateCB.currentIndex, card);
+  }
+
+  function playCardCB(playerIndex, card) {
+    stateCB.inputLocked = true;   /* is player ki chaal process ho rahi hai — koi aur tap nahi maanenge jab tak agla turn na aaye */
+    const player = stateCB.players[playerIndex];
+    const idx = player.hand.indexOf(card);
+    if (idx !== -1) player.hand.splice(idx, 1);
+
+    if (!stateCB.ledSuit) stateCB.ledSuit = card.suit;
+    stateCB.currentTrick.push({ player: player.id, playerName: player.name, isHuman: player.isHuman, card: card });
+
+    renderAiZoneCB();
+    renderTrickZoneCB();
+    if (player.isHuman) renderHandCB();
+
+    const playMsg = (player.isHuman ? 'You played ' : player.name + ' played ') + card.label + '.';
+    stateCB.history.push((player.isHuman ? 'You' : player.name) + ' played ' + card.label + '.');
+    updateHistoryBtnCB();
+    logGameEvent('card_played', { game_type: 'callbreak', card: card.label });
+    playSound('cardFlip');
+
+    const announceFn = player.isHuman ? announce : announceRobotPlay;
+    announceFn(playMsg, () => {
+      if (stateCB.currentTrick.length === stateCB.players.length) {
+        setTimeout(() => resolveTrickCB(), 600);
+      } else {
+        advanceTurnCB();
+        takeTurnCB();
+      }
+    });
+  }
+
+  function advanceTurnCB() {
+    const n = stateCB.players.length;
+    stateCB.currentIndex = (stateCB.currentIndex + 1) % n;
+  }
+
+  function resolveTrickCB() {
+    const winnerEntry = decideWinner(stateCB.currentTrick, stateCB.ledSuit, 'Spades');
+    const winner = stateCB.players[winnerEntry.player];
+    winner.tricksWon++;
+    stateCB.tricksPlayedThisRound++;
+
+    playSound(winner.isHuman ? 'trickWin' : 'trickLose');
+
+    const winnerLabel = winner.isHuman ? 'You' : winner.name;
+    const msg = lvl(
+      winnerLabel + ' won trick with ' + winnerEntry.card.label + '.',
+      (winner.isHuman ? 'You won' : winner.name + ' won') + ' this trick with ' + winnerEntry.card.label + '. ' + winner.tricksWon + ' trick' + (winner.tricksWon === 1 ? '' : 's') + ' so far.'
+    );
+    stateCB.history.push('--- Trick ' + stateCB.tricksPlayedThisRound + ' won by ' + winnerLabel + ' ---');
+    updateHistoryBtnCB();
+    updateTrickStatusCB(msg);
+    updateScoresDrawerCB();
+
+    announce(msg, () => {
+      stateCB.currentTrick = [];
+      stateCB.ledSuit = null;
+      renderTrickZoneCB();
+
+      if (stateCB.tricksPlayedThisRound === 13) {
+        setTimeout(() => endRoundCB(), 1200);
+        return;
+      }
+
+      stateCB.leaderIndex = winner.id;
+      stateCB.currentIndex = stateCB.leaderIndex;
+      renderAiZoneCB();
+      takeTurnCB();
+    });
+  }
+
+  /* ── VISUAL RENDERING ── */
+  function renderAiZoneCB() {
+    const row = document.getElementById('cb-ai-cards-visual');
+    if (!row) return;
+    row.innerHTML = '';
+    stateCB.players.filter(p => !p.isHuman).forEach(p => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
+      const cardBack = document.createElement('div');
+      cardBack.className = 'card-back';
+      cardBack.textContent = '🂠';
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:0.68rem;color:var(--text-muted);white-space:nowrap;';
+      label.textContent = p.name + ' (' + p.hand.length + ')';
+      wrap.appendChild(cardBack);
+      wrap.appendChild(label);
+      row.appendChild(wrap);
+    });
+  }
+
+  function renderTrickZoneCB() {
+    const container = document.getElementById('cb-trick-cards');
+    container.innerHTML = '';
+    stateCB.currentTrick.forEach(entry => {
+      const suitSymbol = entry.card.display.replace(/[^♠♥♣♦]/g, '');
+      const rankShort  = entry.card.display.replace(/[♠♥♣♦]/g, '');
+      const div = document.createElement('div');
+      div.className = 'card-human' + (entry.card.red ? ' suit-red' : '');
+      div.style.cssText = 'width:44px;height:62px;pointer-events:none;';
+      const [tl, center, br] = buildCardSpans(suitSymbol, rankShort, entry.card.red);
+      div.appendChild(tl); div.appendChild(center); div.appendChild(br);
+      container.appendChild(div);
+    });
+    if (stateCB.currentTrick.length === 0) {
+      document.getElementById('cb-trick-status').textContent =
+        stateCB.phase === 'bidding' ? 'Waiting for bids…' : 'Waiting for first card…';
+    }
+  }
+
+  function updateTrickStatusCB(msg) {
+    document.getElementById('cb-trick-status').textContent = msg;
+  }
+
+  function clearTrickZoneCB(msg) {
+    document.getElementById('cb-trick-cards').innerHTML = '';
+    document.getElementById('cb-trick-status').textContent = msg;
+  }
+
+  function updateStatusBarCB() {
+    const bar = document.getElementById('cb-status-bar');
+    const text = document.getElementById('cb-status-text');
+    let msg;
+    if (stateCB.phase === 'bidding') {
+      const bidderIdx = stateCB.biddingOrder[stateCB.biddingQueueIdx];
+      const bidder = stateCB.players[bidderIdx];
+      msg = 'Round ' + stateCB.roundNumber + ' of ' + stateCB.roundsToPlay + ' — ' + (bidder.isHuman ? 'Your bid' : bidder.name + ' bidding');
+    } else if (stateCB.phase === 'playing') {
+      const turnPlayer = stateCB.players[stateCB.currentIndex];
+      msg = 'Round ' + stateCB.roundNumber + ' of ' + stateCB.roundsToPlay + ' — ' + (turnPlayer.isHuman ? 'Your turn' : turnPlayer.name + '\u2019s turn');
+    } else {
+      msg = 'Round ' + stateCB.roundNumber + ' of ' + stateCB.roundsToPlay;
+    }
+    text.textContent = msg;
+    bar.setAttribute('aria-label', msg + '.');
+  }
+
+  function updateHistoryBtnCB() {
+    const btn = document.getElementById('btn-history-cb');
+    if (btn) btn.setAttribute('aria-label', 'View move history. ' + (stateCB ? stateCB.history.length : 0) + ' moves recorded.');
+  }
+
+  function formatScoreCB(score) {
+    const rounded = Math.round(score * 10) / 10;
+    return (rounded % 1 === 0) ? String(rounded) : rounded.toFixed(1);
+  }
+
+  /* ── HISTORY DRAWER ── */
+  function openHistoryCB() {
+    const list = document.getElementById('history-list-cb');
+    if (!stateCB || stateCB.history.length === 0) {
+      list.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No moves yet.</p>';
+      announce('History panel opened. No moves recorded yet.');
+    } else {
+      list.innerHTML = stateCB.history.map((move, i) =>
+        '<div class="panel-row"><span style="color:var(--text-muted);min-width:56px;">Move ' + (i + 1) + '</span><span>' + move + '</span></div>'
+      ).join('');
+      announce('History panel opened. ' + stateCB.history.length + ' moves recorded.');
+    }
+    const drawer = document.getElementById('drawer-history-cb');
+    drawer.removeAttribute('inert');
+    drawer.removeAttribute('aria-hidden');
+    drawer.classList.add('open');
+    setCallBreakScreenInert(true);
+    setTimeout(() => {
+      const backBtn = drawer.querySelector('.drawer-back-btn');
+      if (backBtn) backBtn.focus();
+    }, 340);
+    modalHistoryPush('historycb');
+  }
+
+  function closeHistoryCB(fromBackButton) {
+    const drawer = document.getElementById('drawer-history-cb');
+    drawer.classList.remove('open');
+    setCallBreakScreenInert(false);
+    setTimeout(() => {
+      drawer.setAttribute('inert', '');
+      drawer.setAttribute('aria-hidden', 'true');
+    }, 350);
+    announce('History panel closed.');
+    setTimeout(() => document.getElementById('btn-history-cb').focus(), 50);
+    if (!fromBackButton) modalHistoryPop('historycb');
+  }
+
+  /* ── SCORES DRAWER ── */
+  function updateScoresDrawerCB() {
+    if (!stateCB) return;
+    const list = document.getElementById('scores-list-cb');
+    const totals = document.getElementById('totals-list-cb');
+    if (!list || !totals) return;
+    list.innerHTML = stateCB.players.map(p =>
+      '<div class="panel-row"><span>' + (p.isHuman ? 'You' : p.name) + '</span><span>Bid ' + (p.bid === null ? '—' : p.bid) + ' • Won ' + p.tricksWon + '</span></div>'
+    ).join('');
+    totals.innerHTML = stateCB.players.map(p =>
+      '<div class="panel-row"><span>' + (p.isHuman ? 'You' : p.name) + '</span><span>' + formatScoreCB(p.totalScore) + '</span></div>'
+    ).join('');
+  }
+
+  function openScoresCB() {
+    updateScoresDrawerCB();
+    const drawer = document.getElementById('drawer-scores-cb');
+    drawer.removeAttribute('inert');
+    drawer.removeAttribute('aria-hidden');
+    drawer.classList.add('open');
+    setCallBreakScreenInert(true);
+    announce('Scores panel opened.');
+    setTimeout(() => {
+      const backBtn = drawer.querySelector('.drawer-back-btn');
+      if (backBtn) backBtn.focus();
+    }, 340);
+    modalHistoryPush('scorescb');
+  }
+
+  function closeScoresCB(fromBackButton) {
+    const drawer = document.getElementById('drawer-scores-cb');
+    drawer.classList.remove('open');
+    setCallBreakScreenInert(false);
+    setTimeout(() => {
+      drawer.setAttribute('inert', '');
+      drawer.setAttribute('aria-hidden', 'true');
+    }, 350);
+    announce('Scores panel closed.');
+    setTimeout(() => document.getElementById('btn-scores-cb').focus(), 50);
+    if (!fromBackButton) modalHistoryPop('scorescb');
+  }
+
+  /* ── ROUND END / SCORING ── */
+  function endRoundCB() {
+    stateCB.phase = 'roundover';
+    stateCB.players.forEach(p => {
+      if (p.tricksWon >= p.bid) {
+        p.roundScore = p.bid + 0.1 * (p.tricksWon - p.bid);
+      } else {
+        p.roundScore = -p.bid;
+      }
+      p.totalScore += p.roundScore;
+    });
+
+    stateCB.history.push('--- Round ' + stateCB.roundNumber + ' scored ---');
+    updateHistoryBtnCB();
+    updateScoresDrawerCB();
+    logGameEvent('round_completed', { game_type: 'callbreak', round: stateCB.roundNumber });
+
+    showRoundSummaryCB();
+  }
+
+  function showRoundSummaryCB() {
+    document.getElementById('cb-round-summary-title').textContent =
+      'Round ' + stateCB.roundNumber + ' Complete';
+    const table = document.getElementById('cb-round-summary-table');
+    table.innerHTML = stateCB.players.map(p =>
+      '<div class="panel-row"><span>' + (p.isHuman ? 'You' : p.name) + '</span><span>Bid ' + p.bid + ', Won ' + p.tricksWon + ' \u2192 ' + formatScoreCB(p.roundScore) + ' (Total: ' + formatScoreCB(p.totalScore) + ')</span></div>'
+    ).join('');
+
+    const isLastRound = stateCB.roundNumber >= stateCB.roundsToPlay;
+    const btn = document.getElementById('cb-round-summary-btn');
+    btn.textContent = isLastRound ? 'See Final Result' : 'Next Round';
+    btn.setAttribute('aria-label', isLastRound ? 'See final match result.' : 'Continue to next round.');
+
+    const overlay = document.getElementById('cb-round-summary-overlay');
+    overlay.style.display = 'flex';
+    setCallBreakBoardInert(true);
+
+    const humanP = stateCB.players[0];
+    const summaryMsg = lvl(
+      'Round ' + stateCB.roundNumber + ' done. You scored ' + formatScoreCB(humanP.roundScore) + '.',
+      'Round ' + stateCB.roundNumber + ' is complete. You bid ' + humanP.bid + ' and won ' + humanP.tricksWon + ' tricks, scoring ' + formatScoreCB(humanP.roundScore) + ' this round. Your total is now ' + formatScoreCB(humanP.totalScore) + '.'
+    );
+    setTimeout(() => {
+      document.getElementById('cb-round-summary-title').focus();
+      announce(summaryMsg);
+    }, 200);
+  }
+
+  function continueAfterRoundCB() {
+    const overlay = document.getElementById('cb-round-summary-overlay');
+    overlay.style.display = 'none';
+    setCallBreakBoardInert(false);
+
+    if (stateCB.roundNumber >= stateCB.roundsToPlay) {
+      endMatchCB();
+      return;
+    }
+
+    stateCB.roundNumber++;
+    stateCB.dealerIndex = (stateCB.dealerIndex + 1) % stateCB.players.length;
+    startRoundCB();
+  }
+
+  /* ── MATCH END ── */
+  function endMatchCB() {
+    stateCB.phase = 'gameover';
+    const sorted = stateCB.players.slice().sort((a, b) => b.totalScore - a.totalScore);
+    const humanP = stateCB.players[0];
+    const humanRank = sorted.indexOf(humanP) + 1;
+    const humanWon = sorted[0] === humanP;
+
+    playSound(humanWon ? 'win' : 'lose');
+    const isFirstMatchTodayCB = updateAppStreak();
+    scheduleDailyReminder();
+
+    /* ── Wallet: Crowns + Cups (Reward System Plan) ──
+       Jeeto +5, haaro -4 (floor 0). Cup sirf WIN pe milta hai —
+       exact 99/Court Piece pattern, incrementCup() teeno games
+       ke cups jod ke 10th-win milestone check karta hai. */
+    awardCrowns(humanWon ? 5 : -4, humanWon ? 'Won a Call Break match' : 'Lost a Call Break match');
+    if (humanWon) {
+      incrementCup('callbreak').then((totalWinsAfter) => {
+        if (totalWinsAfter !== null) checkGameplayMilestones(totalWinsAfter, isFirstMatchTodayCB);
+      });
+    } else if (isFirstMatchTodayCB && appStreak === 30) {
+      checkGameplayMilestones(null, isFirstMatchTodayCB);
+    }
+    if (isFirstMatchTodayCB) awardCrowns(2, 'First match of the day');
+    const milestoneBonusCB = streakMilestoneBonus(appStreak);
+    if (isFirstMatchTodayCB && milestoneBonusCB > 0) {
+      awardCrowns(milestoneBonusCB, appStreak + '-day streak milestone');
+    }
+    updateDailyChallenge('callbreak', humanWon);
+
+    const durationSecCB = Math.round((Date.now() - (cbMatchStartTime || Date.now())) / 1000);
+
+    logGameEvent('match_completed', {
+      game_type: 'callbreak',
+      result: humanWon ? 'win' : 'loss',
+      duration_sec: durationSecCB,
+      moves_played: stateCB.history.length
+    });
+
+    const currentUserCB = auth.currentUser;
+    if (currentUserCB) {
+      db.collection('users').doc(currentUserCB.uid)
+        .collection('matchResults').add({
+          game:         'callbreak',
+          result:       humanWon ? 'win' : 'loss',
+          rank:         humanRank,
+          totalScore:   humanP.totalScore,
+          robotCount:   stateCB.players.length - 1,
+          roundsPlayed: stateCB.roundsToPlay,
+          timestamp:    firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .catch(function(err) {
+          console.error('Firestore matchResult save error (Call Break):', err);
+        });
+    }
+
+    const table = document.getElementById('cb-gameover-table');
+    table.innerHTML = sorted.map((p, i) =>
+      '<div class="panel-row"><span>' + (i + 1) + '. ' + (p.isHuman ? 'You' : p.name) + '</span><span>' + formatScoreCB(p.totalScore) + '</span></div>'
+    ).join('');
+
+    document.getElementById('cb-gameover-msg').textContent =
+      humanWon ? '\uD83C\uDFC6 MATCH WON!' : (humanRank === stateCB.players.length ? '\uD83D\uDC80 MATCH LOST' : 'MATCH OVER \u2014 Rank ' + humanRank);
+    document.getElementById('cb-gameover-summary-text').textContent =
+      'Rounds played: ' + stateCB.roundsToPlay + '. Your total: ' + formatScoreCB(humanP.totalScore) + '. Duration: ' + formatDuration(durationSecCB) + '.';
+
+    const overlay = document.getElementById('cb-gameover-overlay');
+    overlay.style.display = 'flex';
+    setCallBreakBoardInert(true);
+
+    const shareBtn = document.getElementById('btn-share-whatsapp-cb');
+    if (shareBtn) {
+      shareBtn.onclick = (e) => {
+        e.stopPropagation();
+        const resultText = humanWon ? 'won! \uD83C\uDFC6' : 'finished rank ' + humanRank + '.';
+        const msg = 'I just played Call Break on Card Game and ' + resultText
+          + ' \u2660\uFE0F Total score: ' + formatScoreCB(humanP.totalScore)
+          + '. My streak: ' + appStreak + ' day' + (appStreak === 1 ? '' : 's') + '! Try it here:';
+        const shareUrl = currentApkUrl();
+        const text = encodeURIComponent(msg + '\n' + shareUrl);
+        window.open('https://wa.me/?text=' + text, '_blank');
+      };
+    }
+
+    setTimeout(() => {
+      const msgEl = document.getElementById('cb-gameover-msg');
+      msgEl.focus();
+      announce(msgEl.textContent + '. ' + document.getElementById('cb-gameover-summary-text').textContent);
+    }, 200);
+  }
+  </script>
        Registers sw.js (must be uploaded alongside this index.html,
        in the same folder, on GitHub Pages) so the app:
        - Works offline using the last cached version
