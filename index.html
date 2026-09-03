@@ -2400,6 +2400,15 @@
             Continue with Google
           </button>
 
+          <!-- Google Sign-In error — real DOM focus target, NOT aria-live.
+               Native account-picker band hone par WebView khud focus wapas
+               upar wale button par bhej deta hai, jo announce()'s aria-live
+               update se race karke usse silently drop kar sakta hai. Real
+               focus() TalkBack ka sabse guaranteed announcement path hai —
+               isliye error yahan force-focus karke bola jaata hai. -->
+          <div id="google-signin-error" role="alert" tabindex="-1"
+            style="color:#ff6b6b;font-size:0.85rem;min-height:18px;outline:none;"></div>
+
           <!-- Separator -->
           <div style="display:flex;align-items:center;gap:12px;margin:20px 0;" aria-hidden="true">
             <div style="flex:1;height:1px;background:#444;"></div>
@@ -4720,6 +4729,8 @@
 
   /* Shared function to save user after sign-in */
   function onSignInSuccess(user) {
+    const gErrEl = document.getElementById('google-signin-error');
+    if (gErrEl) gErrEl.textContent = '';
     profile.signedIn  = true;
     profile.name      = user.displayName || 'Player';
     profile.email     = user.email || '';
@@ -5496,7 +5507,23 @@
     ]);
   }
 
+  /* Error ko reliably TalkBack se bulwane ke liye — aria-live() ke bajaye
+     asli DOM focus() use karta hai, taakah native account-picker band hone
+     ke baad WebView ka apna focus-return kabhi is announcement ko race
+     karke drop na kar sake. 400ms ka wait jaan-boojh kar diya hai taakah
+     pehle WebView apna khud ka focus-return kar le, phir hum jaan-boojh kar
+     usse override karein. */
+  function showGoogleSignInError(msg) {
+    announce(msg);
+    const errEl = document.getElementById('google-signin-error');
+    if (!errEl) return;
+    errEl.textContent = msg;
+    setTimeout(() => { errEl.focus(); }, 400);
+  }
+
   async function handleGoogleSignIn() {
+    const errEl = document.getElementById('google-signin-error');
+    if (errEl) errEl.textContent = '';
     announce('Opening Google Sign-In. Please wait.');
 
     /* APK mein native plugin use karo */
@@ -5533,7 +5560,8 @@
         onSignInSuccess(fbResult.user);
       } catch (error) {
         console.error('Native sign-in error:', error);
-        announce('Sign-in failed: ' + (error.message || 'Please try again.'));
+        const detail = error.message || error.code || 'Unknown error.';
+        showGoogleSignInError('Sign-in failed: ' + detail);
       }
     } else {
       /* Browser mein popup use karo */
@@ -5542,7 +5570,7 @@
         onSignInSuccess(result.user);
       }).catch((error) => {
         console.error('Popup sign-in error:', error.code, error.message);
-        announce('Sign-in failed. ' + (error.message || 'Please try again.'));
+        showGoogleSignInError('Sign-in failed: ' + (error.message || error.code || 'Please try again.'));
       });
     }
   }
