@@ -5543,8 +5543,17 @@
         if (!GoogleSignIn) throw new Error('GoogleSignIn native plugin not found — check it is installed and synced.');
 
         await withTimeout(GoogleSignIn.initialize({
-          clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com',
-          scopes: ['profile', 'email']
+          clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com'
+          /* NOTE: scopes jaan-boojh kar hata di gayi hain. Purana
+             ['profile','email'] short-form tha jo sirf purane
+             @codetrix-studio plugin mein chalta tha — naya capawesome
+             plugin full scope URL expect karta hai (jaise
+             'https://www.googleapis.com/auth/userinfo.profile'),
+             warna scope invalid maana jaata hai. Humein scopes ki
+             zarurat hi nahi — idToken, email, aur displayName sabhi
+             default result mein bina kisi scope ke already aate hain;
+             scopes sirf accessToken/serverAuthCode ke liye chahiye
+             hote hain, jo yeh app use nahi karta. */
         }), 15000, 'Initialize');
 
         announce('Choose your Google account.');
