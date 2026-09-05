@@ -4709,17 +4709,20 @@
 
   function downloadAppUpdate() {
     if (!latestApkUrl) return;
-    announce('Opening download link in browser.');
-    /* PEHLE: window.open(latestApkUrl, '_system') use ho raha tha —
-       yeh Cordova-era tareeka hai jo Capacitor WebView mein reliably
-       kaam nahi karta (koi ready system-browser handler nahi hota,
-       isliye Android sirf ek "open with?" jaisa prompt dikhata hai
-       jo khud aage nahi badhta). AB: @capacitor/browser plugin use
-       karte hain (jo OAuth sign-in ke liye already install hai) —
-       yeh guaranteed Chrome Custom Tab kholta hai. */
-    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: latestApkUrl });
+    /* Naye APK (jisme @capacitor/browser hai) mein seedha Custom Tab khulta
+       hai. Purani installed APKs (jinme yeh plugin build-time par shamil hi
+       nahi tha) ke liye Share plugin use karte hain — yeh sabse purani APK
+       mein bhi hamesha se maujood raha hai, isliye guaranteed kaam karega
+       (bas ek extra tap lagega: user "Chrome"/"Browser" choose karega). */
+    const Capacitor = window.Capacitor;
+    if (Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins.Browser) {
+      announce('Opening download link in browser.');
+      Capacitor.Plugins.Browser.open({ url: latestApkUrl });
+    } else if (Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins.Share) {
+      announce('Choose an app to open the download link.');
+      Capacitor.Plugins.Share.share({ url: latestApkUrl, title: 'Download update' }).catch(() => {});
     } else {
+      announce('Opening download link in browser.');
       window.open(latestApkUrl, '_blank');
     }
   }
