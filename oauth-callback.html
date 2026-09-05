@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signing in…</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #121212;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    text-align: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+  <p role="status">Signing you in&hellip; you can close this tab if it doesn&rsquo;t return automatically.</p>
+  <script>
+    /* Google isi page par redirect karta hai, id_token URL ke FRAGMENT
+       (window.location.hash) mein deta hai — server tak kabhi nahi
+       jaata, isliye yeh page purely static rah sakta hai, koi backend
+       nahi chahiye. Hum bas isi fragment ko app ke custom URL scheme
+       par forward kar dete hain — Android isse pakad kar app kholta
+       hai (agar app installed hai). */
+    var hash = window.location.hash || '';
+    var target = 'com.aliaccesslabs.cardgame://oauth-callback' + hash;
+    window.location.href = target;
+  </script>
+</body>
+</html>

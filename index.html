@@ -4599,7 +4599,7 @@
      Used for on-screen display (About/Settings) and as the browser-
      preview fallback. NOT used for the update-banner comparison
      anymore — see note below on installedAppVersion(). */
-  const CURRENT_APP_VERSION = '1.7.0';
+  const CURRENT_APP_VERSION = '1.8.0';
   const VERSION_CHECK_URL = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/version.json';
   const UPDATE_DISMISSED_KEY = 'update_dismissed_version';
 
@@ -5507,12 +5507,127 @@
     ]);
   }
 
+  /* ═══════════════════════════════════════════════════════════
+     GOOGLE SIGN-IN — Browser-based OAuth
+     ═══════════════════════════════════════════════════════════
+     PEHLE: @capawesome/capacitor-google-sign-in (Android Credential
+     Manager/Play Services ke through) use ho raha tha. Har account
+     ke saath, har baar "The user canceled the sign-in flow" aata
+     tha — jabki SHA-1 fingerprint, package name, Web client ID,
+     aur OAuth consent screen sab Google Cloud Console mein confirmed
+     sahi the. Yeh is device/Play-Services ke andar ka ek stuck/buggy
+     state lagta hai jo humare control se bahar hai (cache clear se
+     bhi theek nahi hua).
+
+     AB: seedha Google ke OAuth page ko system browser (Chrome Custom
+     Tab) mein kholte hain, phir Android ke apne deep-link system
+     (OS-level guaranteed mechanism — jaise koi WhatsApp link kisi
+     doosri app se WhatsApp khol deta hai) se wapas app mein aate
+     hain. Ismein kahin bhi Credential Manager ya Play Services ka
+     naya "sign in with Google" API involved nahi — poora upar wala
+     bug class hi bypass ho jata hai.
+
+     Do-hop redirect kyun: Google ka Web OAuth client sirf https
+     redirect URIs accept karta hai, seedha custom app:// scheme
+     nahi. Isliye: Google → hamara https callback page
+     (oauth-callback.html, GitHub Pages par) → wahan se JS turant
+     app:// custom scheme par bounce karta hai → Android intent-filter
+     usse pakad kar app kholta hai. Yeh standard, proven pattern hai
+     jo bade OAuth libraries (jaise AppAuth) bhi mobile ke liye
+     yehi karte hain. */
+
+  const GOOGLE_OAUTH_REDIRECT_HTTPS = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/oauth-callback.html';
+  const GOOGLE_OAUTH_REDIRECT_SCHEME = 'com.aliaccesslabs.cardgame://oauth-callback';
+  let __googleOAuthNonce = null;
+
+  function generateNonce() {
+    const arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* Sirf payload padhne ke liye — signature verify nahi karta.
+     Signature verification zaroori nahi hai kyunki hum is token ko
+     seedha trust nahi kar rahe: Firebase ka signInWithCredential()
+     apne server par poori JWT signature/audience verify karta hai
+     is se pehle ki koi session bane. Yahan sirf humara apna nonce
+     match karna hai (replay-protection ke liye). */
+  function decodeJwtPayload(token) {
+    try {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+      return JSON.parse(atob(padded));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function parseFragmentParams(fragment) {
+    const params = {};
+    fragment.replace(/^#/, '').split('&').forEach((pair) => {
+      if (!pair) return;
+      const eq = pair.indexOf('=');
+      if (eq === -1) return;
+      params[decodeURIComponent(pair.slice(0, eq))] = decodeURIComponent(pair.slice(eq + 1));
+    });
+    return params;
+  }
+
+  /* Ek hi baar app boot pe register hota hai (per-click nahi) — taaki
+     redirect event kabhi bhi aaye, miss na ho. window.addEventListener
+     ('load', ...) ke andar se call hota hai, dashboard load hone par. */
+  function initGoogleOAuthRedirectListener() {
+    if (!isNativeApp() || !window.Capacitor.Plugins.App) return;
+
+    window.Capacitor.Plugins.App.addListener('appUrlOpen', async (data) => {
+      const url = data && data.url ? data.url : '';
+      if (!url.startsWith(GOOGLE_OAUTH_REDIRECT_SCHEME)) return;
+
+      try {
+        if (window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.close().catch(() => {});
+        }
+        const fragment = url.split('#')[1] || '';
+        const params = parseFragmentParams(fragment);
+
+        if (params.error) throw new Error('Google sign-in error: ' + params.error);
+        if (!params.id_token) throw new Error('No ID token received from Google.');
+
+        const payload = decodeJwtPayload(params.id_token);
+        if (!payload || !__googleOAuthNonce || payload.nonce !== __googleOAuthNonce) {
+          throw new Error('Sign-in verification failed. Please try again.');
+        }
+        __googleOAuthNonce = null;
+
+        await completeGoogleSignIn(params.id_token);
+      } catch (error) {
+        console.error('OAuth redirect error:', error);
+        showGoogleSignInError('Sign-in failed: ' + (error.message || 'Please try again.'));
+      }
+    });
+
+    /* Agar user Chrome tab ko khud band kar de (sign in complete kiye
+       bina), usse "Opening..." pe hamesha ke liye atka na chhodo. */
+    if (window.Capacitor.Plugins.Browser) {
+      window.Capacitor.Plugins.Browser.addListener('browserFinished', () => {
+        if (__googleOAuthNonce) {
+          __googleOAuthNonce = null;
+          showGoogleSignInError('Sign-in canceled.');
+        }
+      });
+    }
+  }
+
+  async function completeGoogleSignIn(idToken) {
+    announce('Finishing sign-in.');
+    const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+    const fbResult = await withTimeout(auth.signInWithCredential(credential), 15000, 'Firebase sign-in');
+    onSignInSuccess(fbResult.user);
+  }
+
   /* Error ko reliably TalkBack se bulwane ke liye — aria-live() ke bajaye
-     asli DOM focus() use karta hai, taakah native account-picker band hone
-     ke baad WebView ka apna focus-return kabhi is announcement ko race
-     karke drop na kar sake. 400ms ka wait jaan-boojh kar diya hai taakah
-     pehle WebView apna khud ka focus-return kar le, phir hum jaan-boojh kar
-     usse override karein. */
+     asli DOM focus() use karta hai, taakah WebView ka apna focus-return
+     kabhi is announcement ko race karke silently drop na kar sake. */
   function showGoogleSignInError(msg) {
     announce(msg);
     const errEl = document.getElementById('google-signin-error');
@@ -5526,51 +5641,28 @@
     if (errEl) errEl.textContent = '';
     announce('Opening Google Sign-In. Please wait.');
 
-    /* APK mein native plugin use karo */
+    /* APK mein system browser (Chrome Custom Tab) kholo */
     if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
       try {
-        /* PEHLE: @codetrix-studio/capacitor-google-auth use ho raha
-           tha — pehle CDN-import bug thi (window.Capacitor.Plugins
-           se fix bhi kar diya tha), lekin us plugin ke apne GitHub
-           page pe hi likha hai "yeh plugin virtually archived hai,
-           author se contact ka koi tareeka nahi hai" — aur woh khud
-           logon ko @capawesome/capacitor-google-sign-in pe migrate
-           karne ko keh rahe hain. Yeh naya plugin Capacitor 8.x ke
-           liye officially "Active support" mein hai. API bhi thoda
-           alag hai — idToken seedha result.idToken mein aata hai,
-           googleUser.authentication.idToken jaisa nested nahi. */
-        const GoogleSignIn = window.Capacitor.Plugins.GoogleSignIn;
-        if (!GoogleSignIn) throw new Error('GoogleSignIn native plugin not found — check it is installed and synced.');
+        const Browser = window.Capacitor.Plugins.Browser;
+        if (!Browser) throw new Error('Browser plugin not found — check it is installed and synced.');
 
-        await withTimeout(GoogleSignIn.initialize({
-          clientId: '495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com'
-          /* NOTE: scopes jaan-boojh kar hata di gayi hain. Purana
-             ['profile','email'] short-form tha jo sirf purane
-             @codetrix-studio plugin mein chalta tha — naya capawesome
-             plugin full scope URL expect karta hai (jaise
-             'https://www.googleapis.com/auth/userinfo.profile'),
-             warna scope invalid maana jaata hai. Humein scopes ki
-             zarurat hi nahi — idToken, email, aur displayName sabhi
-             default result mein bina kisi scope ke already aate hain;
-             scopes sirf accessToken/serverAuthCode ke liye chahiye
-             hote hain, jo yeh app use nahi karta. */
-        }), 15000, 'Initialize');
+        __googleOAuthNonce = generateNonce();
+        const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+          '?client_id=495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com' +
+          '&redirect_uri=' + encodeURIComponent(GOOGLE_OAUTH_REDIRECT_HTTPS) +
+          '&response_type=id_token' +
+          '&scope=' + encodeURIComponent('openid email profile') +
+          '&nonce=' + __googleOAuthNonce +
+          '&prompt=select_account';
 
-        announce('Choose your Google account.');
-        const result = await withTimeout(GoogleSignIn.signIn(), 60000, 'Account selection');
-        /* 60 sec — account chunne ka waqt user pe depend karta hai,
-           isliye baaki steps se lamba timeout diya hai. */
-
-        if (!result || !result.idToken) throw new Error('No ID token received from Google.');
-
-        announce('Finishing sign-in.');
-        const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken);
-        const fbResult = await withTimeout(auth.signInWithCredential(credential), 15000, 'Firebase sign-in');
-        onSignInSuccess(fbResult.user);
+        await Browser.open({ url: authUrl });
+        /* Result yahan se nahi aata — initGoogleOAuthRedirectListener()
+           ka appUrlOpen listener isse pick karega jab Android app ko
+           wapas kholega, aur wahi Firebase sign-in complete karega. */
       } catch (error) {
         console.error('Native sign-in error:', error);
-        const detail = error.message || error.code || 'Unknown error.';
-        showGoogleSignInError('Sign-in failed: ' + detail);
+        showGoogleSignInError('Sign-in failed: ' + (error.message || error.code || 'Unknown error.'));
       }
     } else {
       /* Browser mein popup use karo */
@@ -6440,6 +6532,7 @@
     });
     announce('Card Game. Dashboard loaded. Choose a game to play.');
     initHardwareBackButton();
+    initGoogleOAuthRedirectListener();
   });
 
   /* ════════════════════════════════════════════
