@@ -5549,7 +5549,42 @@
 
   const GOOGLE_OAUTH_REDIRECT_HTTPS = 'https://aliabbas7362-a11y.github.io/Ali-access-lab-/oauth-callback.html';
   const GOOGLE_OAUTH_REDIRECT_SCHEME = 'com.aliaccesslabs.cardgame://oauth-callback';
-  let __googleOAuthNonce = null;
+
+  /* PEHLE: nonce ek JS variable (memory) mein rakha jata tha. Masla yeh
+     tha — jab tak user Chrome mein account select kar raha hota hai,
+     Android (khaaskar sasre/budget phones — MIUI, Vivo, Oppo waghera)
+     background mein hamari app ko memory bachane ke liye BAND kar
+     sakta hai. Jab Chrome deep-link se wapas app kholta hai, app FRESH
+     start hoti hai — aur memory wala nonce gayab ho chuka hota hai.
+     Asli, sahi sign-in bhi "verification failed" ban jata tha, kyunki
+     verify karne wali cheez hi nahi bachi thi.
+     AB: localStorage use karte hain — yeh app band/restart hone par
+     bhi bacha rehta hai, 10 minute tak valid (expiry replay-protection
+     ke liye). */
+  const OAUTH_NONCE_KEY = 'googleOAuthNonce';
+  const OAUTH_NONCE_MAX_AGE_MS = 10 * 60 * 1000;
+
+  function setOAuthNonce(nonce) {
+    try {
+      localStorage.setItem(OAUTH_NONCE_KEY, JSON.stringify({ nonce: nonce, ts: Date.now() }));
+    } catch (e) { /* localStorage blocked — sign-in chalega, bas replay-protection nahi hogi */ }
+  }
+
+  function getOAuthNonce() {
+    try {
+      const raw = localStorage.getItem(OAUTH_NONCE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !data.nonce || (Date.now() - data.ts) > OAUTH_NONCE_MAX_AGE_MS) return null;
+      return data.nonce;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearOAuthNonce() {
+    try { localStorage.removeItem(OAUTH_NONCE_KEY); } catch (e) {}
+  }
 
   function generateNonce() {
     const arr = new Uint8Array(16);
@@ -5605,10 +5640,11 @@
         if (!params.id_token) throw new Error('No ID token received from Google.');
 
         const payload = decodeJwtPayload(params.id_token);
-        if (!payload || !__googleOAuthNonce || payload.nonce !== __googleOAuthNonce) {
+        const storedNonce = getOAuthNonce();
+        if (!payload || !storedNonce || payload.nonce !== storedNonce) {
           throw new Error('Sign-in verification failed. Please try again.');
         }
-        __googleOAuthNonce = null;
+        clearOAuthNonce();
 
         await completeGoogleSignIn(params.id_token);
       } catch (error) {
@@ -5621,8 +5657,8 @@
        bina), usse "Opening..." pe hamesha ke liye atka na chhodo. */
     if (window.Capacitor.Plugins.Browser) {
       window.Capacitor.Plugins.Browser.addListener('browserFinished', () => {
-        if (__googleOAuthNonce) {
-          __googleOAuthNonce = null;
+        if (getOAuthNonce()) {
+          clearOAuthNonce();
           showGoogleSignInError('Sign-in canceled.');
         }
       });
@@ -5658,13 +5694,14 @@
         const Browser = window.Capacitor.Plugins.Browser;
         if (!Browser) throw new Error('Browser plugin not found — check it is installed and synced.');
 
-        __googleOAuthNonce = generateNonce();
+        const nonce = generateNonce();
+        setOAuthNonce(nonce);
         const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
           '?client_id=495670908374-plt4l2dsp5s9fqu2pvjg08orci7d4ugl.apps.googleusercontent.com' +
           '&redirect_uri=' + encodeURIComponent(GOOGLE_OAUTH_REDIRECT_HTTPS) +
           '&response_type=id_token' +
           '&scope=' + encodeURIComponent('openid email profile') +
-          '&nonce=' + __googleOAuthNonce +
+          '&nonce=' + nonce +
           '&prompt=select_account';
 
         await Browser.open({ url: authUrl });
