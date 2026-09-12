@@ -3755,6 +3755,7 @@
   async function shareApp() {
     const shareText = 'Try this accessible Card Game app — Court Piece and 99, built for TalkBack users!';
     claimShareBonusIfEligible();
+    logGameEvent('share_app', {});
 
     /* Native app (APK) mein browser ka navigator.share() support
        nahi hota — isliye pehle seedha WhatsApp wale fallback pe
@@ -5297,6 +5298,8 @@
     updateProfileUI();
     closeDrawer('profile');
     announce('Signed in as ' + profile.name + '.');
+    const signInMethod = (user.providerData && user.providerData[0] && user.providerData[0].providerId === 'google.com') ? 'google' : 'email';
+    logGameEvent('sign_in_success', { method: signInMethod });
     db.collection('users').doc(user.uid).set({
       name:  profile.name,
       email: profile.email,
@@ -5495,10 +5498,12 @@
     if (totalWinsAfter === 10) {
       playMilestoneFanfare();
       announce('Milestone! Your 10th win. Well played.');
+      logGameEvent('milestone_unlocked', { milestone: 'ten_wins' });
     }
     if (isFirstMatchToday && appStreak === 30) {
       playMilestoneFanfare();
       announce('Milestone! 30-day streak. Amazing consistency.');
+      logGameEvent('milestone_unlocked', { milestone: 'thirty_day_streak' });
     }
   }
 
@@ -5587,6 +5592,7 @@
         playSound('challenge');
         awardCrowns(result.challenge.reward, 'Daily Challenge: ' + result.challenge.text);
         announce('Daily Challenge complete! ' + result.challenge.text + '. Plus ' + result.challenge.reward + ' Crowns.');
+        logGameEvent('daily_challenge_completed', { challenge_id: result.challenge.id });
       }
     }).catch((err) => {
       console.error('Daily Challenge update error:', err);
@@ -5676,6 +5682,7 @@
     }).then((result) => {
       playSound('coin');
       announce('Daily Check-in complete! Day ' + result.newStreak + ' streak. Plus ' + result.reward + ' Crowns.');
+      logGameEvent('daily_checkin', { streak_day: result.newStreak, reward: result.reward });
 
       /* awardCrowns() jaisa hi pattern — history mein ek row daalo.
          Ye ALAG write hai (crownHistory subcollection ki apni rule
@@ -5881,6 +5888,7 @@
       else { ownedBadges.push(id); }
       playSound('purchase');
       announce(catalog.find(c => c.id === id).name + ' purchased.');
+      logGameEvent('purchase', { item_id: id, kind: kind, price: price });
       loadShopData();
     }).catch((err) => {
       if (err.message === 'insufficient-funds') {
@@ -6229,6 +6237,7 @@
      asli DOM focus() use karta hai, taakah WebView ka apna focus-return
      kabhi is announcement ko race karke silently drop na kar sake. */
   function showGoogleSignInError(msg) {
+    logGameEvent('sign_in_failed', { method: 'google', reason: String(msg).slice(0, 100) });
     announce(msg);
     const errEl = document.getElementById('google-signin-error');
     if (!errEl) return;
@@ -6293,6 +6302,7 @@
   }
 
   function showEmailAuthError(message) {
+    logGameEvent('sign_in_failed', { method: 'email', reason: String(message).slice(0, 100) });
     const el = getEmailAuthError();
     el.textContent = message;
     announce(message);
