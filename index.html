@@ -906,13 +906,14 @@
        structurally) but with its OWN internal
        start/game sub-views inside a single screen,
        as requested — no separate shuffle screen.
+       Bright sky theme (not the dark card-game felt) —
+       Abbas asked for this to look attractive/cheerful,
+       distinct from the serious card games.
        ───────────────────────────────────────── */
     #screen-game-flappybird {
       position: fixed; inset: 0;
       flex-direction: column;
-      background:
-        radial-gradient(ellipse 100% 70% at 50% 40%, rgba(15,35,18,0.9) 0%, transparent 80%),
-        var(--felt);
+      background: linear-gradient(180deg, #6ec6e8 0%, #a8ddf0 55%, #dff3fa 100%);
       display: none;
       overflow: hidden;
     }
@@ -942,8 +943,8 @@
     }
     .flappy-pipes-decor span {
       width: 16px; border-radius: 3px;
-      background: var(--green);
-      opacity: 0.55;
+      background: #2e9e4f;
+      opacity: 0.75;
       animation: flappy-sway 2.4s ease-in-out infinite;
     }
     .flappy-pipes-decor span:nth-child(1) { height: 26px; animation-delay: 0s; }
@@ -951,18 +952,18 @@
     .flappy-pipes-decor span:nth-child(3) { height: 20px; animation-delay: 0.6s; }
     .flappy-pipes-decor span:nth-child(4) { height: 34px; animation-delay: 0.9s; }
     @keyframes flappy-sway {
-      0%, 100% { opacity: 0.4; }
-      50%      { opacity: 0.75; }
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 0.9; }
     }
     .flappy-title {
-      color: var(--gold); font-size: 1.4rem; font-weight: bold;
+      color: #1b4a5e; font-size: 1.4rem; font-weight: bold;
       letter-spacing: 1px;
     }
     .flappy-instructions {
-      color: var(--text); font-size: 0.95rem; line-height: 1.7;
+      color: #2c4a54; font-size: 0.95rem; line-height: 1.7;
       max-width: 340px;
     }
-    .flappy-instructions .hi { color: var(--gold); font-weight: bold; }
+    .flappy-instructions .hi { color: #d9722a; font-weight: bold; }
 
     /* ── Game sub-panel — canvas + controls + status ── */
     .flappy-game-panel {
@@ -971,18 +972,22 @@
       position: relative; overflow: hidden;
     }
     #flappy-control-panel {
-      position: absolute; top: 10px; left: 10px; z-index: 10;
-      background: rgba(10,15,20,0.85);
-      border: 1px solid var(--border);
-      padding: 8px 10px; border-radius: var(--r-sm);
+      display: flex; align-items: center; gap: 6px;
     }
     #flappy-control-panel label {
-      color: var(--gold); display: block; font-size: 0.75rem;
-      margin-bottom: 6px; font-weight: bold;
+      color: var(--gold); font-size: 0.75rem; font-weight: bold;
     }
-    #flappy-control-panel input[type="range"] { width: 130px; accent-color: var(--gold); }
+    #flappy-control-panel input[type="range"] { width: 70px; accent-color: #d9722a; }
+    #flappy-score-hud {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(15, 58, 74, 0.9);
+      color: #ffffff; font-size: 1.3rem; font-weight: bold;
+      padding: 8px 20px; border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
     #flappy-canvas {
-      display: block; background: #10241a;
+      display: block; background: #6ec6e8;
       border: 3px solid var(--gold);
       border-radius: var(--r-sm);
       width: 100%; height: 100%;
@@ -2299,7 +2304,11 @@
     <!-- TOP BAR -->
     <div class="game-topbar" role="banner">
       <span class="game-topbar-title" aria-hidden="true">🐦 Flappy Bird</span>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div id="flappy-control-panel">
+          <label for="flappy-volume">Vol</label>
+          <input type="range" id="flappy-volume" min="0" max="100" value="70" aria-label="Flappy Bird volume">
+        </div>
         <button class="btn-small"
           aria-label="Quit Flappy Bird and return to home screen"
           onclick="backToDashboardFromFlappy()">
@@ -2310,7 +2319,16 @@
 
     <!-- START SUB-PANEL -->
     <div id="flappy-start-panel" class="flappy-start-panel">
-      <div class="flappy-bird-icon" aria-hidden="true">🐦</div>
+      <div class="flappy-bird-icon" aria-hidden="true">
+        <svg viewBox="0 0 120 100" width="72" height="60">
+          <polygon points="31.5,51.5 9,45.5 12,62 9,78.5 31.5,72.5" fill="#e0a52e"/>
+          <ellipse cx="60" cy="62" rx="34.5" ry="30" fill="#f4c542" stroke="#c98a1f" stroke-width="2"/>
+          <ellipse cx="57" cy="63.5" rx="28.5" ry="12.6" fill="#fff3d6" stroke="#c98a1f" stroke-width="1.5" transform="rotate(-15 57 63.5)"/>
+          <polygon points="87,57.5 108,62 87,69.5" fill="#e8722a"/>
+          <circle cx="70.5" cy="51.5" r="8.4" fill="#ffffff"/>
+          <circle cx="73.5" cy="51.5" r="3.9" fill="#2c2c2c"/>
+        </svg>
+      </div>
       <div class="flappy-pipes-decor" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
       <div class="flappy-title" id="flappy-start-title" tabindex="-1">FLAPPY BIRD</div>
       <div class="flappy-instructions">
@@ -2330,16 +2348,12 @@
 
     <!-- GAME SUB-PANEL -->
     <div id="flappy-game-panel" class="flappy-game-panel flappy-hidden">
-      <div id="flappy-control-panel">
-        <label for="flappy-volume">Volume:</label>
-        <input type="range" id="flappy-volume" min="0" max="100" value="70" aria-label="Flappy Bird volume">
-      </div>
+      <div id="flappy-score-hud" aria-hidden="true">Score: <span id="flappy-score-display">0</span></div>
       <canvas id="flappy-canvas"
         role="img"
         aria-label="Flappy Bird game area — tap anywhere to fly"></canvas>
       <div id="flappy-status" role="status" aria-live="off">
         <div id="flappy-status-text" tabindex="-1">READY</div>
-        <div style="font-size:0.82rem;margin-top:6px;color:var(--text-muted);">Score: <span id="flappy-score-display">0</span></div>
       </div>
     </div>
 
@@ -10515,10 +10529,13 @@
     x: 0, y: 0, width: 30, height: 30,
     velocity: 0, gravity: 0.25, flapForce: -8, maxVelocity: 6
   };
+  /* 1 = wing fully raised (just flapped), decays toward 0 (wing
+     resting/down) each frame — gives a real flap-and-settle
+     motion instead of a static shape. */
+  let flappyWingFlap = 0;
 
   const flappyPipe = { width: 80, gapSize: 300, spacing: 400, velocity: -2 };
   let flappyPipes = [];
-  let flappyNextPipeX = 0;
   let flappyPipesPassed = new Set();
 
   let flappyNavOscillator = null;
@@ -10664,6 +10681,7 @@
   function flapBird() {
     if (!flappyGameRunning || flappyGameOver) return;
     flappyBird.velocity = flappyBird.flapForce;
+    flappyWingFlap = 1;
     playFlappyFlapSound();
     vibrateFlappyFlap();
   }
@@ -10674,6 +10692,7 @@
     flappyBird.velocity += flappyBird.gravity;
     flappyBird.velocity = Math.min(flappyBird.velocity, flappyBird.maxVelocity);
     flappyBird.y += flappyBird.velocity;
+    flappyWingFlap = Math.max(0, flappyWingFlap - 0.08);
 
     updateFlappyNavPitch();
     giveFlappyVoiceGuidance();
@@ -10692,10 +10711,10 @@
       if (flappyPipes[i].x + flappyPipe.width < 0) flappyPipes.splice(i, 1);
     }
 
-    if (flappyNextPipeX < flappyCanvas.width) {
-      const gapPosition = Math.random() * (flappyCanvas.height - flappyPipe.gapSize - 100) + 50;
-      flappyPipes.push({ x: flappyCanvas.width, y: gapPosition });
-      flappyNextPipeX = flappyCanvas.width + flappyPipe.spacing;
+    if (flappyPipes.length === 0 || flappyPipes[flappyPipes.length - 1].x <= flappyCanvas.width - flappyPipe.spacing) {
+      const availableSpace = Math.max(100, flappyCanvas.height - flappyPipe.gapSize - 100);
+      const gapPosition = Math.random() * availableSpace + 50;
+      flappyPipes.push({ x: flappyCanvas.width + 40, y: gapPosition });
     }
 
     if (flappyBird.y - flappyBird.height / 2 <= 0 || flappyBird.y + flappyBird.height / 2 >= flappyCanvas.height) {
@@ -10741,9 +10760,9 @@
     flappyBird.x = flappyCanvas.width * 0.2;
     flappyBird.y = flappyCanvas.height / 2;
     flappyBird.velocity = 0;
+    flappyWingFlap = 0;
     flappyPipes = [];
     flappyPipesPassed.clear();
-    flappyNextPipeX = flappyCanvas.width + 200;
     flappyScore = 0;
     flappyGameRunning = true;
     flappyGameOver = false;
@@ -10751,33 +10770,124 @@
   }
 
   function drawFlappyGame() {
-    flappyCtx.fillStyle = '#10241a';
+    const sky = flappyCtx.createLinearGradient(0, 0, 0, flappyCanvas.height);
+    sky.addColorStop(0, '#6ec6e8');
+    sky.addColorStop(1, '#cdeefb');
+    flappyCtx.fillStyle = sky;
     flappyCtx.fillRect(0, 0, flappyCanvas.width, flappyCanvas.height);
 
-    flappyCtx.fillStyle = '#1b7a3e';
+    const capH = 22, capOverhang = 6;
     for (const p of flappyPipes) {
-      flappyCtx.fillRect(p.x, 0, flappyPipe.width, p.y);
-      flappyCtx.fillRect(p.x, p.y + flappyPipe.gapSize, flappyPipe.width, flappyCanvas.height);
+      flappyCtx.fillStyle = '#3fb35f';
+      flappyCtx.fillRect(p.x, 0, flappyPipe.width, Math.max(0, p.y - capH));
+      flappyCtx.fillRect(p.x, p.y + flappyPipe.gapSize + capH, flappyPipe.width, flappyCanvas.height);
+      flappyCtx.fillStyle = '#2a8a45';
+      flappyCtx.fillRect(p.x - capOverhang, Math.max(0, p.y - capH), flappyPipe.width + capOverhang * 2, capH);
+      flappyCtx.fillRect(p.x - capOverhang, p.y + flappyPipe.gapSize, flappyPipe.width + capOverhang * 2, capH);
     }
 
-    flappyCtx.fillStyle = '#e8b84b';
+    /* Bird — body tilts with velocity (nose up while rising, nose
+       down while falling, classic Flappy Bird feel), wing swings
+       up on flap and settles back down (flappyWingFlap decays
+       every frame in updateFlappyGame). */
+    const tiltRad = Math.max(-25, Math.min(75, flappyBird.velocity * 6)) * Math.PI / 180;
+    const r = flappyBird.width / 2;
+
+    flappyCtx.save();
+    flappyCtx.translate(flappyBird.x, flappyBird.y);
+    flappyCtx.rotate(tiltRad);
+
+    flappyCtx.fillStyle = '#f4c542';
     flappyCtx.beginPath();
-    flappyCtx.arc(flappyBird.x, flappyBird.y, flappyBird.width / 2, 0, Math.PI * 2);
+    flappyCtx.ellipse(0, 0, r * 1.15, r, 0, 0, Math.PI * 2);
     flappyCtx.fill();
-    flappyCtx.strokeStyle = '#ff6600';
-    flappyCtx.lineWidth = 3;
+    flappyCtx.strokeStyle = '#c98a1f';
+    flappyCtx.lineWidth = 2;
     flappyCtx.stroke();
 
-    flappyCtx.fillStyle = '#e8b84b';
-    flappyCtx.font = 'bold 36px Georgia';
-    flappyCtx.textAlign = 'left';
-    flappyCtx.fillText('Score: ' + flappyScore, 16, 50);
+    /* Tail — three fanned feathers (a proper bird tail), NOT the
+       forked diamond shape from before, which several reviewers
+       read as a fish tail. Feathers share a base near the body
+       and spread apart toward their tips. */
+    flappyCtx.fillStyle = '#e0a52e';
+    flappyCtx.strokeStyle = '#c98a1f';
+    flappyCtx.lineWidth = 1;
+    [
+      [[-r * 0.85, -r * 0.15], [-r * 1.7, -r * 0.55], [-r * 0.85, -r * 0.02]],
+      [[-r * 0.85, -r * 0.08], [-r * 1.85, 0],         [-r * 0.85, r * 0.08]],
+      [[-r * 0.85, r * 0.02],  [-r * 1.7, r * 0.55],   [-r * 0.85, r * 0.15]]
+    ].forEach(pts => {
+      flappyCtx.beginPath();
+      flappyCtx.moveTo(pts[0][0], pts[0][1]);
+      flappyCtx.lineTo(pts[1][0], pts[1][1]);
+      flappyCtx.lineTo(pts[2][0], pts[2][1]);
+      flappyCtx.closePath();
+      flappyCtx.fill();
+      flappyCtx.stroke();
+    });
+
+    /* Wing — a curved leaf shape (rounded at the shoulder,
+       tapering to a point at the tip), not a plain oval, so it
+       reads as a wing rather than a second body-blob. Cream
+       against the golden body for clear contrast. Sweeps through
+       a wide arc on each flap. */
+    const wingAngle = -1.3 + flappyWingFlap * 1.9;
+    flappyCtx.save();
+    flappyCtx.translate(-r * 0.05, r * 0.05);
+    flappyCtx.rotate(wingAngle);
+    flappyCtx.fillStyle = '#fff3d6';
+    flappyCtx.beginPath();
+    flappyCtx.moveTo(0, 0);
+    flappyCtx.quadraticCurveTo(r * 0.6, -r * 0.6, r * 1.2, -r * 0.1);
+    flappyCtx.quadraticCurveTo(r * 0.75, r * 0.3, 0, r * 0.18);
+    flappyCtx.closePath();
+    flappyCtx.fill();
+    flappyCtx.strokeStyle = '#c98a1f';
+    flappyCtx.lineWidth = 1.5;
+    flappyCtx.stroke();
+    flappyCtx.restore();
+
+    flappyCtx.fillStyle = '#e8722a';
+    flappyCtx.beginPath();
+    flappyCtx.moveTo(r * 0.9, -r * 0.15);
+    flappyCtx.lineTo(r * 1.6, 0);
+    flappyCtx.lineTo(r * 0.9, r * 0.25);
+    flappyCtx.closePath();
+    flappyCtx.fill();
+
+    flappyCtx.fillStyle = '#ffffff';
+    flappyCtx.beginPath();
+    flappyCtx.arc(r * 0.35, -r * 0.35, r * 0.28, 0, Math.PI * 2);
+    flappyCtx.fill();
+    flappyCtx.fillStyle = '#2c2c2c';
+    flappyCtx.beginPath();
+    flappyCtx.arc(r * 0.45, -r * 0.35, r * 0.13, 0, Math.PI * 2);
+    flappyCtx.fill();
+
+    flappyCtx.restore();
 
     if (flappyGameOver) {
-      flappyCtx.fillStyle = '#c0392b';
       flappyCtx.font = 'bold 26px Georgia';
       flappyCtx.textAlign = 'center';
-      flappyCtx.fillText('TAP TO RESTART', flappyCanvas.width / 2, flappyCanvas.height / 2);
+      const restartText = 'TAP TO RESTART';
+      const textWidth = flappyCtx.measureText(restartText).width;
+      const boxX = flappyCanvas.width / 2 - textWidth / 2 - 20;
+      const boxY = flappyCanvas.height / 2 - 26;
+      const boxW = textWidth + 40;
+      const boxH = 52;
+      flappyCtx.fillStyle = '#0f3a4a';
+      flappyCtx.beginPath();
+      try {
+        flappyCtx.roundRect(boxX, boxY, boxW, boxH, 12);
+      } catch (e) {
+        flappyCtx.rect(boxX, boxY, boxW, boxH);
+      }
+      flappyCtx.fill();
+      flappyCtx.strokeStyle = '#f4c542';
+      flappyCtx.lineWidth = 2;
+      flappyCtx.stroke();
+      flappyCtx.fillStyle = '#ffffff';
+      flappyCtx.fillText(restartText, flappyCanvas.width / 2, flappyCanvas.height / 2 + 9);
     }
   }
 
