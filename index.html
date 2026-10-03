@@ -1006,7 +1006,7 @@
     /* ─────────────────────────────────────────
        SPADES — GAME SCREEN (mirrors #screen-game-callbreak;
        everything else — .game-topbar, .trump-bar, .game-middle,
-       .ai-zone, .trick-zone, .game-info-bar, .bid-stepper-*,
+       .ai-zone, .trick-zone, .game-info-bar, .bid-select-*,
        .btn-shuffle, .card-human, .card-back, .panel-row,
        .slide-drawer, .shuffle-* — is class-based and reused
        directly, no duplication needed.)
@@ -1051,21 +1051,25 @@
       background: rgba(232,184,75,0.12);
     }
 
-    /* Bid stepper */
-    .bid-stepper-row {
-      display: flex; align-items: center; justify-content: center;
-      gap: 18px; margin: 10px 0;
+    /* Bid select — native <select> so Android/TalkBack opens the
+       OS's own picker dialog (not a custom styled list). Choosing
+       a value confirms the bid immediately, no separate button. */
+    .bid-select-row {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; margin: 10px 0;
     }
-    .bid-stepper-btn {
-      width: 52px; height: 52px; border-radius: 50%;
-      border: 1px solid var(--border); background: rgba(255,255,255,0.06);
-      color: var(--text); font-size: 1.4rem; font-weight: bold;
+    .bid-select-label {
+      font-size: 0.8rem; color: var(--text-muted);
+      letter-spacing: 1px; text-transform: uppercase;
     }
-    .bid-stepper-btn:active { background: rgba(255,255,255,0.14); }
-    .bid-stepper-value {
-      min-width: 70px; text-align: center;
-      font-size: 2rem; font-weight: bold; color: var(--gold);
+    .bid-select {
+      min-width: 140px; text-align: center;
+      font-size: 1.6rem; font-weight: bold; color: var(--gold);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 16px; font-family: var(--font);
     }
+    .bid-select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
     /* ─────────────────────────────────────────
        GAME SCREEN — FULL-SCREEN FELT TABLE
@@ -1613,27 +1617,19 @@
         Choose how many robot opponents you want, then tap Start Game.
       </p>
 
-      <!-- ROBOT COUNT SELECTOR (custom button-radio pattern —
-           same as Announcement Level in Settings — native
-           <input type="radio"> was unreliable across devices) -->
+      <!-- ROBOT COUNT SELECTOR — native <select>, same pattern as
+           the in-game bid dropdown. Starts empty (no default), so
+           the player must actively choose before Start Game works. -->
       <div class="robot-count-fieldset">
-        <div class="robot-count-legend">Number of robot opponents</div>
-        <div role="radiogroup" aria-label="Number of robot opponents. 1, 2, or 3."
-          style="display:flex;gap:10px;margin-top:10px;">
-          <button type="button" id="btn-robotcount-1" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="1 robot opponent. Double tap to select."
-            style="flex:1;" onclick="setRobotCount99(1)">1 Robot</button>
-          <button type="button" id="btn-robotcount-2" class="btn-small"
-            role="radio" aria-checked="true"
-            aria-label="2 robot opponents. Currently selected."
-            style="flex:1;border-color:var(--gold);color:var(--gold);"
-            onclick="setRobotCount99(2)">2 Robots</button>
-          <button type="button" id="btn-robotcount-3" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="3 robot opponents. Double tap to select."
-            style="flex:1;" onclick="setRobotCount99(3)">3 Robots</button>
-        </div>
+        <label class="robot-count-legend" for="select-robotcount-99">Number of robot opponents</label>
+        <select id="select-robotcount-99" class="bid-select" style="width:100%;margin-top:10px;"
+          aria-label="Number of robot opponents. Choose 1, 2, or 3."
+          onchange="setRobotCount99(this.value)">
+          <option value="" selected disabled>Choose…</option>
+          <option value="1">1 Robot</option>
+          <option value="2">2 Robots</option>
+          <option value="3">3 Robots</option>
+        </select>
       </div>
 
       <button class="btn-shuffle"
@@ -1700,51 +1696,29 @@
       </p>
 
       <div class="robot-count-fieldset">
-        <div class="robot-count-legend">Number of robot opponents</div>
-        <div role="radiogroup" aria-label="Number of robot opponents. 1, 2, or 3."
-          style="display:flex;gap:10px;margin-top:10px;">
-          <button type="button" id="btn-cb-robotcount-1" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="1 robot opponent. Double tap to select."
-            style="flex:1;" onclick="setRobotCountCB(1)">1 Robot</button>
-          <button type="button" id="btn-cb-robotcount-2" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="2 robot opponents. Double tap to select."
-            style="flex:1;" onclick="setRobotCountCB(2)">2 Robots</button>
-          <button type="button" id="btn-cb-robotcount-3" class="btn-small"
-            role="radio" aria-checked="true"
-            aria-label="3 robot opponents. Currently selected."
-            style="flex:1;border-color:var(--gold);color:var(--gold);"
-            onclick="setRobotCountCB(3)">3 Robots</button>
-        </div>
+        <label class="robot-count-legend" for="select-cb-robotcount">Number of robot opponents</label>
+        <select id="select-cb-robotcount" class="bid-select" style="width:100%;margin-top:10px;"
+          aria-label="Number of robot opponents. Choose 1, 2, or 3."
+          onchange="setRobotCountCB(this.value)">
+          <option value="" selected disabled>Choose…</option>
+          <option value="1">1 Robot</option>
+          <option value="2">2 Robots</option>
+          <option value="3">3 Robots</option>
+        </select>
       </div>
 
       <div class="robot-count-fieldset" style="margin-top:12px;">
-        <div class="robot-count-legend">Number of rounds</div>
-        <div role="radiogroup" aria-label="Number of rounds. 1 to 5."
-          style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-          <button type="button" id="btn-cb-rounds-1" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="1 round. Double tap to select."
-            style="flex:1;min-width:56px;" onclick="setRoundsCB(1)">1</button>
-          <button type="button" id="btn-cb-rounds-2" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="2 rounds. Double tap to select."
-            style="flex:1;min-width:56px;" onclick="setRoundsCB(2)">2</button>
-          <button type="button" id="btn-cb-rounds-3" class="btn-small"
-            role="radio" aria-checked="true"
-            aria-label="3 rounds. Currently selected."
-            style="flex:1;min-width:56px;border-color:var(--gold);color:var(--gold);"
-            onclick="setRoundsCB(3)">3</button>
-          <button type="button" id="btn-cb-rounds-4" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="4 rounds. Double tap to select."
-            style="flex:1;min-width:56px;" onclick="setRoundsCB(4)">4</button>
-          <button type="button" id="btn-cb-rounds-5" class="btn-small"
-            role="radio" aria-checked="false"
-            aria-label="5 rounds. Double tap to select."
-            style="flex:1;min-width:56px;" onclick="setRoundsCB(5)">5</button>
-        </div>
+        <label class="robot-count-legend" for="select-cb-rounds">Number of rounds</label>
+        <select id="select-cb-rounds" class="bid-select" style="width:100%;margin-top:10px;"
+          aria-label="Number of rounds. Choose 1 to 5."
+          onchange="setRoundsCB(this.value)">
+          <option value="" selected disabled>Choose…</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
       </div>
 
       <button class="btn-shuffle"
@@ -1767,7 +1741,7 @@
         <p>Spades are always the trump suit — this never changes, round to round.</p>
 
         <h2>Bidding</h2>
-        <p>Before each round, every player bids how many of the 13 tricks they think they can win, from 1 to 13. Bid using the stepper, then confirm.</p>
+        <p>Before each round, every player bids how many of the 13 tricks they think they can win, from 1 to 13. Open the bid dropdown and pick a number — it confirms as soon as you choose it.</p>
 
         <h2>Playing Tricks</h2>
         <p>The first player leads any card. Everyone else must follow the led suit if they can. If you have none of the led suit, you may play any card, including a spade — you are never forced to play a spade, and never forced to play a higher spade than one already played. The highest spade played wins the trick; if no spade was played, the highest card of the led suit wins. The trick winner leads the next trick.</p>
@@ -1870,7 +1844,7 @@
         Turn: <span id="game99-turn">You</span> &nbsp;•&nbsp;
         Direction: <span id="game99-direction" aria-hidden="true">&#8635;</span>
       </p>
-      <div class="game-info-bar" role="region" aria-label="History">
+      <div class="game-info-bar" role="region" aria-label="History and last move">
         <button class="info-btn"
           aria-label="View move history. No moves yet."
           aria-haspopup="dialog"
@@ -1878,6 +1852,13 @@
           onclick="openHistory99()">
           <div class="info-btn-label">History</div>
           <div class="info-btn-value">📋</div>
+        </button>
+        <button class="info-btn"
+          aria-label="Hear your last card and your opponent's last card."
+          id="btn-lastmove-99"
+          onclick="announceLastMove99()">
+          <div class="info-btn-label">Last Move</div>
+          <div class="info-btn-value">🔁</div>
         </button>
       </div>
     </div>
@@ -2013,7 +1994,7 @@
       </div>
 
       <!-- SCORES + HISTORY -->
-      <div class="game-info-bar" role="region" aria-label="Scores and history">
+      <div class="game-info-bar" role="region" aria-label="Scores, history, and last move">
         <button class="info-btn"
           aria-label="View bids and scores."
           aria-haspopup="dialog"
@@ -2029,6 +2010,13 @@
           onclick="openHistoryCB()">
           <div class="info-btn-label">History</div>
           <div class="info-btn-value">📋</div>
+        </button>
+        <button class="info-btn"
+          aria-label="Hear your last card and your opponent's last card."
+          id="btn-lastmove-cb"
+          onclick="announceLastMoveCB()">
+          <div class="info-btn-label">Last Move</div>
+          <div class="info-btn-value">🔁</div>
         </button>
       </div>
 
@@ -2059,20 +2047,12 @@
       <p style="font-size:0.85rem;color:var(--text-muted);margin:0;max-width:280px;">
         How many of the 13 tricks do you think you'll win?
       </p>
-      <div class="bid-stepper-row">
-        <button type="button" class="bid-stepper-btn"
-          aria-label="Decrease bid."
-          onclick="adjustBidCB(-1)">&#8722;</button>
-        <span class="bid-stepper-value" id="cb-bid-value" aria-live="polite">3</span>
-        <button type="button" class="bid-stepper-btn"
-          aria-label="Increase bid."
-          onclick="adjustBidCB(1)">+</button>
+      <div class="bid-select-row">
+        <label class="bid-select-label" for="cb-bid-select">Your Bid</label>
+        <select id="cb-bid-select" class="bid-select"
+          aria-label="Your bid. Choose a number from 1 to 13. Confirms as soon as you pick one."
+          onchange="selectBidCB(this.value)"></select>
       </div>
-      <button class="btn-shuffle" style="max-width:260px;"
-        aria-label="Confirm bid."
-        onclick="confirmBidCB()">
-        Confirm Bid
-      </button>
     </div>
 
     <!-- ROUND SUMMARY OVERLAY -->
@@ -2116,7 +2096,7 @@
        Robot 2 + Robot 3 = Team B. Mirrors Call Break's
        structure (board / bid overlay / round summary /
        match-over), but with a partner zone separate from
-       the opponents zone, a Nil toggle in the bid stepper,
+       the opponents zone, a Nil option in the bid dropdown,
        a Blind Nil pre-round prompt, and bag-aware scoring.
        ══════════════════════════════════════ -->
   <div id="screen-game-spades" role="main" aria-label="Spades game screen">
@@ -2166,7 +2146,7 @@
       </div>
 
       <!-- SCORES + HISTORY -->
-      <div class="game-info-bar" role="region" aria-label="Scores and history">
+      <div class="game-info-bar" role="region" aria-label="Scores, history, and last move">
         <button class="info-btn"
           aria-label="View bids and scores."
           aria-haspopup="dialog"
@@ -2182,6 +2162,13 @@
           onclick="openHistorySP()">
           <div class="info-btn-label">History</div>
           <div class="info-btn-value">📋</div>
+        </button>
+        <button class="info-btn"
+          aria-label="Hear your last card and your opponent's last card."
+          id="btn-lastmove-sp"
+          onclick="announceLastMoveSP()">
+          <div class="info-btn-label">Last Move</div>
+          <div class="info-btn-value">🔁</div>
         </button>
       </div>
 
@@ -2235,20 +2222,12 @@
       <p style="font-size:0.85rem;color:var(--text-muted);margin:0;max-width:280px;">
         How many of the 13 tricks do you think you'll win? 0 is a Nil bid.
       </p>
-      <div class="bid-stepper-row">
-        <button type="button" class="bid-stepper-btn"
-          aria-label="Decrease bid."
-          onclick="adjustBidSP(-1)">&#8722;</button>
-        <span class="bid-stepper-value" id="sp-bid-value" aria-live="polite">3</span>
-        <button type="button" class="bid-stepper-btn"
-          aria-label="Increase bid."
-          onclick="adjustBidSP(1)">+</button>
+      <div class="bid-select-row">
+        <label class="bid-select-label" for="sp-bid-select">Your Bid</label>
+        <select id="sp-bid-select" class="bid-select"
+          aria-label="Your bid. Choose Nil or a number from 1 to 13. Confirms as soon as you pick one."
+          onchange="selectBidSP(this.value)"></select>
       </div>
-      <button class="btn-shuffle" style="max-width:260px;"
-        aria-label="Confirm bid."
-        onclick="confirmBidSP()">
-        Confirm Bid
-      </button>
     </div>
 
     <!-- ROUND SUMMARY OVERLAY -->
@@ -2514,7 +2493,7 @@
       </div>
 
       <!-- SCORE + HISTORY -->
-      <div class="game-info-bar" role="region" aria-label="Score and history">
+      <div class="game-info-bar" role="region" aria-label="Score, history, and last move">
         <button class="info-btn"
           aria-label="View score. Your team: 0 tricks. Opponents: 0 tricks."
           aria-haspopup="dialog"
@@ -2530,6 +2509,13 @@
           onclick="openDrawer('history')">
           <div class="info-btn-label">History</div>
           <div class="info-btn-value">📋</div>
+        </button>
+        <button class="info-btn"
+          aria-label="Hear your last card and your opponent's last card."
+          id="btn-lastmove"
+          onclick="announceLastMove()">
+          <div class="info-btn-label">Last Move</div>
+          <div class="info-btn-value">🔁</div>
         </button>
       </div>
 
@@ -3411,6 +3397,23 @@
   window.__suppressPopstate = false;
   window.__pendingPopTimer = null;
 
+  /* Koi bhi naya game shuru karne se PEHLE yeh call karo. Har
+     game/setup screen par se '.active' class zabardasti hata deta
+     hai, chahe woh kisi bhi wajah se pehle se laga reh gaya ho.
+     Isse do screens kabhi ek saath overlap/visible nahi ho sakte,
+     chahe pichla navigation kaise bhi hua ho. */
+  function closeAllGameScreens() {
+    [
+      'screen-game', 'screen-game-99', 'screen-game-callbreak',
+      'screen-game-spades', 'screen-game-flappybird',
+      'shuffle-screen', 'shuffle-screen-99', 'shuffle-screen-cb',
+      'shuffle-screen-sp'
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+  }
+
   /* Har open* function ke AAKHIR mein call karo. */
   function modalHistoryPush(modalId) {
     const wasEmpty = window.__modalStack.length === 0;
@@ -3619,6 +3622,9 @@
     trumpCaller:   'human', /* Is round mein trump kisne chuna */
 
     history:      [],
+    lastYourCard:     null, /* "Last Move" button ke liye */
+    lastOpponentCard: null,
+    lastOpponentName: null,
     trump:        null,   /* Abhi ka trump suit */
     deck:         [],
     hands:        { human: [], r1: [], r2: [], r3: [] },
@@ -6240,11 +6246,36 @@
     }
   }
 
+  /* Anonymous session ko real account se link karta hai (guest ka
+     Crowns/Cups/streak data save rehta hai). Agar yeh Google/email
+     account kisi doosri device par pehle se istemaal ho chuka hai,
+     to link fail hoga ('credential-already-in-use' / 'email-already-
+     in-use') — us surat mein seedha usi purane real account mein
+     sign-in kar dete hain (guest session ka data chhoot jayega, lekin
+     purana asli data mil jayega). */
+  async function linkOrSignInWithCredential(credential) {
+    const current = auth.currentUser;
+    if (current && current.isAnonymous) {
+      try {
+        const result = await current.linkWithCredential(credential);
+        return result.user;
+      } catch (error) {
+        if (error.code === 'auth/credential-already-in-use' || error.code === 'auth/email-already-in-use') {
+          const result = await auth.signInWithCredential(credential);
+          return result.user;
+        }
+        throw error;
+      }
+    }
+    const result = await auth.signInWithCredential(credential);
+    return result.user;
+  }
+
   async function completeGoogleSignIn(idToken) {
     announce('Finishing sign-in.');
     const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
-    const fbResult = await withTimeout(auth.signInWithCredential(credential), 15000, 'Firebase sign-in');
-    onSignInSuccess(fbResult.user);
+    const user = await withTimeout(linkOrSignInWithCredential(credential), 15000, 'Firebase sign-in');
+    onSignInSuccess(user);
   }
 
   /* Error ko reliably TalkBack se bulwane ke liye — aria-live() ke bajaye
@@ -6289,11 +6320,28 @@
         showGoogleSignInError('Sign-in failed: ' + (error.message || error.code || 'Unknown error.'));
       }
     } else {
-      /* Browser mein popup use karo */
+      /* Browser mein popup use karo. Agar abhi anonymous session hai
+         to pehle linkWithPopup se link karne ki koshish karo (guest
+         ka data save rahe); agar yeh Google account kahin aur pehle
+         se link hai ('credential-already-in-use'), seedha usi mein
+         sign-in kar do. */
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).then((result) => {
+      const current = auth.currentUser;
+      const signInPromise = (current && current.isAnonymous)
+        ? current.linkWithPopup(provider)
+        : auth.signInWithPopup(provider);
+      signInPromise.then((result) => {
         onSignInSuccess(result.user);
       }).catch((error) => {
+        if (error.code === 'auth/credential-already-in-use') {
+          auth.signInWithPopup(provider).then((result) => {
+            onSignInSuccess(result.user);
+          }).catch((err2) => {
+            console.error('Popup sign-in error (fallback):', err2.code, err2.message);
+            showGoogleSignInError('Sign-in failed: ' + (err2.message || err2.code || 'Please try again.'));
+          });
+          return;
+        }
         console.error('Popup sign-in error:', error.code, error.message);
         showGoogleSignInError('Sign-in failed: ' + (error.message || error.code || 'Please try again.'));
       });
@@ -6376,7 +6424,16 @@
     }
 
     announce('Creating account. Please wait.');
-    auth.createUserWithEmailAndPassword(email, password).then((result) => {
+    /* Anonymous session ho to linkWithCredential se link karo (naya
+       account banta hai aur guest ka data isi ke saath jud jata hai
+       ek hi step mein). Anonymous na ho to purana tareeqa. */
+    const credential = firebase.auth.EmailAuthProvider.credential(email, password);
+    const current = auth.currentUser;
+    const signUpPromise = (current && current.isAnonymous)
+      ? current.linkWithCredential(credential)
+      : auth.createUserWithEmailAndPassword(email, password);
+
+    signUpPromise.then((result) => {
       const user = result.user;
       /* Email/password sign-up has no displayName by default —
          derive a friendly name from the email's local part */
@@ -6413,26 +6470,59 @@
      handleSignOut chhedne ki zaroorat nahi padi (cosmetics wale
      pattern jaisa hi). */
   auth.onAuthStateChanged((user) => {
-    if (user) {
+    if (!user) {
+      /* Koi bhi user nahi — pehli baar app khula ya explicitly sign
+         out kiya tha. Silently ek anonymous session shuru karo taaki
+         Crowns/Cups/streak turant se save hone lagein — koi popup ya
+         button nahi, player ko pata bhi nahi chalega. Yeh khud is
+         listener ko dobara trigger karega, is baar anonymous user ke
+         saath (neeche wala isAnonymous branch). */
+      auth.signInAnonymously().catch((err) => {
+        console.log('Anonymous sign-in failed:', err.message);
+      });
+      profile.signedIn  = false;
+      profile.name      = '';
+      profile.email     = '';
+      profile.avatarUrl = '';
+      resetCosmeticsToDefault();
+      appStreak = 0;
+      appBestStreak = 0;
+      appLastPlayedDate = null;
+      renderStreakDisplay();
+    } else if (user.isAnonymous) {
+      /* Anonymous — Crowns/Cups/streak/Daily Challenge ab isi uid
+         ke neeche background mein save hote rahenge. Profile UI
+         phir bhi "Not signed in" hi dikhayega, taaki player ko pata
+         chale ke is progress ko doosri device/reinstall ke liye
+         mehfooz rakhna hai to real account link karna hoga. */
+      profile.signedIn  = false;
+      profile.name      = '';
+      profile.email     = '';
+      profile.avatarUrl = '';
+      /* Firestore rules ke 'isValidCreate()' ko sirf exactly
+         name/email/lastLogin wala doc chahiye hota hai jab doc
+         pehli baar bane. Agar yeh step yahan na ho, to is guest
+         ka pehla hi awardCrowns()/incrementCup() call 'create'
+         rule se reject ho jayega (kyunki uska payload sirf
+         {crowns:...} hota hai, name/email nahi) — aur wahi
+         SILENT FAILURE wapas aa jayegi, is baar Firestore rules
+         ki wajah se, code ki nahi. */
+      db.collection('users').doc(user.uid).set({
+        name: 'Guest',
+        email: '',
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch((err) => {
+        console.error('Guest profile create error:', err);
+      });
+      loadCosmetics(user.uid);
+      loadStreakFromCloud(user.uid);
+    } else {
       profile.signedIn  = true;
       profile.name      = user.displayName || 'Player';
       profile.email     = user.email || '';
       profile.avatarUrl = user.photoURL || '';
       loadCosmetics(user.uid);
       loadStreakFromCloud(user.uid);
-    } else {
-      profile.signedIn  = false;
-      profile.name      = '';
-      profile.email     = '';
-      profile.avatarUrl = '';
-      resetCosmeticsToDefault();
-      /* Signed-in nahi — koi streak track nahi hoti, purani cloud
-         wali value bhi memory se hata do taaki purani signed-in
-         session ki stale value na dikhe. */
-      appStreak = 0;
-      appBestStreak = 0;
-      appLastPlayedDate = null;
-      renderStreakDisplay();
     }
     updateProfileUI();
   });
@@ -6456,6 +6546,7 @@
   }
 
   function launchCourtPiece() {
+    closeAllGameScreens();
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('shuffle-screen').classList.add('active');
     setTimeout(() => {
@@ -6470,6 +6561,13 @@
      so Court Piece flow is never touched)
      ════════════════════════════════════════════ */
   function launch99Game() {
+    closeAllGameScreens();
+    /* Har baar yeh setup screen khulte waqt selection khali karo —
+       purani choice yaad nahi rakhni, player har match se pehle
+       khud select kare. */
+    selectedRobotCount99 = null;
+    const sel99 = document.getElementById('select-robotcount-99');
+    if (sel99) sel99.value = '';
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('shuffle-screen-99').classList.add('active');
     setTimeout(() => {
@@ -6480,6 +6578,12 @@
   }
 
   function start99Game() {
+    if (!selectedRobotCount99) {
+      announce('Please choose the number of robot opponents first.');
+      const sel99 = document.getElementById('select-robotcount-99');
+      if (sel99) sel99.focus();
+      return;
+    }
     const robotCount = selectedRobotCount99;
     document.getElementById('shuffle-screen-99').classList.remove('active');
     document.getElementById('screen-game-99').classList.add('active');
@@ -6543,6 +6647,23 @@
     }
   }
 
+  function announceLastMove99() {
+    const you = state99 ? state99.lastYourCard : null;
+    const oppName = state99 ? state99.lastOpponentName : null;
+    const oppCard = state99 ? state99.lastOpponentCard : null;
+    let msg;
+    if (!you && !oppCard) {
+      msg = 'No cards played yet.';
+    } else if (you && !oppCard) {
+      msg = 'You played ' + you + '. No opponent has played yet.';
+    } else if (!you && oppCard) {
+      msg = oppName + ' played ' + oppCard + '. You have not played yet.';
+    } else {
+      msg = 'You played ' + you + '. ' + oppName + ' played ' + oppCard + '.';
+    }
+    announce(msg);
+  }
+
   function openHistory99() {
     const list = document.getElementById('history-list-99');
     if (!state99 || state99.history.length === 0) {
@@ -6599,7 +6720,7 @@
 
   let state99 = null;
   let state99MatchStartTime = null;
-  let selectedRobotCount99 = 2;
+  let selectedRobotCount99 = null;
 
   function buildDeck99() {
     const deck = [];
@@ -6636,7 +6757,10 @@
       total: 0, direction: 1,
       currentIndex: 0,
       gameOver: false,
-      history: []
+      history: [],
+      lastYourCard: null,
+      lastOpponentCard: null,
+      lastOpponentName: null
     };
 
     document.getElementById('game99-gameover').style.display = 'none';
@@ -6905,6 +7029,12 @@
   }
 
   function applyCardEffect99(player, card, value) {
+    if (player.isHuman) {
+      state99.lastYourCard = card.label;
+    } else {
+      state99.lastOpponentCard = card.label;
+      state99.lastOpponentName = player.name;
+    }
     if (card.rank === 'K') {
       state99.total = 99;
       playSound('kingHit');
@@ -7227,24 +7357,9 @@
      game-flow announcements (deal/trump/card-play/trick/
      round/match) is se affect hote hain — dekho lvl().
      ════════════════════════════════════════════ */
-  function setRobotCount99(count) {
-    selectedRobotCount99 = count;
-    const btn1 = document.getElementById('btn-robotcount-1');
-    const btn2 = document.getElementById('btn-robotcount-2');
-    const btn3 = document.getElementById('btn-robotcount-3');
-    const buttons = [
-      { btn: btn1, n: 1, label: '1 robot opponent' },
-      { btn: btn2, n: 2, label: '2 robot opponents' },
-      { btn: btn3, n: 3, label: '3 robot opponents' }
-    ];
-    buttons.forEach(({ btn, n, label }) => {
-      const isChecked = n === count;
-      btn.setAttribute('aria-checked', String(isChecked));
-      btn.setAttribute('aria-label', label + '. ' + (isChecked ? 'Currently selected.' : 'Double tap to select.'));
-      btn.style.borderColor = isChecked ? 'var(--gold)' : '';
-      btn.style.color       = isChecked ? 'var(--gold)' : '';
-    });
-    announce('Robot opponents set to ' + count + '.');
+  function setRobotCount99(value) {
+    selectedRobotCount99 = parseInt(value, 10);
+    announce('Robot opponents set to ' + selectedRobotCount99 + '.');
   }
 
   function setAnnouncementLevel(level) {
@@ -7675,6 +7790,7 @@
       state.history.push('You played ' + card.label + ' (lead)');
       updateHistoryBtn();
       state.currentTrick = [{ card: card, player: 'human', team: 'A' }];
+      state.lastYourCard = card.label;
 
       /* Dynamic first-delay: index-0 robot (Robot 1) tabhi fire hoga
          jab humanLeadMsg ka focus-read TalkBack mein poora bol chuka
@@ -7699,6 +7815,7 @@
       state.history.push('You played ' + card.label);
       updateHistoryBtn();
       state.currentTrick.push({ card: card, player: 'human', team: 'A' });
+      state.lastYourCard = card.label;
 
       const alreadyPlayed = state.currentTrick.map(e => e.player);
       const remaining = [
@@ -7759,6 +7876,10 @@
           if (chosen) {
             state.hands[robot.key] = state.hands[robot.key].filter(c => c.label !== chosen.label);
             state.currentTrick.push({ card: chosen, player: robot.key, team: robot.team });
+            if (robot.team === 'B') {
+              state.lastOpponentCard = chosen.label;
+              state.lastOpponentName = 'Robot ' + robot.key.slice(1);
+            }
             showCardInTrick(chosen, state.currentTrick.length - 1);
             playSound('cardFlip');
 
@@ -8019,6 +8140,10 @@
 
           state.hands[key]   = state.hands[key].filter(c => c.label !== leaderCard.label);
           state.currentTrick = [{ card: leaderCard, player: key, team: leaderTeam }];
+          if (leaderTeam === 'B') {
+            state.lastOpponentCard = leaderCard.label;
+            state.lastOpponentName = 'Robot ' + key.slice(1);
+          }
 
           showCardInTrick(leaderCard, 0);
           playSound('cardFlip');
@@ -8265,6 +8390,9 @@
     state.currentTrick = [];
     state.leader       = 'human';
     state.tricksPlayed = 0;
+    state.lastYourCard     = null;
+    state.lastOpponentCard = null;
+    state.lastOpponentName = null;
 
     /* Trick zone saaf karo */
     const trickCards = document.getElementById('trick-cards');
@@ -8494,6 +8622,23 @@
       'View move history. ' + state.history.length + ' moves recorded.');
   }
 
+  function announceLastMove() {
+    const you = state.lastYourCard;
+    const oppName = state.lastOpponentName;
+    const oppCard = state.lastOpponentCard;
+    let msg;
+    if (!you && !oppCard) {
+      msg = 'No cards played yet this round.';
+    } else if (you && !oppCard) {
+      msg = 'You played ' + you + '. No opponent has played yet this round.';
+    } else if (!you && oppCard) {
+      msg = oppName + ' played ' + oppCard + '. You have not played yet this round.';
+    } else {
+      msg = 'You played ' + you + '. ' + oppName + ' played ' + oppCard + '.';
+    }
+    announce(msg);
+  }
+
   function updateScoreDisplay() {
     /* Round tricks dikhao upar, match points bhi */
     document.getElementById('score-display').textContent =
@@ -8695,40 +8840,33 @@
   const SUIT_ORDER_CB = { Spades: 0, Hearts: 1, Clubs: 2, Diamonds: 3 };
 
   let stateCB = null;
-  let cbRobotCount = 3;
-  let cbRoundsToPlay = 3;
+  let cbRobotCount = null;
+  let cbRoundsToPlay = null;
   let cbMatchStartTime = null;
   let cbBidValue = 3;
 
   /* ── SETUP SCREEN — robot count / rounds selectors ── */
-  function setRobotCountCB(n) {
-    cbRobotCount = n;
-    [1, 2, 3].forEach(i => {
-      const btn = document.getElementById('btn-cb-robotcount-' + i);
-      const sel = i === n;
-      btn.setAttribute('aria-checked', sel ? 'true' : 'false');
-      btn.style.borderColor = sel ? 'var(--gold)' : '';
-      btn.style.color = sel ? 'var(--gold)' : '';
-      btn.setAttribute('aria-label', i + ' robot opponent' + (i === 1 ? '' : 's') + '. ' + (sel ? 'Currently selected.' : 'Double tap to select.'));
-    });
-    announce(n + ' robot opponent' + (n === 1 ? '' : 's') + ' selected.');
+  function setRobotCountCB(value) {
+    cbRobotCount = parseInt(value, 10);
+    announce(cbRobotCount + ' robot opponent' + (cbRobotCount === 1 ? '' : 's') + ' selected.');
   }
 
-  function setRoundsCB(n) {
-    cbRoundsToPlay = n;
-    [1, 2, 3, 4, 5].forEach(i => {
-      const btn = document.getElementById('btn-cb-rounds-' + i);
-      const sel = i === n;
-      btn.setAttribute('aria-checked', sel ? 'true' : 'false');
-      btn.style.borderColor = sel ? 'var(--gold)' : '';
-      btn.style.color = sel ? 'var(--gold)' : '';
-      btn.setAttribute('aria-label', i + ' round' + (i === 1 ? '' : 's') + '. ' + (sel ? 'Currently selected.' : 'Double tap to select.'));
-    });
-    announce(n + ' round' + (n === 1 ? '' : 's') + ' selected.');
+  function setRoundsCB(value) {
+    cbRoundsToPlay = parseInt(value, 10);
+    announce(cbRoundsToPlay + ' round' + (cbRoundsToPlay === 1 ? '' : 's') + ' selected.');
   }
 
   /* ── LAUNCH / START / QUIT ── */
   function launchCallBreak() {
+    closeAllGameScreens();
+    /* Har baar setup screen khulte waqt dono selection khali karo —
+       purani choice yaad nahi rakhni. */
+    cbRobotCount = null;
+    cbRoundsToPlay = null;
+    const selRC = document.getElementById('select-cb-robotcount');
+    const selR  = document.getElementById('select-cb-rounds');
+    if (selRC) selRC.value = '';
+    if (selR)  selR.value  = '';
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('shuffle-screen-cb').classList.add('active');
     setTimeout(() => {
@@ -8739,6 +8877,15 @@
   }
 
   function startCallBreak() {
+    if (!cbRobotCount || !cbRoundsToPlay) {
+      announce(!cbRobotCount
+        ? 'Please choose the number of robot opponents first.'
+        : 'Please choose the number of rounds first.');
+      const missingId = !cbRobotCount ? 'select-cb-robotcount' : 'select-cb-rounds';
+      const el = document.getElementById(missingId);
+      if (el) el.focus();
+      return;
+    }
     document.getElementById('shuffle-screen-cb').classList.remove('active');
     document.getElementById('screen-game-callbreak').classList.add('active');
     logGameEvent('game_started', { game_type: 'callbreak', robot_count: cbRobotCount, rounds: cbRoundsToPlay });
@@ -8814,7 +8961,10 @@
       phase: 'dealing',
       history: [],
       tricksPlayedThisRound: 0,
-      inputLocked: true
+      inputLocked: true,
+      lastYourCard: null,
+      lastOpponentCard: null,
+      lastOpponentName: null
     };
     document.getElementById('cb-gameover-overlay').style.display = 'none';
     document.getElementById('cb-round-summary-overlay').style.display = 'none';
@@ -8842,6 +8992,9 @@
     stateCB.tricksPlayedThisRound = 0;
     stateCB.phase = 'bidding';
     stateCB.inputLocked = true;
+    stateCB.lastYourCard = null;
+    stateCB.lastOpponentCard = null;
+    stateCB.lastOpponentName = null;
 
     const n = stateCB.players.length;
     const startIdx = (stateCB.dealerIndex + 1) % n;
@@ -8935,15 +9088,36 @@
   }
 
   function openBidOverlayCB(player) {
-    cbBidValue = Math.max(1, Math.min(13, estimateBidCB(player.hand)));
-    document.getElementById('cb-bid-value').textContent = cbBidValue;
+    /* Koi default bid pre-select nahi karte — khali dropdown khulta
+       hai, player khud ek number chune. (Pehle AI-estimated value
+       default selected hoti thi, jo galat bhi lagti thi aur agar
+       player wahi number chahta to onchange fire hi nahi hota tha.) */
+    cbBidValue = null;
+    populateBidSelectCB();
     const overlay = document.getElementById('cb-bid-overlay');
     overlay.style.display = 'flex';
     setCallBreakBoardInert(true);
     setTimeout(() => {
       document.getElementById('cb-bid-title').focus();
-      announce('Your turn to bid. Current bid ' + cbBidValue + '. Adjust and confirm.');
+      announce('Your turn to bid. Open the bid dropdown and choose a number from 1 to 13. It confirms as soon as you pick one.');
     }, 200);
+  }
+
+  function populateBidSelectCB() {
+    const sel = document.getElementById('cb-bid-select');
+    sel.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose…';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    sel.appendChild(placeholder);
+    for (let i = 1; i <= 13; i++) {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = String(i);
+      sel.appendChild(opt);
+    }
   }
 
   /* Bid stepper beep — Web Audio API se seedha synthesize hota
@@ -8978,11 +9152,10 @@
     }
   }
 
-  function adjustBidCB(delta) {
-    cbBidValue = Math.max(1, Math.min(13, cbBidValue + delta));
-    playBidTickCB(delta);
-    document.getElementById('cb-bid-value').textContent = cbBidValue;
-    announce('Bid ' + cbBidValue + '.');
+  function selectBidCB(value) {
+    cbBidValue = Math.max(1, Math.min(13, parseInt(value, 10)));
+    playBidTickCB(1);
+    confirmBidCB();
   }
 
   function confirmBidCB() {
@@ -9140,6 +9313,13 @@
     if (!stateCB.ledSuit) stateCB.ledSuit = card.suit;
     stateCB.currentTrick.push({ player: player.id, playerName: player.name, isHuman: player.isHuman, card: card });
 
+    if (player.isHuman) {
+      stateCB.lastYourCard = card.label;
+    } else {
+      stateCB.lastOpponentCard = card.label;
+      stateCB.lastOpponentName = player.name;
+    }
+
     renderAiZoneCB();
     renderTrickZoneCB();
     if (player.isHuman) renderHandCB();
@@ -9164,6 +9344,23 @@
   function advanceTurnCB() {
     const n = stateCB.players.length;
     stateCB.currentIndex = (stateCB.currentIndex + 1) % n;
+  }
+
+  function announceLastMoveCB() {
+    const you = stateCB.lastYourCard;
+    const oppName = stateCB.lastOpponentName;
+    const oppCard = stateCB.lastOpponentCard;
+    let msg;
+    if (!you && !oppCard) {
+      msg = 'No cards played yet this round.';
+    } else if (you && !oppCard) {
+      msg = 'You played ' + you + '. No opponent has played yet this round.';
+    } else if (!you && oppCard) {
+      msg = oppName + ' played ' + oppCard + '. You have not played yet this round.';
+    } else {
+      msg = 'You played ' + you + '. ' + oppName + ' played ' + oppCard + '.';
+    }
+    announce(msg);
   }
 
   function resolveTrickCB() {
@@ -9538,6 +9735,7 @@
 
   /* ── LAUNCH / START / QUIT ── */
   function launchSpades() {
+    closeAllGameScreens();
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('shuffle-screen-sp').classList.add('active');
     setTimeout(() => {
@@ -9623,7 +9821,10 @@
       phase: 'dealing',
       history: [],
       tricksPlayedThisRound: 0,
-      inputLocked: true
+      inputLocked: true,
+      lastYourCard: null,
+      lastOpponentCard: null,
+      lastOpponentName: null
     };
     document.getElementById('sp-gameover-overlay').style.display = 'none';
     document.getElementById('sp-round-summary-overlay').style.display = 'none';
@@ -9644,6 +9845,9 @@
     stateSP.ledSuit = null;
     stateSP.spadesBroken = false;
     stateSP.tricksPlayedThisRound = 0;
+    stateSP.lastYourCard = null;
+    stateSP.lastOpponentCard = null;
+    stateSP.lastOpponentName = null;
     stateSP.players.forEach(p => {
       p.hand = [];
       p.bid = null;
@@ -9840,23 +10044,44 @@
   }
 
   function openBidOverlaySP(player) {
-    const est = estimateBidSP(player);
-    spBidValue = est.isNil ? 0 : Math.max(1, Math.min(13, est.bid));
-    document.getElementById('sp-bid-value').textContent = spBidValue === 0 ? 'Nil' : spBidValue;
+    /* Koi default bid pre-select nahi karte — khali dropdown khulta
+       hai (Nil bhi pre-selected nahi), player khud chune. */
+    spBidValue = null;
+    populateBidSelectSP();
     const overlay = document.getElementById('sp-bid-overlay');
     overlay.style.display = 'flex';
     setSpadesBoardInert(true);
     setTimeout(() => {
       document.getElementById('sp-bid-title').focus();
-      announce('Your turn to bid. Current bid ' + (spBidValue === 0 ? 'Nil' : spBidValue) + '. Adjust and confirm. Zero is a Nil bid.');
+      announce('Your turn to bid. Open the bid dropdown and choose Nil or a number from 1 to 13. It confirms as soon as you pick one.');
     }, 200);
   }
 
-  function adjustBidSP(delta) {
-    spBidValue = Math.max(0, Math.min(13, spBidValue + delta));
-    playBidTickSP(delta);
-    document.getElementById('sp-bid-value').textContent = spBidValue === 0 ? 'Nil' : spBidValue;
-    announce(spBidValue === 0 ? 'Nil.' : 'Bid ' + spBidValue + '.');
+  function populateBidSelectSP() {
+    const sel = document.getElementById('sp-bid-select');
+    sel.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose…';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    sel.appendChild(placeholder);
+    const nilOpt = document.createElement('option');
+    nilOpt.value = '0';
+    nilOpt.textContent = 'Nil';
+    sel.appendChild(nilOpt);
+    for (let i = 1; i <= 13; i++) {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = String(i);
+      sel.appendChild(opt);
+    }
+  }
+
+  function selectBidSP(value) {
+    spBidValue = Math.max(0, Math.min(13, parseInt(value, 10)));
+    playBidTickSP(1);
+    confirmBidSP();
   }
 
   function confirmBidSP() {
@@ -10065,6 +10290,13 @@
     if (card.suit === 'Spades') stateSP.spadesBroken = true;
     stateSP.currentTrick.push({ player: player.id, playerName: player.name, isHuman: player.isHuman, team: player.team, card: card });
 
+    if (player.isHuman) {
+      stateSP.lastYourCard = card.label;
+    } else if (player.mode === 'opponent') {
+      stateSP.lastOpponentCard = card.label;
+      stateSP.lastOpponentName = player.name;
+    }
+
     renderPartnerZoneSP();
     renderOppZoneSP();
     renderTrickZoneSP();
@@ -10090,6 +10322,23 @@
   function advanceTurnSP() {
     const n = stateSP.players.length;
     stateSP.currentIndex = (stateSP.currentIndex + 1) % n;
+  }
+
+  function announceLastMoveSP() {
+    const you = stateSP.lastYourCard;
+    const oppName = stateSP.lastOpponentName;
+    const oppCard = stateSP.lastOpponentCard;
+    let msg;
+    if (!you && !oppCard) {
+      msg = 'No cards played yet this round.';
+    } else if (you && !oppCard) {
+      msg = 'You played ' + you + '. No opponent has played yet this round.';
+    } else if (!you && oppCard) {
+      msg = oppName + ' played ' + oppCard + '. You have not played yet this round.';
+    } else {
+      msg = 'You played ' + you + '. ' + oppName + ' played ' + oppCard + '.';
+    }
+    announce(msg);
   }
 
   function resolveTrickSP() {
@@ -10941,6 +11190,7 @@
      dashboard. Shows the start sub-panel first; the actual game
      only begins once Start Game is tapped. ── */
   function launchFlappyBird() {
+    closeAllGameScreens();
     document.getElementById('screen-home').classList.remove('active');
     document.getElementById('screen-game-flappybird').classList.add('active');
     document.getElementById('flappy-start-panel').classList.remove('flappy-hidden');
