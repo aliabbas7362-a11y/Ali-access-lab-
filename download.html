@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Card Game — Download | Abbas Ali</title>
-<meta name="description" content="Download Card Game by Abbas Ali. Court Piece, 99, and Call Break — accessible card games built for everyone, including screen reader users.">
+<title>Downloads — Card Game and Dark Survival | Abbas Ali</title>
+<meta name="description" content="Download Card Game and Dark Survival by Abbas Ali. Accessible Android games built for blind and low-vision players.">
 <style>
   :root {
     --bg: #fcfaf6;
@@ -112,6 +112,14 @@
     outline-offset: 3px;
   }
 
+  .cta.alt { background: var(--felt); }
+  .cta.alt:hover, .cta.alt:active { background: #153528; }
+
+  .app { margin-bottom: 44px; }
+  .app + .app { border-top: 1px solid var(--line); padding-top: 36px; }
+  .app h2 { font-size: 1.6rem; margin: 0 0 6px; text-align: center; }
+  .app .tagline { text-align: center; }
+
   .meta {
     margin: 14px 0 0;
     color: var(--ink-soft);
@@ -209,35 +217,60 @@
     <svg class="mark" width="40" height="40" viewBox="0 0 24 24" fill="var(--felt)" aria-hidden="true">
       <path d="M12 2C9 7 3 10.5 3 15a5 5 0 0 0 8.2 3.8c-.2 1.6-.9 2.7-2.2 3.7a.6.6 0 0 0 .4 1h5.2a.6.6 0 0 0 .4-1c-1.3-1-2-2.1-2.2-3.7A5 5 0 0 0 21 15c0-4.5-6-8-9-13z"/>
     </svg>
-    <h1>Card Game</h1>
+    <h1>Downloads</h1>
     <p class="byline">by Abbas Ali · Ali Access Labs</p>
-    <p class="tagline">Court Piece, 99, and Call Break — three classic card games built to work fully with screen readers, from the ground up.</p>
+    <p class="tagline">Two Android games, built so blind and low-vision players can enjoy them fully.</p>
   </header>
 
-  <section class="games">
-    <ul>
-      <li><strong>Court Piece</strong><span>1 vs 3 robots, classic trick-taking</span></li>
-      <li><strong>99</strong><span>Race to 99, don't go over</span></li>
-      <li><strong>Call Break</strong><span>Bid, win tricks, beat the round</span></li>
-    </ul>
+  <section class="app" aria-labelledby="card-title">
+    <h2 id="card-title">Card Game</h2>
+    <p class="tagline">Court Piece, 99, and Call Break — three classic card games built to work fully with screen readers, from the ground up.</p>
+
+    <div class="games" style="margin-top:20px">
+      <ul>
+        <li><strong>Court Piece</strong><span>1 vs 3 robots, classic trick-taking</span></li>
+        <li><strong>99</strong><span>Race to 99, don't go over</span></li>
+        <li><strong>Call Break</strong><span>Bid, win tricks, beat the round</span></li>
+      </ul>
+    </div>
+
+    <div class="download">
+      <a class="cta" href="https://aliabbas7362-a11y.github.io/Ali-access-lab-/card-game.apk" aria-label="Download Card Game APK, download starts immediately" download>
+        Download Card Game APK
+      </a>
+      <p class="meta">Free · Works offline · No Play Store account needed</p>
+    </div>
   </section>
 
-  <section class="download">
-    <a class="cta" href="https://aliabbas7362-a11y.github.io/Ali-access-lab-/card-game.apk" aria-label="Download Card Game APK, download starts immediately" download>
-      Download Card Game APK
-    </a>
-    <p class="meta">Free · Works offline · No Play Store account needed</p>
+  <section class="app" aria-labelledby="ds-title">
+    <h2 id="ds-title">Dark Survival</h2>
+    <p class="tagline">An audio-first survival game. Move through the forest by sound, listen for enemies by direction, and survive.</p>
+
+    <div class="games" style="margin-top:20px">
+      <ul>
+        <li><strong>Spatial audio</strong><span>Hear where enemies are</span></li>
+        <li><strong>Spoken and haptic feedback</strong><span>Speech and vibration guide you</span></li>
+        <li><strong>Five zones</strong><span>Drop Point to Enemy Camp</span></li>
+      </ul>
+    </div>
+
+    <div class="download">
+      <a class="cta alt" href="https://aliabbas7362-a11y.github.io/Ali-access-lab-/dark-survival.apk" aria-label="Download Dark Survival APK, download starts immediately" download>
+        Download Dark Survival APK
+      </a>
+      <p class="meta">Free · Works offline · No Play Store account needed · Use headphones for the best experience</p>
+    </div>
   </section>
 
   <section class="a11y-note">
-    <p>Built screen-reader first. Every menu, card, and turn is announced — tested daily with TalkBack, not added after the fact.</p>
+    <p>Built accessibility first. Card Game is screen-reader first: every menu, card, and turn is announced, tested daily with TalkBack. Dark Survival is audio first: sound, speech, and vibration carry the whole game.</p>
   </section>
 
   <section class="steps">
     <h2>How to install</h2>
     <ol>
       <li>
-        <p>Tap the download button above. The file starts downloading right away.</p>
+        <p>Tap the download button of the game you want. The file starts downloading right away. You can install both games on the same phone.</p>
       </li>
       <li>
         <p>If your browser warns that the file type is unusual, tap <strong>Download anyway</strong>. This is expected for apps installed outside the Play Store.</p>
